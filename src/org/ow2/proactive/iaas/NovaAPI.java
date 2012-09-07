@@ -100,9 +100,14 @@ public class NovaAPI {
         HttpResponse response = httpClient.execute(post);
         String entity = EntityUtils.toString(response.getEntity());
 
+        System.out.println(entity);
+        
         // Retrieve useful information from this response
         sessionId = JsonPath.read(entity, "$.access.token.id");
         novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='nova')].endpoints[0].publicURL");
+   
+    
+    
     }
 
     public String createServer(String name, String imageRef, String flavorRef, Map<String, String> metadata)

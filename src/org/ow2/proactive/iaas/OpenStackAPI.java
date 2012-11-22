@@ -1,3 +1,9 @@
+/**
+ * This class has been created to connect with different cloud platforms supporting the openstack API, i.e. Nova, HPCloud.
+ * 
+ * */
+
+
 package org.ow2.proactive.iaas;
 
 
@@ -10,6 +16,7 @@ import java.util.Map;
 import javax.security.sasl.AuthenticationException;
 
 import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -24,9 +31,9 @@ import org.apache.http.util.EntityUtils;
 import com.jayway.jsonpath.JsonPath;
 
 
-public class NovaAPI {
+public class OpenStackAPI {
 
-    private static Map<Integer, NovaAPI> instances;
+    private static Map<Integer, OpenStackAPI> instances;
 
     private long created;
     private HttpClient httpClient;
@@ -35,20 +42,20 @@ public class NovaAPI {
     private String novaUri;
 
     // ////////////////////////
-    // NOVA FACTORY
+    // OPENSTACK FACTORY
     // ////////////////////////
 
-    public static synchronized NovaAPI getNovaAPI(String username, String password, String tenantName,
-            URI endpoint) throws AuthenticationException {
+    public static synchronized OpenStackAPI getOpenStackAPI(String username, String password, String tenantName,
+            URI endpoint, CloudProvider provider) throws AuthenticationException {
         if (instances == null) {
-            instances = new HashMap<Integer, NovaAPI>();
+            instances = new HashMap<Integer, OpenStackAPI>();
         }
         int hash = (username + password + tenantName).hashCode();
-        NovaAPI instance = instances.get(hash);
+        OpenStackAPI instance = instances.get(hash);
         if (instance == null || !isValid(instance.created)) {
             try {
                 instances.remove(hash);
-                instance = new NovaAPI(username, password, tenantName, endpoint);
+                instance = new OpenStackAPI(username, password, tenantName, endpoint, provider);
             } catch (Throwable t) {
                 throw new AuthenticationException("Failed to authenticate to " + endpoint, t);
             }
@@ -70,18 +77,18 @@ public class NovaAPI {
         return (System.currentTimeMillis() - created < ALMOST_ONE_DAY);
     }
 
-    private NovaAPI(String username, String password, String tenantName, URI endpoint) throws IOException {
+    private OpenStackAPI(String username, String password, String tenantName, URI endpoint, CloudProvider provider) throws IOException {
         this.created = System.currentTimeMillis();
         this.endpoint = endpoint;
         this.httpClient = new DefaultHttpClient();
-        authenticate(username, password, tenantName);
+        authenticate(username, password, tenantName, provider);
     }
 
     // ////////////////////////
-    // NOVA COMMANDS
+    // OPENSTACK COMMANDS
     // ////////////////////////
 
-    private void authenticate(String username, String password, String tenant) throws IOException {
+    private void authenticate(String username, String password, String tenant, CloudProvider provider) throws IOException {
         // Retrieve a token id to list tenants
         JSONObject jsonCreds = new JSONObject();
         jsonCreds.put("username", username);
@@ -101,37 +108,54 @@ public class NovaAPI {
         String entity = EntityUtils.toString(response.getEntity());
 
         System.out.println(entity);
+       
         
         // Retrieve useful information from this response
         sessionId = JsonPath.read(entity, "$.access.token.id");
-        novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='Compute')].endpoints[0].publicURL");
-   
+       
+       switch(provider){ 
+       		case HPCLOUD:
+       			novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='Compute')].endpoints[0].publicURL");
+       			break;
+       		case NOVA:
+       			novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='nova')].endpoints[0].publicURL");
+       		
+       		default:
+       			break;
+    	   
+       }
     
     
     }
     
     
     
-    public void listAvailableImages() throws ClientProtocolException, IOException{
+    public String listAvailableServers() throws ClientProtocolException, IOException{
     	
-        //JSONObject jReq = new JSONObject();
-        //jReq.put("server", jServer);
-    	System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         HttpResponse response = get("/servers/detail");
         String entity = EntityUtils.toString(response.getEntity());
 
-        System.out.println(entity);
+        return entity;
         
         
         
-        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-         response = get("/flavors/detail");
-         entity = EntityUtils.toString(response.getEntity());
-
-        System.out.println(entity);
+ 
         
     }
     
+    
+    public String listAvailableFlavors() throws ClientProtocolException, IOException{
+    	
+        HttpResponse response = get("/flavors/detail");
+        String entity = EntityUtils.toString(response.getEntity());
+
+        return entity;
+        
+        
+        
+ 
+        
+    }
     
     
 
@@ -150,9 +174,26 @@ public class NovaAPI {
 
         HttpResponse response = post("/servers", jReq);
         String entity = EntityUtils.toString(response.getEntity());
-
-        return entity;
+        System.out.println("SEPARATOR------------");
+        System.out.println(entity);
+        String resourceId = JsonPath.read(entity, "$.server.uuid");
+        
+        return resourceId;
     }
+    
+    
+    /**
+     * Given a VM, returns updated details about it.
+     * 
+     * @return A string containing the details regarding the server.
+     * */
+  /*  private String getUpdatedDetails(){
+    	
+    	
+    	
+    }
+    */
+    
 
     public boolean rebootServer(String serverId, String method) throws ClientProtocolException, IOException {
         JSONObject jReboot = new JSONObject();

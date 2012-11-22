@@ -9,7 +9,7 @@ import org.ow2.proactive.authentication.crypto.Credentials;
 import java.io.File;
 
 public class Main {
-	
+	/*
 	public static void main(String[] args) throws Exception{
 		String policyfile = "config/java.policy";
 
@@ -51,5 +51,5 @@ public class Main {
 		}
 		
 		System.exit(0);
-	}
+	}*/
 }

@@ -1,22 +1,25 @@
 /**
  * This class has been created to connect with different cloud platforms supporting the openstack API, i.e. Nova, HPCloud.
- * 
+ *
  * */
 
 
-package org.ow2.proactive.iaas;
+package org.ow2.proactive.iaas.openstack;
 
 
+import org.ow2.proactive.iaas.CloudProvider;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasVM;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.sasl.AuthenticationException;
 
 import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -31,7 +34,7 @@ import org.apache.http.util.EntityUtils;
 import com.jayway.jsonpath.JsonPath;
 
 
-public class OpenStackAPI {
+public class OpenStackAPI implements IaasApi {
 
     private static Map<Integer, OpenStackAPI> instances;
 
@@ -46,7 +49,7 @@ public class OpenStackAPI {
     // ////////////////////////
 
     public static synchronized OpenStackAPI getOpenStackAPI(String username, String password, String tenantName,
-            URI endpoint, CloudProvider provider) throws AuthenticationException {
+                                                            URI endpoint, CloudProvider provider) throws AuthenticationException {
         if (instances == null) {
             instances = new HashMap<Integer, OpenStackAPI>();
         }
@@ -67,7 +70,7 @@ public class OpenStackAPI {
     /**
      * SessionId provided by OpenStack are valid for 24 hours. So we have to
      * check is the cached one is still valid.
-     * 
+     *
      * @param created
      * @return
      */
@@ -108,56 +111,48 @@ public class OpenStackAPI {
         String entity = EntityUtils.toString(response.getEntity());
 
         System.out.println(entity);
-       
-        
+
+
         // Retrieve useful information from this response
         sessionId = JsonPath.read(entity, "$.access.token.id");
-       
-       switch(provider){ 
-       		case HPCLOUD:
-       			novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='Compute')].endpoints[0].publicURL");
-       			break;
-       		case NOVA:
-       			novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='nova')].endpoints[0].publicURL");
-       		
-       		default:
-       			break;
-    	   
-       }
-    
-    
+
+        switch (provider) {
+            case HPCLOUD:
+                novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='Compute')].endpoints[0].publicURL");
+                break;
+            case NOVA:
+                novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='nova')].endpoints[0].publicURL");
+
+            default:
+                break;
+
+        }
+
+
     }
-    
-    
-    
-    public String listAvailableServers() throws ClientProtocolException, IOException{
-    	
+
+
+    public String listAvailableServers() throws ClientProtocolException, IOException {
+
         HttpResponse response = get("/servers/detail");
         String entity = EntityUtils.toString(response.getEntity());
 
         return entity;
-        
-        
-        
- 
-        
+
+
     }
-    
-    
-    public String listAvailableFlavors() throws ClientProtocolException, IOException{
-    	
+
+
+    public String listAvailableFlavors() throws ClientProtocolException, IOException {
+
         HttpResponse response = get("/flavors/detail");
         String entity = EntityUtils.toString(response.getEntity());
 
         return entity;
-        
-        
-        
- 
-        
+
+
     }
-    
-    
+
 
     public String createServer(String name, String imageRef, String flavorRef, Map<String, String> metadata)
             throws ClientProtocolException, IOException {
@@ -177,24 +172,22 @@ public class OpenStackAPI {
         System.out.println("SEPARATOR------------");
         System.out.println(entity);
         String resourceId = JsonPath.read(entity, "$.server.uuid");
-        
+
         return resourceId;
     }
-    
-    
+
+
     /**
      * Given a VM, returns updated details about it.
-     * 
+     *
      * @return A string containing the details regarding the server.
-     * */
+     */
   /*  private String getUpdatedDetails(){
-    	
+
     	
     	
     }
     */
-    
-
     public boolean rebootServer(String serverId, String method) throws ClientProtocolException, IOException {
         JSONObject jReboot = new JSONObject();
         jReboot.put("type", method.toUpperCase());
@@ -242,5 +235,33 @@ public class OpenStackAPI {
         del.addHeader("X-Auth-Token", sessionId);
 
         return httpClient.execute(del);
+    }
+
+    @Override
+    public IaasVM startVm(Map<String, String> arguments) throws Exception {
+        return new IaasVM(createServer(arguments.get("name"),
+                arguments.get("imageRef"),
+                arguments.get("flavorRef"),
+                null)); // TODO
+    }
+
+    @Override
+    public void stopVm(Map<String, String> args) throws Exception {
+        deleteServer(args.get("id"));
+    }
+
+    @Override
+    public boolean isVmStarted(String vmId) throws Exception {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    public static IaasApi getOpenStackAPI(Map<String, String> args) throws URISyntaxException, AuthenticationException {
+        return getOpenStackAPI(
+                args.get("username"),
+                args.get("password"),
+                args.get("tenantName"),
+                new URI(args.get("endpoint")),
+                CloudProvider.valueOf(args.get("provider"))
+        );
     }
 }

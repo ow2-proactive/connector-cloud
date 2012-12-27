@@ -1,9 +1,13 @@
-package org.ow2.proactive.iaas;
+package org.ow2.proactive.iaas.nova;
 
 
+
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasVM;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +28,7 @@ import org.apache.http.util.EntityUtils;
 import com.jayway.jsonpath.JsonPath;
 
 
-public class NovaAPI {
+public class NovaAPI implements IaasApi {
 
     private static Map<Integer, NovaAPI> instances;
 
@@ -37,6 +41,13 @@ public class NovaAPI {
     // ////////////////////////
     // NOVA FACTORY
     // ////////////////////////
+
+    public static IaasApi getNovaAPI(Map<String, String> args) throws URISyntaxException, AuthenticationException {
+        return getNovaAPI(args.get("username"),
+                args.get("password"),
+                args.get("tenantName"),
+                new URI(args.get("endpoint")));
+    }
 
     public static synchronized NovaAPI getNovaAPI(String username, String password, String tenantName,
             URI endpoint) throws AuthenticationException {
@@ -201,5 +212,25 @@ public class NovaAPI {
         del.addHeader("X-Auth-Token", sessionId);
 
         return httpClient.execute(del);
+    }
+
+    @Override
+    public IaasVM startVm(Map<String, String> arguments) throws Exception {
+        return new IaasVM(createServer(
+                arguments.get("name"),
+                arguments.get("imageRef"),
+                arguments.get("flavorRef"),
+                null) // TODO
+        );
+    }
+
+    @Override
+    public void stopVm(Map<String, String> args) throws Exception {
+        deleteServer(args.get("id"));
+    }
+
+    @Override
+    public boolean isVmStarted(String vmId) throws Exception {
+        throw new UnsupportedOperationException("not implemented");
     }
 }

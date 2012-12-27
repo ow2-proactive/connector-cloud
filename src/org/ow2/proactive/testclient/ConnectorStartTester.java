@@ -1,8 +1,5 @@
 package org.ow2.proactive.testclient;
 
-import org.ow2.proactive.occi.scheduler.actions.vm.VMDeleteAction;
-import org.ow2.proactive.occi.scheduler.actions.vm.VMStartAction;
-
 public class ConnectorStartTester {
 	
 	
@@ -10,9 +7,9 @@ public class ConnectorStartTester {
 	public static void main(String[] args) throws InterruptedException{
 		
 		
-		VMStartAction start = new VMStartAction("demo", "demo", "whatever");
-		
-		start.execute();
+//		VMStartAction start = new VMStartAction("demo", "demo", "whatever");
+//
+//		start.execute();
 		
 		/*
 		Thread.sleep(60000);  //60 secs wait to keep into account the time needed to start the VM

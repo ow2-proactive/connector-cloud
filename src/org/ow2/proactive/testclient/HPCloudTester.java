@@ -1,14 +1,10 @@
 package org.ow2.proactive.testclient;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 
-import javax.security.sasl.AuthenticationException;
-
 import org.ow2.proactive.iaas.CloudProvider;
-import org.ow2.proactive.iaas.NovaAPI;
-import org.ow2.proactive.iaas.OpenStackAPI;
+import org.ow2.proactive.iaas.openstack.OpenStackAPI;
 
 public class HPCloudTester{
 

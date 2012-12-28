@@ -3,12 +3,13 @@ package org.ow2.proactive.iaas;
 import org.ow2.proactive.scheduler.common.task.executable.JavaExecutable;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class IaasExecutable extends JavaExecutable {
 
     private String providerName;
-    protected Map<String, String> args;
+    protected Map<String, String> args = new HashMap<String, String>();
 
     @Override
     public void init(Map<String, Serializable> args) throws Exception {

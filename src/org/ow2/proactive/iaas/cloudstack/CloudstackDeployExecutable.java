@@ -32,30 +32,37 @@
  *
  *  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.ow2.proactive.iaas;
+package org.ow2.proactive.iaas.cloudstack;
 
+import org.ow2.proactive.iaas.IaasExecutable;
+import org.ow2.proactive.iaas.IaasVM;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
 
 import java.io.Serializable;
 
-public class IaasDeployExecutable extends IaasExecutable {
-
-    private boolean waitUntilVmIsReady = true; // TODO
+public class CloudstackDeployExecutable extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        IaasApi api = createApi(args);
+        CloudStackAPI api = (CloudStackAPI) createApi(args);
 
         IaasVM vm = api.startVm(args);
 
-        if (waitUntilVmIsReady) {
-            while (true) {
-                if (api.isVmStarted(vm.getVmId())) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-        }
+        waitUntilVMRunning(api, vm);
+        api.attachVolume(vm.getVmId(), "cf48db13-a1d9-4c2a-9df7-22a88b7ab885");
+        api.reboot(vm.getVmId());
+        Thread.sleep(30000); // TODO wait until reboot order is ack
+        waitUntilVMRunning(api, vm);
+
         return vm.getVmId();
+    }
+
+    private void waitUntilVMRunning(CloudStackAPI api, IaasVM vm) throws Exception {
+        while (true) {
+            if (api.isVmStarted(vm.getVmId())) {
+                break;
+            }
+            Thread.sleep(10000);
+        }
     }
 }

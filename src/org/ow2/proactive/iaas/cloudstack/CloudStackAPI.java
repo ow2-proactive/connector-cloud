@@ -39,6 +39,7 @@ import org.ow2.proactive.iaas.IaasVM;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
@@ -52,7 +53,10 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -62,6 +66,9 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import static java.util.Arrays.asList;
 
@@ -86,13 +93,23 @@ public class CloudStackAPI implements IaasApi {
         List<NameValuePair> params = asList(
                 findArgument("serviceofferingid", arguments),
                 findArgument("templateid", arguments),
+                new BasicNameValuePair("userdata", new String(Base64.encodeBase64(findArgument("userdata", arguments).getValue().getBytes(ENCODING)), ENCODING)),
                 findArgument("zoneid", arguments));
 
         String responseString = callApi("deployVirtualMachine", params);
 
         System.out.println(responseString);
+
+        DocumentBuilderFactory dbf =
+                DocumentBuilderFactory.newInstance();
+        DocumentBuilder db = dbf.newDocumentBuilder();
+        InputSource is = new InputSource();
+        is.setCharacterStream(new StringReader(responseString));
+        Document doc = db.parse(is);
+        NodeList nodes = doc.getElementsByTagName("id");
+
         // TODO query XML for vm id
-        return new IaasVM("");
+        return new IaasVM(nodes.item(0).getTextContent());
 
     }
 
@@ -115,13 +132,13 @@ public class CloudStackAPI implements IaasApi {
     @Override
     public boolean isVmStarted(String vmId) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-//        params.add(new BasicNameValuePair("id", vmId));
+        params.add(new BasicNameValuePair("id", vmId));
 
         String responseString = callApi("listVirtualMachines", params);
 
         System.out.println(responseString);
 
-        return true; // TODO query xml for status field
+        return responseString.contains("Running"); // TODO query xml for status field "State = Running"
     }
 
     private String callApi(String command, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, IOException {
@@ -163,4 +180,19 @@ public class CloudStackAPI implements IaasApi {
             return o1.getName().compareTo(o2.getName());
         }
     };
+
+    public void attachVolume(String vmId, String diskId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException {
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("id", diskId));
+        params.add(new BasicNameValuePair("virtualmachineid", vmId));
+        String responseString = callApi("attachVolume", params);
+        System.out.println(responseString);
+    }
+
+    public void reboot(String vmId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException {
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("id", vmId));
+        String responseString = callApi("rebootVirtualMachine", params);
+        System.out.println(responseString);
+    }
 }

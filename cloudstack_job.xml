@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:proactive:jobdescriptor:3.1"
+	 xsi:schemaLocation="urn:proactive:jobdescriptor:3.1 http://www.activeeon.com/public_content/schemas/proactive/jobdescriptor/3.1/schedulerjob.xsd"
+	 name="ProactiveJob">
+	<variables>
+		<!-- pa.scheduler.home is known as java property - ie : start with -Dpa.scheduler.home=value -->
+		<variable name="HOME" value="/home/ybonnaffe/src/build/dist/scheduling/samples/scripts/selection/"/>
+	</variables>
+	<taskFlow>
+		<task name="Deploy">
+			<javaExecutable class="org.ow2.proactive.iaas.cloudstack.CloudstackDeployExecutable">
+				<parameters>
+					<parameter name="providerName" value="cloudstack"/>
+					<parameter name="apiurl" value="http://localhost:8080/client/api"/>
+					<parameter name="apikey"
+							   value="dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA"/>
+					<parameter name="secretkey"
+							   value="VV_w_yDEqST8ovh0mkQpDh8nXEzyMBsW0wFyCEhjneZazHIX8IcNCAgsjGF3p2ZzeVqyxYT6vwWJm6TSv5tdoQ"/>
+
+					<parameter name="serviceofferingid" value="4fe8b730-f227-4693-8b5e-bf384c566853"/>
+					<parameter name="templateid" value="23c780e0-564d-4a02-b03c-3eb28847cfb1"/>
+					<parameter name="zoneid" value="ff2169df-f439-4694-817c-31babf50df9f"/>
+					<parameter name="userdata" value="192.168.56.1"/>
+				</parameters>
+			</javaExecutable>
+		</task>
+		<task name="Run-uname">
+			<depends>
+				<task ref="Deploy"/>
+			</depends>
+			<selection>
+				<script type="static">
+					<file path="${HOME}/checkFileExists.js">
+						<arguments>
+							<argument value="/root/proactive.sh"/>
+						</arguments>
+					</file>
+				</script>
+			</selection>
+			<nativeExecutable>
+				<staticCommand
+						value="uname">
+					<arguments>
+						<argument value="-a"/>
+					</arguments>
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+		<task name="Run-ifconfig">
+			<depends>
+				<task ref="Deploy"/>
+			</depends>
+			<selection>
+				<script type="static">
+					<file path="${HOME}/checkFileExists.js">
+						<arguments>
+							<argument value="/root/proactive.sh"/>
+						</arguments>
+					</file>
+				</script>
+			</selection>
+			<nativeExecutable>
+				<staticCommand
+						value="ifconfig">
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+		<task name="Undeploy">
+			<depends>
+				<task ref="Deploy"/>
+				<task ref="Run-ifconfig"/>
+				<task ref="Run-uname"/>
+			</depends>
+			<javaExecutable class="org.ow2.proactive.iaas.IaasUndeployExecutable">
+				<parameters>
+					<parameter name="providerName" value="cloudstack"/>
+					<parameter name="apiurl" value="http://localhost:8080/client/api"/>
+					<parameter name="apikey"
+							   value="dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA"/>
+					<parameter name="secretkey"
+							   value="VV_w_yDEqST8ovh0mkQpDh8nXEzyMBsW0wFyCEhjneZazHIX8IcNCAgsjGF3p2ZzeVqyxYT6vwWJm6TSv5tdoQ"/>
+				</parameters>
+			</javaExecutable>
+		</task>
+	</taskFlow>
+</job>

@@ -35,6 +35,7 @@
 package org.ow2.proactive.iaas;
 
 public class IaasVM {
+
     private final String vmId;
 
     public IaasVM(String vmId) {

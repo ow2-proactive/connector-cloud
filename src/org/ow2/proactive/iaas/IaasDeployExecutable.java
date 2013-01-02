@@ -40,22 +40,10 @@ import java.io.Serializable;
 
 public class IaasDeployExecutable extends IaasExecutable {
 
-    private boolean waitUntilVmIsReady = true; // TODO
-
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
         IaasApi api = createApi(args);
-
         IaasVM vm = api.startVm(args);
-
-        if (waitUntilVmIsReady) {
-            while (true) {
-                if (api.isVmStarted(vm.getVmId())) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-        }
         return vm.getVmId();
     }
 }

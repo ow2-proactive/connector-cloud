@@ -48,21 +48,9 @@ public class CloudstackDeployExecutable extends IaasExecutable {
 
         IaasVM vm = api.startVm(args);
 
-        waitUntilVMRunning(api, vm);
-        api.attachVolume(vm.getVmId(), "cf48db13-a1d9-4c2a-9df7-22a88b7ab885");
+        api.attachVolume(vm, args);
         api.reboot(vm.getVmId());
-        Thread.sleep(30000); // TODO wait until reboot order is ack
-        waitUntilVMRunning(api, vm);
 
         return vm.getVmId();
-    }
-
-    private void waitUntilVMRunning(CloudStackAPI api, IaasVM vm) throws Exception {
-        while (true) {
-            if (api.isVmStarted(vm.getVmId())) {
-                break;
-            }
-            Thread.sleep(10000);
-        }
     }
 }

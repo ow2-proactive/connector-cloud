@@ -476,7 +476,7 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
     }
 
     @Override
-    public boolean isVmStarted(String vmId) throws Exception {
+    public boolean isVmStarted(IaasVM vm) throws Exception {
         throw new UnsupportedOperationException("not implemented");
     }
 }

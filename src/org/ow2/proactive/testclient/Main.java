@@ -1,15 +1,45 @@
 package org.ow2.proactive.testclient;
 
-import java.security.PublicKey;
-import org.ow2.proactive.scheduler.common.Scheduler;
-import org.ow2.proactive.scheduler.common.SchedulerConnection;
-import org.ow2.proactive.authentication.crypto.CredData;
-import org.ow2.proactive.scheduler.common.SchedulerAuthenticationInterface;
-import org.ow2.proactive.authentication.crypto.Credentials;
-import java.io.File;
+import org.ow2.proactive.iaas.IaasVM;
+import org.ow2.proactive.iaas.cloudstack.CloudStackAPI;
+
+import java.util.HashMap;
 
 public class Main {
-	/*
+
+    public static void main(String[] args) throws Exception {
+
+        HashMap<String, String> params = new HashMap<String, String>();
+        params.put("apiurl", "http://localhost:8080/client/api");
+        params.put("apikey", "dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA");
+        params.put("secretkey", "VV_w_yDEqST8ovh0mkQpDh8nXEzyMBsW0wFyCEhjneZazHIX8IcNCAgsjGF3p2ZzeVqyxYT6vwWJm6TSv5tdoQ");
+        CloudStackAPI cloudStackAPI = new CloudStackAPI(params);
+
+        HashMap<String, String> paramsStart = new HashMap<String, String>();
+        paramsStart.put("serviceofferingid","4fe8b730-f227-4693-8b5e-bf384c566853");
+        paramsStart.put("templateid", "23c780e0-564d-4a02-b03c-3eb28847cfb1");
+        paramsStart.put("zoneid", "ff2169df-f439-4694-817c-31babf50df9f");
+        paramsStart.put("userdata", "192.168.56.1");
+
+        IaasVM vm = cloudStackAPI.startVm(paramsStart);
+        System.out.println(vm.getVmId());
+
+        cloudStackAPI.isVmStarted(vm.getVmId());
+
+        HashMap<String, String> paramsStarted = new HashMap<String, String>();
+        paramsStarted.put("diskid", "cf48db13-a1d9-4c2a-9df7-22a88b7ab885");
+        cloudStackAPI.attachVolume(vm, paramsStarted);
+
+        cloudStackAPI.isVmStarted(vm.getVmId());
+
+        cloudStackAPI.reboot(vm.getVmId());
+
+        cloudStackAPI.isVmStarted(vm.getVmId());
+
+
+//        cloudStackAPI.isVmStarted("5381718c-dc52-4338-a233-e02154cbd293");
+//        cloudStackAPI.stopVm(paramsStarted);
+    }    /*
 	public static void main(String[] args) throws Exception{
 		String policyfile = "config/java.policy";
 

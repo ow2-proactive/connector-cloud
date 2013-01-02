@@ -41,5 +41,5 @@ public interface IaasApi {
 
     void stopVm(Map<String, String> args) throws Exception;
 
-    boolean isVmStarted(String vmId) throws Exception;
+    boolean isVmStarted(IaasVM vm) throws Exception;
 }

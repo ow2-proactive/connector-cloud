@@ -53,8 +53,10 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
@@ -66,8 +68,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import static java.util.Arrays.asList;
@@ -76,6 +76,8 @@ public class CloudStackAPI implements IaasApi {
 
     public static final String ENCODING = "UTF-8";
     public static final String SECURITY_ALGORITHM = "HmacSHA1";
+
+    private static final String PENDING = "0";
 
     private final String apiURL;
     private final String apiKey;
@@ -100,17 +102,32 @@ public class CloudStackAPI implements IaasApi {
 
         System.out.println(responseString);
 
-        DocumentBuilderFactory dbf =
-                DocumentBuilderFactory.newInstance();
-        DocumentBuilder db = dbf.newDocumentBuilder();
-        InputSource is = new InputSource();
-        is.setCharacterStream(new StringReader(responseString));
-        Document doc = db.parse(is);
-        NodeList nodes = doc.getElementsByTagName("id");
+        String vmId = xpath(responseString, "//id");
 
-        // TODO query XML for vm id
-        return new IaasVM(nodes.item(0).getTextContent());
+        String jobId = xpath(responseString, "//jobid");
+        waitUntilAsynchronousOperationEnds(jobId);
 
+        return new IaasVM(vmId);
+
+    }
+
+    private String xpath(String xmlAsString, String xpathExpression) throws XPathExpressionException {
+        InputSource source = new InputSource(new StringReader(xmlAsString));
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        return (String) xpath.compile(xpathExpression).evaluate(source, XPathConstants.STRING);
+    }
+
+    private void waitUntilAsynchronousOperationEnds(String jobId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, XPathExpressionException, InterruptedException {
+        List<NameValuePair> params = Collections.<NameValuePair>singletonList(new BasicNameValuePair("jobid", jobId));
+
+        while (true) {
+            String responseString = callApi("queryAsyncJobResult", params);
+            String jobStatus = xpath(responseString, "//jobstatus");
+            if (!PENDING.equals(jobStatus)) {
+                break;
+            }
+            Thread.sleep(5000);
+        }
     }
 
     private NameValuePair findArgument(String key, Map<String, String> arguments) {
@@ -127,18 +144,22 @@ public class CloudStackAPI implements IaasApi {
 
         System.out.println(responseString);
 
+        String jobId = xpath(responseString, "//jobid");
+        waitUntilAsynchronousOperationEnds(jobId);
+
     }
 
     @Override
-    public boolean isVmStarted(String vmId) throws Exception {
+    public boolean isVmStarted(IaasVM vm) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", vmId));
+        params.add(new BasicNameValuePair("id", vm.getVmId()));
 
         String responseString = callApi("listVirtualMachines", params);
 
         System.out.println(responseString);
 
-        return responseString.contains("Running"); // TODO query xml for status field "State = Running"
+        String vmState = xpath(responseString, "//state");
+        return "Running".equals(vmState);
     }
 
     private String callApi(String command, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, IOException {
@@ -181,18 +202,24 @@ public class CloudStackAPI implements IaasApi {
         }
     };
 
-    public void attachVolume(String vmId, String diskId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException {
+    public void attachVolume(IaasVM vm, Map<String, String> args) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", diskId));
-        params.add(new BasicNameValuePair("virtualmachineid", vmId));
+        params.add(new BasicNameValuePair("id", findArgument("diskid", args).getValue()));
+        params.add(new BasicNameValuePair("virtualmachineid", vm.getVmId()));
         String responseString = callApi("attachVolume", params);
         System.out.println(responseString);
+        String jobId = xpath(responseString, "//jobid");
+        waitUntilAsynchronousOperationEnds(jobId);
     }
 
-    public void reboot(String vmId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException {
+    public void reboot(String vmId) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
         params.add(new BasicNameValuePair("id", vmId));
         String responseString = callApi("rebootVirtualMachine", params);
+
         System.out.println(responseString);
+
+        String jobId = xpath(responseString, "//jobid");
+        waitUntilAsynchronousOperationEnds(jobId);
     }
 }

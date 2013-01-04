@@ -246,8 +246,8 @@ public class OpenStackAPI implements IaasApi {
     }
 
     @Override
-    public void stopVm(Map<String, String> args) throws Exception {
-        deleteServer(args.get("id"));
+    public void stopVm(IaasVM vm) throws Exception {
+        deleteServer(vm.getVmId());
     }
 
     @Override

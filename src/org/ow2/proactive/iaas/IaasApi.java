@@ -39,7 +39,7 @@ import java.util.Map;
 public interface IaasApi {
     IaasVM startVm(Map<String, String> arguments) throws Exception;
 
-    void stopVm(Map<String, String> args) throws Exception;
+    void stopVm(IaasVM vm) throws Exception;
 
     boolean isVmStarted(IaasVM vm) throws Exception;
 }

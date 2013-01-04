@@ -83,10 +83,14 @@ public class CloudStackAPI implements IaasApi {
     private final String apiKey;
     private final String secretKey;
 
+    public CloudStackAPI(String apiUrl, String apiKey, String secretKey) {
+        this.apiKey = apiKey;
+        this.secretKey = secretKey;
+        this.apiURL = apiUrl;
+    }
+
     public CloudStackAPI(Map<String, String> args) {
-        this.apiKey = args.get("apikey");
-        this.secretKey = args.get("secretkey");
-        this.apiURL = args.get("apiurl");
+        this(args.get("apikey"), args.get("secretkey"), args.get("apiurl"));
     }
 
     @Override
@@ -95,6 +99,7 @@ public class CloudStackAPI implements IaasApi {
         List<NameValuePair> params = asList(
                 findArgument("serviceofferingid", arguments),
                 findArgument("templateid", arguments),
+                findArgument("name", arguments),
                 new BasicNameValuePair("userdata", new String(Base64.encodeBase64(findArgument("userdata", arguments).getValue().getBytes(ENCODING)), ENCODING)),
                 findArgument("zoneid", arguments));
 
@@ -135,10 +140,10 @@ public class CloudStackAPI implements IaasApi {
     }
 
     @Override
-    public void stopVm(Map<String, String> args) throws Exception {
+    public void stopVm(IaasVM vm) throws Exception {
 
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(findArgument("id", args));
+        params.add(new BasicNameValuePair("id", vm.getVmId()));
 
         String responseString = callApi("destroyVirtualMachine", params);
 

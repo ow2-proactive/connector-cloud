@@ -44,7 +44,7 @@ public class IaasUndeployExecutable extends IaasExecutable {
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
         String vmId = (String) results[0].value();
-        createApi(args).stopVm(Collections.singletonMap("id", vmId));
+        createApi(args).stopVm(new IaasVM(vmId));
         return "DONE";
     }
 }

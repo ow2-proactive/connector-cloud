@@ -471,8 +471,8 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
     }
 
     @Override
-    public void stopVm(Map<String, String> args) throws Exception {
-        stop(args.get("id"));
+    public void stopVm(IaasVM vm) throws Exception {
+        stop(vm.getVmId());
     }
 
     @Override

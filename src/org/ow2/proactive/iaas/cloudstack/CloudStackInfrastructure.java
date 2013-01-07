@@ -67,25 +67,25 @@ public class CloudStackInfrastructure extends InfrastructureManager {
     protected Integer maxNbOfInstances;
 
     @Configurable(description = "The URL where the Cloudstack Rest API is located.")
-    protected String apiUrl = "http://localhost:8080/client/api";
+    protected String apiUrl = "";
 
     @Configurable(description = "The user's api key to query Cloudstack API.")
-    protected String apiKey = "dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA";
+    protected String apiKey = "";
 
     @Configurable(description = "The user's secret key to compute the signature of Cloudstack API queries.")
-    protected String secretKey = "VV_w_yDEqST8ovh0mkQpDh8nXEzyMBsW0wFyCEhjneZazHIX8IcNCAgsjGF3p2ZzeVqyxYT6vwWJm6TSv5tdoQ";
+    protected String secretKey = "";
 
     @Configurable(description = "The identifier of the service offering used for the instances.")
-    protected String serviceOfferingId = "4fe8b730-f227-4693-8b5e-bf384c566853";
+    protected String serviceOfferingId = "";
 
     @Configurable(description = "The identifier of the template used for the instances.")
-    protected String templateId = "d93961c7-c8bf-4f36-b592-4c5f4ff7a780";
+    protected String templateId = "";
 
     @Configurable(description = "The identifier of the zone used for the instances.")
-    protected String zoneId = "ff2169df-f439-4694-817c-31babf50df9f";
+    protected String zoneId = "";
 
     @Configurable(description = "The location of the Resource Manager where new instances will register.")
-    protected String rmAddress = "192.168.56.1";
+    protected String rmAddress = "";
 
     @Override
     protected void configure(Object... parameters) {
@@ -118,14 +118,13 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME, nodeName);
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA, String.format("%s\n%s\n%s", rmAddress, nodeSourceName, nodeName));
 
+        String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying Cloudstack node ", TEN_MINUTES_TIMEOUT);
         try {
-            String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying Cloudstack node ", TEN_MINUTES_TIMEOUT);
-
             IaasInstance instance = api.startInstance(args);
             nodeNameToInstance.put(nodeName, instance);
             logger.info("New Cloudstack instance started " + nodeUrl);
-
         } catch (Exception e) {
+            this.declareDeployingNodeLost(nodeUrl, "Failed to start Cloudstack instance: " + e.getMessage());
             logger.error("Failed to start Cloudstack instance", e);
         }
 

@@ -39,22 +39,28 @@ import org.ow2.proactive.iaas.eucalyptus.EucalyptusConnector;
 import org.ow2.proactive.iaas.nova.NovaAPI;
 import org.ow2.proactive.iaas.openstack.OpenStackAPI;
 
-import java.io.IOException;
 import java.util.Map;
 
+import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.CLOUDSTACK;
+import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.EUCALYPTUS;
+import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.NOVA;
+import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.OPENSTACK;
+
 public class IaasApiFactory {
+    public enum IaasProvider {
+        CLOUDSTACK, NOVA, OPENSTACK, EUCALYPTUS
+    }
 
     public static IaasApi create(String providerName, Map<String, String> args) throws Exception {
-        if ("cloudstack".equals(providerName)) {
+        if (CLOUDSTACK.name().equals(providerName)) {
             return new CloudStackAPI(args);
-        } else if ("nova".equals(providerName)) {
+        } else if (NOVA.name().equals(providerName)) {
             return NovaAPI.getNovaAPI(args);
-        } else if ("openstack".equals(providerName)) {
+        } else if (OPENSTACK.name().equals(providerName)) {
             return OpenStackAPI.getOpenStackAPI(args);
-        } else if ("eucalyptus".equals(providerName)) {
+        } else if (EUCALYPTUS.name().equals(providerName)) {
             return new EucalyptusConnector(args);
         }
-
-        throw new IllegalArgumentException("Unknown provider");
+        throw new IllegalArgumentException("Unknown Iaas provider");
     }
 }

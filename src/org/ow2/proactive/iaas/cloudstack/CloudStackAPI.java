@@ -71,13 +71,27 @@ import org.apache.http.message.BasicNameValuePair;
 import org.xml.sax.InputSource;
 
 import static java.util.Arrays.asList;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.NAME;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.SERVICE_OFFERING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.TEMPLATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.USER_DATA;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.ZONE;
 
 public class CloudStackAPI implements IaasApi {
 
-    public static final String ENCODING = "UTF-8";
-    public static final String SECURITY_ALGORITHM = "HmacSHA1";
+    private static final String ENCODING = "UTF-8";
 
-    private static final String PENDING = "0";
+    private static final String SECURITY_ALGORITHM = "HmacSHA1";
+    private static final int PERIOD_FOR_ASYNC_JOB_QUERIES = 5000;
 
     private final String apiURL;
     private final String apiKey;
@@ -90,53 +104,27 @@ public class CloudStackAPI implements IaasApi {
     }
 
     public CloudStackAPI(Map<String, String> args) {
-        this(args.get("apikey"), args.get("secretkey"), args.get("apiurl"));
+        this(args.get(API_URL), args.get(API_KEY), args.get(SECRET_KEY));
     }
 
     @Override
     public IaasVM startVm(Map<String, String> arguments) throws Exception {
 
         List<NameValuePair> params = asList(
-                findArgument("serviceofferingid", arguments),
-                findArgument("templateid", arguments),
-                findArgument("name", arguments),
-                new BasicNameValuePair("userdata", new String(Base64.encodeBase64(findArgument("userdata", arguments).getValue().getBytes(ENCODING)), ENCODING)),
-                findArgument("zoneid", arguments));
+                findArgument(SERVICE_OFFERING, arguments),
+                findArgument(TEMPLATE, arguments),
+                findArgument(NAME, arguments),
+                new BasicNameValuePair(USER_DATA, new String(Base64.encodeBase64(findArgument(USER_DATA, arguments).getValue().getBytes(ENCODING)), ENCODING)),
+                findArgument(ZONE, arguments));
 
         String responseString = callApi("deployVirtualMachine", params);
 
-        System.out.println(responseString);
+        String vmId = xpath(responseString, ID);
 
-        String vmId = xpath(responseString, "//id");
-
-        String jobId = xpath(responseString, "//jobid");
+        String jobId = xpath(responseString, JOB_ID);
         waitUntilAsynchronousOperationEnds(jobId);
 
         return new IaasVM(vmId);
-
-    }
-
-    private String xpath(String xmlAsString, String xpathExpression) throws XPathExpressionException {
-        InputSource source = new InputSource(new StringReader(xmlAsString));
-        XPath xpath = XPathFactory.newInstance().newXPath();
-        return (String) xpath.compile(xpathExpression).evaluate(source, XPathConstants.STRING);
-    }
-
-    private void waitUntilAsynchronousOperationEnds(String jobId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, XPathExpressionException, InterruptedException {
-        List<NameValuePair> params = Collections.<NameValuePair>singletonList(new BasicNameValuePair("jobid", jobId));
-
-        while (true) {
-            String responseString = callApi("queryAsyncJobResult", params);
-            String jobStatus = xpath(responseString, "//jobstatus");
-            if (!PENDING.equals(jobStatus)) {
-                break;
-            }
-            Thread.sleep(5000);
-        }
-    }
-
-    private NameValuePair findArgument(String key, Map<String, String> arguments) {
-        return new BasicNameValuePair(key, arguments.get(key));
     }
 
     @Override
@@ -147,11 +135,8 @@ public class CloudStackAPI implements IaasApi {
 
         String responseString = callApi("destroyVirtualMachine", params);
 
-        System.out.println(responseString);
-
-        String jobId = xpath(responseString, "//jobid");
+        String jobId = xpath(responseString, JOB_ID);
         waitUntilAsynchronousOperationEnds(jobId);
-
     }
 
     @Override
@@ -161,10 +146,39 @@ public class CloudStackAPI implements IaasApi {
 
         String responseString = callApi("listVirtualMachines", params);
 
-        System.out.println(responseString);
+        String vmState = xpath(responseString, STATE);
+        return VM_STATE_RUNNING.equals(vmState);
+    }
 
-        String vmState = xpath(responseString, "//state");
-        return "Running".equals(vmState);
+    public void attachVolume(IaasVM vm, String diskId) throws Exception {
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("id", diskId));
+        params.add(new BasicNameValuePair("virtualmachineid", vm.getVmId()));
+        String responseString = callApi("attachVolume", params);
+        String jobId = xpath(responseString, JOB_ID);
+        waitUntilAsynchronousOperationEnds(jobId);
+    }
+
+    public void reboot(String vmId) throws Exception {
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("id", vmId));
+        String responseString = callApi("rebootVirtualMachine", params);
+
+        String jobId = xpath(responseString, JOB_ID);
+        waitUntilAsynchronousOperationEnds(jobId);
+    }
+
+    private void waitUntilAsynchronousOperationEnds(String jobId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, XPathExpressionException, InterruptedException {
+        List<NameValuePair> params = Collections.<NameValuePair>singletonList(new BasicNameValuePair("jobid", jobId));
+
+        while (true) {
+            String responseString = callApi("queryAsyncJobResult", params);
+            String jobStatus = xpath(responseString, JOB_STATUS);
+            if (!JOB_STATE_PENDING.equals(jobStatus)) {
+                break;
+            }
+            Thread.sleep(PERIOD_FOR_ASYNC_JOB_QUERIES);
+        }
     }
 
     private String callApi(String command, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, IOException {
@@ -200,31 +214,46 @@ public class CloudStackAPI implements IaasApi {
         return DatatypeConverter.printBase64Binary(digest);
     }
 
+    private static String xpath(String xmlAsString, String xpathExpression) throws XPathExpressionException {
+        InputSource source = new InputSource(new StringReader(xmlAsString));
+        XPath xpath = XPathFactory.newInstance().newXPath();
+        return (String) xpath.compile(xpathExpression).evaluate(source, XPathConstants.STRING);
+    }
+
+    private static NameValuePair findArgument(String key, Map<String, String> arguments) {
+        return new BasicNameValuePair(key, arguments.get(key));
+    }
+
+    public class CloudStackAPIConstants {
+        static final String JOB_STATE_PENDING = "0";
+        static final String VM_STATE_RUNNING = "Running";
+
+        public class ApiParameters {
+            static final String API_URL= "apiurl";
+            static final String API_KEY = "apikey";
+            static final String SECRET_KEY= "secretkey";
+        }
+
+        public class VmParameters {
+            static final String NAME = "name";
+            static final String ZONE = "zoneid";
+            static final String SERVICE_OFFERING = "serviceofferingid";
+            static final String TEMPLATE = "templateid";
+            static final String USER_DATA = "userdata";
+        }
+
+        public class Response {
+            static final String ID = "//id";
+            static final String JOB_ID = "//jobid";
+            static final String JOB_STATUS = "//jobstatus";
+            static final String STATE = "//state";
+        }
+    }
+
     public static final Comparator<NameValuePair> NAME_VALUE_PAIR_COMPARATOR = new Comparator<NameValuePair>() {
         @Override
         public int compare(NameValuePair o1, NameValuePair o2) {
             return o1.getName().compareTo(o2.getName());
         }
     };
-
-    public void attachVolume(IaasVM vm, Map<String, String> args) throws Exception {
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", findArgument("diskid", args).getValue()));
-        params.add(new BasicNameValuePair("virtualmachineid", vm.getVmId()));
-        String responseString = callApi("attachVolume", params);
-        System.out.println(responseString);
-        String jobId = xpath(responseString, "//jobid");
-        waitUntilAsynchronousOperationEnds(jobId);
-    }
-
-    public void reboot(String vmId) throws Exception {
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", vmId));
-        String responseString = callApi("rebootVirtualMachine", params);
-
-        System.out.println(responseString);
-
-        String jobId = xpath(responseString, "//jobid");
-        waitUntilAsynchronousOperationEnds(jobId);
-    }
 }

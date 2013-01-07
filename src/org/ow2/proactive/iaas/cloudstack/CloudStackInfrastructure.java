@@ -47,6 +47,13 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
 
+/**
+ *
+ * Cloudstack Infrastructure
+ *
+ * @author The ProActive Team
+ *
+ */
 public class CloudStackInfrastructure extends InfrastructureManager {
 
     private static final Logger logger = Logger.getLogger(CloudStackInfrastructure.class);
@@ -54,31 +61,30 @@ public class CloudStackInfrastructure extends InfrastructureManager {
     private static final int TEN_MINUTES_TIMEOUT = 60000 * 10;
     private static final String NODE_NAME_FORMAT = "%s-node-%d";
 
-    private int currentNbOfInstance;
     private Hashtable<String, IaasVM> nodeNameToInstance = new Hashtable<String, IaasVM>();
 
-    @Configurable(description = "")
+    @Configurable(description = "The maximum number of instances that this policy can start.")
     protected Integer maxNbOfInstances;
 
-    @Configurable(description = "")
+    @Configurable(description = "The URL where the Cloudstack Rest API is located.")
     protected String apiUrl = "http://localhost:8080/client/api";
 
-    @Configurable(description = "")
+    @Configurable(description = "The user's api key to query Cloudstack API.")
     protected String apiKey = "dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA";
 
-    @Configurable(description = "")
+    @Configurable(description = "The user's secret key to compute the signature of Cloudstack API queries.")
     protected String secretKey = "VV_w_yDEqST8ovh0mkQpDh8nXEzyMBsW0wFyCEhjneZazHIX8IcNCAgsjGF3p2ZzeVqyxYT6vwWJm6TSv5tdoQ";
 
-    @Configurable(description = "")
+    @Configurable(description = "The identifier of the service offering used for the instances.")
     protected String serviceOfferingId = "4fe8b730-f227-4693-8b5e-bf384c566853";
 
-    @Configurable(description = "")
+    @Configurable(description = "The identifier of the template used for the instances.")
     protected String templateId = "d93961c7-c8bf-4f36-b592-4c5f4ff7a780";
 
-    @Configurable(description = "")
+    @Configurable(description = "The identifier of the zone used for the instances.")
     protected String zoneId = "ff2169df-f439-4694-817c-31babf50df9f";
 
-    @Configurable(description = "")
+    @Configurable(description = "The location of the Resource Manager where new instances will register.")
     protected String rmAddress = "192.168.56.1";
 
     @Override
@@ -95,8 +101,8 @@ public class CloudStackInfrastructure extends InfrastructureManager {
 
     @Override
     public void acquireNode() {
-        if (currentNbOfInstance >= maxNbOfInstances) {
-            logger.info(String.format("Can not create more instance, limit reached (%d on %d).", currentNbOfInstance, maxNbOfInstances));
+        if (!allowedToCreateMoreInstance()) {
+            logger.info(String.format("Can not create more instance, limit reached (%d on %d).", nodeNameToInstance.size(), maxNbOfInstances));
             return;
         }
 
@@ -106,19 +112,17 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
 
         Map<String, String> args = new HashMap<String, String>();
-        args.put("templateid", templateId);
-        args.put("zoneid", zoneId);
-        args.put("serviceofferingid", serviceOfferingId);
-        args.put("name", nodeName);
-        args.put("userdata", rmAddress + "\n" + nodeSourceName + "\n" + nodeName);
+        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.TEMPLATE, templateId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.ZONE, zoneId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.SERVICE_OFFERING, serviceOfferingId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.NAME, nodeName);
+        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.USER_DATA, String.format("%s\n%s\n%s", rmAddress, nodeSourceName, nodeName));
 
         try {
-            String nodeUrl = this.addDeployingNode(nodeName, "", "Cloudstack node", TEN_MINUTES_TIMEOUT);
+            String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying Cloudstack node ", TEN_MINUTES_TIMEOUT);
 
             IaasVM vm = api.startVm(args);
             nodeNameToInstance.put(nodeName, vm);
-            currentNbOfInstance++;
-
             logger.info("New Cloudstack instance started " + nodeUrl);
 
         } catch (Exception e) {
@@ -129,9 +133,13 @@ public class CloudStackInfrastructure extends InfrastructureManager {
 
     @Override
     public void acquireAllNodes() {
-        while (currentNbOfInstance < maxNbOfInstances) {
+        while (allowedToCreateMoreInstance()) {
             acquireNode();
         }
+    }
+
+    private boolean allowedToCreateMoreInstance() {
+        return nodeNameToInstance.size() < maxNbOfInstances;
     }
 
     @Override
@@ -143,18 +151,18 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         try {
             api.stopVm(vm);
             nodeNameToInstance.remove(nodeName);
-            currentNbOfInstance--;
         } catch (Exception e) {
-            throw new RMException("Failed to remove node", e);
+            throw new RMException("Failed to remove Cloudstack node", e);
         }
     }
 
     @Override
     protected void notifyAcquiredNode(Node node) throws RMException {
-        logger.info("Node has been acquired " + node.getNodeInformation().getName());
+        logger.info("Cloudstack node has been acquired " + node.getNodeInformation().getName());
     }
 
-
+    // required by PluginDescriptor#PluginDescriptor()
+    @SuppressWarnings("unused")
     public String getDescription() {
         return "Handles nodes from Cloudstack.";
     }

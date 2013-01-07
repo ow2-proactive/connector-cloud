@@ -37,14 +37,13 @@ package org.ow2.proactive.iaas;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
 
 import java.io.Serializable;
-import java.util.Collections;
 
 public class IaasUndeployExecutable extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        String vmId = (String) results[0].value();
-        createApi(args).stopVm(new IaasVM(vmId));
+        String instanceId = (String) results[0].value();
+        createApi(args).stopInstance(new IaasInstance(instanceId));
         return "DONE";
     }
 }

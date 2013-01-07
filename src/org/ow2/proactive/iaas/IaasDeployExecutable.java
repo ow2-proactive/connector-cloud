@@ -43,7 +43,7 @@ public class IaasDeployExecutable extends IaasExecutable {
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
         IaasApi api = createApi(args);
-        IaasVM vm = api.startVm(args);
-        return vm.getVmId();
+        IaasInstance instance = api.startInstance(args);
+        return instance.getInstanceId();
     }
 }

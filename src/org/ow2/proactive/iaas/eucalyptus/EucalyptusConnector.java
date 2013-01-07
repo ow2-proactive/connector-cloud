@@ -3,7 +3,7 @@ package org.ow2.proactive.iaas.eucalyptus;
 
 
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasVM;
+import org.ow2.proactive.iaas.IaasInstance;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -466,17 +466,17 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
 
 
     @Override
-    public IaasVM startVm(Map<String, String> arguments) throws Exception {
-        return new IaasVM(start(arguments.get("imageId"), 1, 1).get(0).getInstanceId());
+    public IaasInstance startInstance(Map<String, String> arguments) throws Exception {
+        return new IaasInstance(start(arguments.get("imageId"), 1, 1).get(0).getInstanceId());
     }
 
     @Override
-    public void stopVm(IaasVM vm) throws Exception {
-        stop(vm.getVmId());
+    public void stopInstance(IaasInstance instance) throws Exception {
+        stop(instance.getInstanceId());
     }
 
     @Override
-    public boolean isVmStarted(IaasVM vm) throws Exception {
+    public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         throw new UnsupportedOperationException("not implemented");
     }
 }

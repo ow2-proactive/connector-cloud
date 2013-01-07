@@ -34,7 +34,7 @@
  */
 package org.ow2.proactive.iaas.cloudstack;
 
-import org.ow2.proactive.iaas.IaasVM;
+import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.resourcemanager.exception.RMException;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
@@ -61,7 +61,7 @@ public class CloudStackInfrastructure extends InfrastructureManager {
     private static final int TEN_MINUTES_TIMEOUT = 60000 * 10;
     private static final String NODE_NAME_FORMAT = "%s-node-%d";
 
-    private Hashtable<String, IaasVM> nodeNameToInstance = new Hashtable<String, IaasVM>();
+    private Hashtable<String, IaasInstance> nodeNameToInstance = new Hashtable<String, IaasInstance>();
 
     @Configurable(description = "The maximum number of instances that this policy can start.")
     protected Integer maxNbOfInstances;
@@ -112,17 +112,17 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
 
         Map<String, String> args = new HashMap<String, String>();
-        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.TEMPLATE, templateId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.ZONE, zoneId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.SERVICE_OFFERING, serviceOfferingId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.NAME, nodeName);
-        args.put(CloudStackAPI.CloudStackAPIConstants.VmParameters.USER_DATA, String.format("%s\n%s\n%s", rmAddress, nodeSourceName, nodeName));
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE, templateId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE, zoneId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING, serviceOfferingId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME, nodeName);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA, String.format("%s\n%s\n%s", rmAddress, nodeSourceName, nodeName));
 
         try {
             String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying Cloudstack node ", TEN_MINUTES_TIMEOUT);
 
-            IaasVM vm = api.startVm(args);
-            nodeNameToInstance.put(nodeName, vm);
+            IaasInstance instance = api.startInstance(args);
+            nodeNameToInstance.put(nodeName, instance);
             logger.info("New Cloudstack instance started " + nodeUrl);
 
         } catch (Exception e) {
@@ -145,11 +145,11 @@ public class CloudStackInfrastructure extends InfrastructureManager {
     @Override
     public void removeNode(Node node) throws RMException {
         String nodeName = node.getNodeInformation().getName();
-        IaasVM vm = nodeNameToInstance.get(nodeName);
+        IaasInstance instance = nodeNameToInstance.get(nodeName);
 
         CloudStackAPI api = new CloudStackAPI(apiUrl, apiKey, secretKey);
         try {
-            api.stopVm(vm);
+            api.stopInstance(instance);
             nodeNameToInstance.remove(nodeName);
         } catch (Exception e) {
             throw new RMException("Failed to remove Cloudstack node", e);

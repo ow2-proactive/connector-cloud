@@ -8,7 +8,9 @@ import java.util.Map;
 
 public abstract class IaasExecutable extends JavaExecutable {
 
+    @SuppressWarnings("unused") // will be written by #init()
     private String providerName;
+
     protected Map<String, String> args = new HashMap<String, String>();
 
     @Override

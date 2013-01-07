@@ -34,15 +34,15 @@
  */
 package org.ow2.proactive.iaas;
 
-public class IaasVM {
+public class IaasInstance {
 
-    private final String vmId;
+    private final String instanceId;
 
-    public IaasVM(String vmId) {
-        this.vmId = vmId;
+    public IaasInstance(String instanceId) {
+        this.instanceId = instanceId;
     }
 
-    public String getVmId() {
-        return vmId;
+    public String getInstanceId() {
+        return instanceId;
     }
 }

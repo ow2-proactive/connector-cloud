@@ -35,7 +35,7 @@
 package org.ow2.proactive.iaas.cloudstack;
 
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasVM;
+import org.ow2.proactive.iaas.IaasInstance;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,11 +80,11 @@ import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConst
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.NAME;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.SERVICE_OFFERING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.TEMPLATE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.USER_DATA;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VmParameters.ZONE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
 
 public class CloudStackAPI implements IaasApi {
 
@@ -108,7 +108,7 @@ public class CloudStackAPI implements IaasApi {
     }
 
     @Override
-    public IaasVM startVm(Map<String, String> arguments) throws Exception {
+    public IaasInstance startInstance(Map<String, String> arguments) throws Exception {
 
         List<NameValuePair> params = asList(
                 findArgument(SERVICE_OFFERING, arguments),
@@ -119,19 +119,19 @@ public class CloudStackAPI implements IaasApi {
 
         String responseString = callApi("deployVirtualMachine", params);
 
-        String vmId = xpath(responseString, ID);
+        String instanceId = xpath(responseString, ID);
 
         String jobId = xpath(responseString, JOB_ID);
         waitUntilAsynchronousOperationEnds(jobId);
 
-        return new IaasVM(vmId);
+        return new IaasInstance(instanceId);
     }
 
     @Override
-    public void stopVm(IaasVM vm) throws Exception {
+    public void stopInstance(IaasInstance instance) throws Exception {
 
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", vm.getVmId()));
+        params.add(new BasicNameValuePair("id", instance.getInstanceId()));
 
         String responseString = callApi("destroyVirtualMachine", params);
 
@@ -140,28 +140,28 @@ public class CloudStackAPI implements IaasApi {
     }
 
     @Override
-    public boolean isVmStarted(IaasVM vm) throws Exception {
+    public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", vm.getVmId()));
+        params.add(new BasicNameValuePair("id", instance.getInstanceId()));
 
         String responseString = callApi("listVirtualMachines", params);
 
-        String vmState = xpath(responseString, STATE);
-        return VM_STATE_RUNNING.equals(vmState);
+        String instanceState = xpath(responseString, STATE);
+        return VM_STATE_RUNNING.equals(instanceState);
     }
 
-    public void attachVolume(IaasVM vm, String diskId) throws Exception {
+    public void attachVolume(IaasInstance instance, String diskId) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
         params.add(new BasicNameValuePair("id", diskId));
-        params.add(new BasicNameValuePair("virtualmachineid", vm.getVmId()));
+        params.add(new BasicNameValuePair("virtualmachineid", instance.getInstanceId()));
         String responseString = callApi("attachVolume", params);
         String jobId = xpath(responseString, JOB_ID);
         waitUntilAsynchronousOperationEnds(jobId);
     }
 
-    public void reboot(String vmId) throws Exception {
+    public void reboot(String instanceId) throws Exception {
         List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("id", vmId));
+        params.add(new BasicNameValuePair("id", instanceId));
         String responseString = callApi("rebootVirtualMachine", params);
 
         String jobId = xpath(responseString, JOB_ID);
@@ -234,7 +234,7 @@ public class CloudStackAPI implements IaasApi {
             static final String SECRET_KEY= "secretkey";
         }
 
-        public class VmParameters {
+        public class InstanceParameters {
             static final String NAME = "name";
             static final String ZONE = "zoneid";
             static final String SERVICE_OFFERING = "serviceofferingid";

@@ -3,7 +3,7 @@ package org.ow2.proactive.iaas.nova;
 
 
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasVM;
+import org.ow2.proactive.iaas.IaasInstance;
 
 import java.io.IOException;
 import java.net.URI;
@@ -215,8 +215,8 @@ public class NovaAPI implements IaasApi {
     }
 
     @Override
-    public IaasVM startVm(Map<String, String> arguments) throws Exception {
-        return new IaasVM(createServer(
+    public IaasInstance startInstance(Map<String, String> arguments) throws Exception {
+        return new IaasInstance(createServer(
                 arguments.get("name"),
                 arguments.get("imageRef"),
                 arguments.get("flavorRef"),
@@ -225,12 +225,12 @@ public class NovaAPI implements IaasApi {
     }
 
     @Override
-    public void stopVm(IaasVM vm) throws Exception {
-        deleteServer(vm.getVmId());
+    public void stopInstance(IaasInstance instance) throws Exception {
+        deleteServer(instance.getInstanceId());
     }
 
     @Override
-    public boolean isVmStarted(IaasVM vm) throws Exception {
+    public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         throw new UnsupportedOperationException("not implemented");
     }
 }

@@ -37,9 +37,9 @@ package org.ow2.proactive.iaas;
 import java.util.Map;
 
 public interface IaasApi {
-    IaasVM startVm(Map<String, String> arguments) throws Exception;
+    IaasInstance startInstance(Map<String, String> arguments) throws Exception;
 
-    void stopVm(IaasVM vm) throws Exception;
+    void stopInstance(IaasInstance instance) throws Exception;
 
-    boolean isVmStarted(IaasVM vm) throws Exception;
+    boolean isInstanceStarted(IaasInstance instance) throws Exception;
 }

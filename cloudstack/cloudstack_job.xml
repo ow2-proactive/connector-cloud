@@ -8,7 +8,7 @@
 	</variables>
 	<taskFlow>
 		<task name="Deploy">
-			<javaExecutable class="org.ow2.proactive.iaas.cloudstack.CloudstackDeployExecutable">
+			<javaExecutable class="org.ow2.proactive.iaas.IaasDeployExecutable">
 				<parameters>
 					<parameter name="providerName" value="cloudstack"/>
 					<parameter name="apiurl" value="http://localhost:8080/client/api"/>
@@ -20,7 +20,6 @@
 					<parameter name="serviceofferingid" value="4fe8b730-f227-4693-8b5e-bf384c566853"/>
 					<parameter name="templateid" value="23c780e0-564d-4a02-b03c-3eb28847cfb1"/>
 					<parameter name="zoneid" value="ff2169df-f439-4694-817c-31babf50df9f"/>
-					<parameter name="diskid" value="cf48db13-a1d9-4c2a-9df7-22a88b7ab885"/>
 					<parameter name="userdata" value="192.168.56.1"/>
 				</parameters>
 			</javaExecutable>

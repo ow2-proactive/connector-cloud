@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<project name="cloud_service_provider_connectors" basedir="./" default="clean-build">
+
+
+	<property file="${basedir}/build.properties"/>
+	<property name="version" value="1.0"/>
+	<property name="base.dir" value="${basedir}/.."/>
+	<property name="src.dir" value="${base.dir}/src"/>
+	<property name="test.dir" value="${base.dir}/tests"/>
+	<property name="build.dir" value="${base.dir}/build"/>
+	<property name="classes.dir" value="${build.dir}/classes"/>
+	<property name="classes.test.dir" value="${build.dir}/test-classes"/>
+	<property name="dist.dir" value="${base.dir}/dist"/>
+	<property name="palib.dir" value="${scheduling.project.dir}/dist/lib"/>
+	<property name="ourlib.dir" value="${base.dir}/lib"/>
+	<property name="ourpalib.dir" value="${base.dir}/${ourlib.dir}/scheduling"/>
+	<property name="main-class" value="Starter"/>
+
+	<import file="../doc/src/build.xml" optional="true"/>
+
+	<target name="copyDependencies">
+		<mkdir dir="${ourlib.dir}"/>
+		<mkdir dir="${ourpalib.dir}"/>
+		<copy todir="${ourpalib.dir}">
+			<fileset dir="${palib.dir}" includes="**/*.jar" excludes="typica.jar"/>
+		</copy>
+		<copy todir="${ourpalib.dir}">
+			<fileset dir="${typica.jar.dir}/" includes="**/*.jar"/>
+		</copy>
+	</target>
+
+	<path id="classpath">
+		<fileset dir="${ourpalib.dir}" includes="**/*.jar"/>
+		<fileset dir="${ourlib.dir}" includes="**/*.jar"/>
+	</path>
+
+	<path id="classpath.test">
+		<path refid="classpath"/>
+		<pathelement location="${classes.dir}"/>
+		<pathelement location="${classes.test.dir}"/>
+	</path>
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+
+	<target name="compile" depends="copyDependencies">
+		<mkdir dir="${classes.dir}"/>
+		<copy todir="${classes.dir}">
+			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico"/>
+		</copy>
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="on"
+			   debuglevel="lines,vars,source" includeantruntime="false"/>
+	</target>
+
+	<target name="dist" depends="compile, test">
+		<mkdir dir="${dist.dir}"/>
+		<jar destfile="${dist.dir}/cloud_service_provider_connectors-${version}.jar" basedir="${classes.dir}"/>
+	</target>
+
+	<target name="clean-build" depends="clean,dist"/>
+	<target name="jar" depends="dist"/>
+
+	<target name="test" depends="compile">
+		<mkdir dir="${classes.test.dir}"/>
+		<javac srcdir="${test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
+			   includeantruntime="false"/>
+		<junit>
+			<classpath refid="classpath.test"/>
+			<formatter type="brief" usefile="false"/>
+			<batchtest fork="yes">
+				<fileset dir="${test.dir}"/>
+			</batchtest>
+		</junit>
+	</target>
+
+</project>

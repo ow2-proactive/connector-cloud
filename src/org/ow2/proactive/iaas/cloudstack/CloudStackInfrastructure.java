@@ -35,10 +35,12 @@
 package org.ow2.proactive.iaas.cloudstack;
 
 import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasPolicy;
 import org.ow2.proactive.resourcemanager.exception.RMException;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
@@ -60,6 +62,7 @@ public class CloudStackInfrastructure extends InfrastructureManager {
 
     private static final int TEN_MINUTES_TIMEOUT = 60000 * 10;
     private static final String NODE_NAME_FORMAT = "%s-node-%d";
+    private static final Map<String,Object> USE_CONFIGURED_VALUES = Collections.emptyMap();
 
     private Hashtable<String, IaasInstance> nodeNameToInstance = new Hashtable<String, IaasInstance>();
 
@@ -101,22 +104,40 @@ public class CloudStackInfrastructure extends InfrastructureManager {
 
     @Override
     public void acquireNode() {
+        acquireNode(USE_CONFIGURED_VALUES);
+    }
+
+    @Override
+    public void acquireNodes(int n, Map<String, ?> nodeConfiguration) {
+        for (int i = 0; i < n; i++) {
+            acquireNode(nodeConfiguration);
+        }
+    }
+
+    private void acquireNode(Map<String, ?> nodeConfiguration) {
         if (!allowedToCreateMoreInstance()) {
             logger.info(String.format("Can not create more instance, limit reached (%d on %d).", nodeNameToInstance.size(), maxNbOfInstances));
             return;
         }
 
+        logger.info("===>" + nodeConfiguration);
         CloudStackAPI api = new CloudStackAPI(apiUrl, apiKey, secretKey);
 
         String nodeSourceName = this.nodeSource.getName();
         String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
 
         Map<String, String> args = new HashMap<String, String>();
-        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE, templateId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE, zoneId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING, serviceOfferingId);
-        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME, nodeName);
-        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA, String.format("%s\n%s\n%s", rmAddress, nodeSourceName, nodeName));
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE,
+                getFromNodeConfigurationOrDefault(nodeConfiguration, IaasPolicy.GenericInformation.IMAGE_ID, templateId));
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE,
+                zoneId);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING,
+                getFromNodeConfigurationOrDefault(nodeConfiguration, IaasPolicy.GenericInformation.INSTANCE_TYPE, serviceOfferingId));
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME,
+                nodeName);
+        args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA,
+                String.format("%s\n%s\n%s\n%s", rmAddress, nodeSourceName, nodeName,
+                        getFromNodeConfigurationOrDefault(nodeConfiguration, IaasPolicy.GenericInformation.TOKEN, "")));
 
         String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying Cloudstack node ", TEN_MINUTES_TIMEOUT);
         try {
@@ -127,7 +148,14 @@ public class CloudStackInfrastructure extends InfrastructureManager {
             this.declareDeployingNodeLost(nodeUrl, "Failed to start Cloudstack instance: " + e.getMessage());
             logger.error("Failed to start Cloudstack instance", e);
         }
+    }
 
+    private String getFromNodeConfigurationOrDefault(Map<String, ?> nodeConfiguration, String key, String defaultValue) {
+        Object fromNodeConfiguration = nodeConfiguration.get(key);
+        if(fromNodeConfiguration instanceof String && !((String)fromNodeConfiguration).isEmpty()){
+            return (String) fromNodeConfiguration;
+        }
+        return defaultValue;
     }
 
     @Override

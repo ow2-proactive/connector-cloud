@@ -59,6 +59,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -168,7 +169,7 @@ public class CloudStackAPI implements IaasApi {
         waitUntilAsynchronousOperationEnds(jobId);
     }
 
-    private void waitUntilAsynchronousOperationEnds(String jobId) throws IOException, NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, XPathExpressionException, InterruptedException {
+    private void waitUntilAsynchronousOperationEnds(String jobId) throws Exception {
         List<NameValuePair> params = Collections.<NameValuePair>singletonList(new BasicNameValuePair("jobid", jobId));
 
         while (true) {
@@ -181,7 +182,7 @@ public class CloudStackAPI implements IaasApi {
         }
     }
 
-    private String callApi(String command, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException, URISyntaxException, IOException {
+    private String callApi(String command, List<NameValuePair> params) throws Exception {
         List<NameValuePair> queryParams = new ArrayList<NameValuePair>();
 
         queryParams.add(new BasicNameValuePair("apikey", apiKey));
@@ -197,7 +198,11 @@ public class CloudStackAPI implements IaasApi {
         HttpUriRequest get = new HttpGet(uri);
         HttpResponse response = new DefaultHttpClient().execute(get);
         InputStream content = response.getEntity().getContent();
-        return IOUtils.toString(content);
+        String responseBody = IOUtils.toString(content);
+        if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+            throw new Exception("Failed to perform operation on Cloudstack API: " + responseBody);
+        }
+        return responseBody;
     }
 
     private static String computeSignature(String secretKey, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException {

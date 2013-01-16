@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<part xml:id="Cloudstack">
+	<info>
+		<title>Cloudstack</title>
+	</info>
+
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Intro">
+		<info>
+			<title>Introduction</title>
+		</info>
+		<para>
+			<link xlink:href="http://incubator.apache.org/cloudstack/">Cloudstack</link>
+			is a open source cloud platform allowing you to build private, public and hybrid clouds. It offers a REST
+			API that has been used to integrate with ProActive in different ways. You can create a NodeSource in the
+			Resource Manager using a Cloudstack infrastructure or you can control deployment and undeployment of
+			Cloudstack instances directly from a Job using specific tasks.
+		</para>
+	</chapter>
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Infrastructure">
+		<info>
+			<title>Running a Cloudstack infrastructure</title>
+		</info>
+		<para>
+
+		</para>
+	</chapter>
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Executables">
+		<info>
+			<title>Using an existing Cloudstack installation from a job</title>
+		</info>
+		<para>
+
+		</para>
+	</chapter>
+</part>

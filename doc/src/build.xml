@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+	<import file="../toolchain/doc_macros.xml" />
+
+	<property name="doc.root.name" value="" />
+	<property name="snippets.start" value="${docs.dir}/../src:${docs.dir}/../samples" />
+
+	<!-- javadoc paths are not include through subant-->
+	<path id="docs.utils.classpath.javadoc">
+		<fileset dir="../doc/toolchain/lib">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+
+	<target name="doc.docs" depends="doc.javadoc.all, doc.manual, doc.doc.zips" description="Generate the Scheduler Programming javadoc, manual, and zip archives" />
+	<target name="doc.doc.zips" depends="doc.manualSingleHtmlZip, doc.manualHtmlZip, doc.javadoc.completeZip" description="Generate the Scheduler Programming javadoc and manual zip archives" />
+	<target name="doc.javadoc.all" depends="doc.javadoc.complete"/>
+
+	<target name="doc.manualHtml" description="Generate the Scheduler Programming HTML manual">
+		<subant target="manualHtml" 			inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.manualHtmlZip" description="Generate the Scheduler Programming HTML manual zip" depends="doc.manualHtml" >
+		<subant target="manualHtmlZip" inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.manualPdf" description="Generate the Scheduler Programming PDF manual">
+		<subant target="manualPdf" inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.manualSingleHtml" description="Generate the Scheduler Programming single HTML manual">
+		<subant target="manualSingleHtml" inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.manualSingleHtmlZip" description="Generate the Scheduler Programming single HTML manual zip" depends="doc.manualSingleHtml" >
+		<subant target="manualSingleHtmlZip" inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.javadoc.completeZip" description="Generate the Scheduler Programming complete javadoc zip" depends="doc.javadoc.complete">
+		<subant target="javadoc.completeZip" inheritall="true">
+			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
+		</subant>
+	</target>
+
+	<target name="doc.manual" description="Generate the Scheduler Programming manuals  (html, single html, pdf)" depends="doc.manualSingleHtml,doc.manualHtml,doc.manualPdf" />
+
+	<!-- javadoc paths are not include through subant-->
+	<path id="docs.utils.classpath.javadoc">
+		<fileset dir="../doc/toolchain/lib">
+			<include name="**/*.jar"/>
+		</fileset>
+	</path>
+
+	<target name="doc.javadoc.complete"  depends="compile" description="Generate the Scheduler complete javadoc">
+		<setProperties />
+		<javadoc
+				destdir="${docs.built.dir}/api_complete"
+				author="true"
+				version="true"
+				source="${source}"
+				use="true"
+				windowtitle="Cloud Service Provider Connectors Complete API"
+				breakiterator="yes"
+				additionalparam="-docfilessubdirs -excludedocfilessubdir CVS:test_documentation">
+
+			<classpath refid="classpath"/>
+
+			<packageset dir="${src.dir}" />
+			<bottom><![CDATA[<i>Copyright 1997-2012 INRIA All Rights Reserved.</i>]]></bottom>
+		</javadoc>
+	</target>
+</project>

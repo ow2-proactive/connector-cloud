@@ -44,6 +44,7 @@ import org.ow2.proactive.scheduler.common.NotificationData;
 import org.ow2.proactive.scheduler.common.Scheduler;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
 import org.ow2.proactive.scheduler.common.SchedulerEventListener;
+import org.ow2.proactive.scheduler.common.SchedulerState;
 import org.ow2.proactive.scheduler.common.job.JobInfo;
 import org.ow2.proactive.scheduler.common.job.JobState;
 import org.ow2.proactive.scheduler.common.task.CommonAttribute;
@@ -58,6 +59,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Vector;
 
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.InitActive;
@@ -70,6 +72,7 @@ import org.objectweb.proactive.extensions.annotation.ActiveObject;
 import static org.ow2.proactive.iaas.IaasPolicy.GenericInformation.InstanceType.LARGE;
 import static org.ow2.proactive.iaas.IaasPolicy.GenericInformation.InstanceType.MEDIUM;
 import static org.ow2.proactive.iaas.IaasPolicy.GenericInformation.InstanceType.SMALL;
+import static org.ow2.proactive.iaas.IaasPolicy.GenericInformation.Operation.*;
 
 @ActiveObject
 public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEventListener {
@@ -82,8 +85,6 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
     protected String largeInstanceId = "";
 
     private IaasPolicy thisStub;
-
-    private Map<String, Queue<JobState>> jobQueueByToken = new HashMap<String, Queue<JobState>>();
 
     public void initActivity(Body body) {
         thisStub = (IaasPolicy) PAActiveObject.getStubOnThis();
@@ -101,65 +102,107 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
 
     @Override
     public void jobSubmittedEvent(JobState job) {
-        // TODO read job generic information for job and tasks
-        // iterate over generic information
-        acquireNodesForJobAndTasks(job);
-    }
-
-    private void acquireNodesForJobAndTasks(JobState job) {
-        if (job == null) {
-            return;
-        }
-        acquireNodesIfNeeded(job, job, job.getId().value());
-        for (TaskState task : job.getTasks()) {
-            acquireNodesIfNeeded(job, task, task.getId().value());
-        }
-    }
-
-    private void acquireNodesIfNeeded(JobState job, CommonAttribute target, String id) {
-        if (isRequiredNodeSource(target) && target.getGenericInformations().containsKey(GenericInformation.TOKEN)
-                ) {
-            // && !target.getGenericInformations().containsKey(GenericInformation.SHUTDOWN)
-            String jobToken = target.getGenericInformations().get(GenericInformation.TOKEN);
-            if (jobQueueByToken.containsKey(jobToken)) {
-                jobQueueByToken.get(jobToken).add(job);
-                logger.debug("This job or task " + id + " uses a token already used by another job.");
-                // if it's a task it should not happen
-            } else {
-                logger.debug("This job or task " + id + " requires this node source, provisioning nodes.");
-                jobQueueByToken.put(jobToken, new LinkedList<JobState>());
-                acquireNodes(job, target);
-            }
-        } else {
-            logger.debug("This job or task " + id + " requires another node source, not provisioning nodes.");
-        }
-    }
-
-    @Override
-    public void taskStateUpdatedEvent(NotificationData<TaskInfo> notification) {
-        if (SchedulerEvent.TASK_RUNNING_TO_FINISHED.equals(notification.getEventType())) {
+        acquireNodesForJob(job);
+        for (TaskState eligibleTask : getEligibleTasks(job).values()) {
             try {
-                JobState jobState = scheduler.getJobState(notification.getData().getJobId());
-                TaskState taskState = jobState.getHMTasks().get(notification.getData().getTaskId());
-                removeTokenResourcesUsedByTask(taskState, jobState);
+                acquireNodesIfNeeded(job, eligibleTask, eligibleTask.getId().value());
             } catch (Exception e) {
                 logger.error("Failed to retrieve job state", e);
             }
         }
     }
 
+    private void acquireNodesForJob(JobState job) {
+        if (job == null) {
+            return;
+        }
+        acquireNodesIfNeeded(job, job, job.getId().value());
+    }
+
+    private void acquireNodesIfNeeded(JobState job, CommonAttribute target, String id) {
+        if (isRequiredNodeSource(target)
+                && target.getGenericInformations().containsKey(GenericInformation.TOKEN)
+                && isDeployOperation(target.getGenericInformations())) {
+            acquireNodes(job, target);
+        } else {
+            logger.debug("This job or task " + id + " requires another node source, not provisioning nodes.");
+        }
+    }
+
+    private Map<String, TaskState> getEligibleTasks(JobState jobState) {
+        // tasks that can be executed
+        Map<String, TaskState> eligibleTasks = new HashMap<String, TaskState>();
+        // tasks with FINISHED state. They have terminated with success
+        Map<String, TaskState> finishedTasks = new HashMap<String, TaskState>();
+
+        // first we consider all tasks waiting for execution are eligible.
+        // then we remove the tasks that have unsatisfied dependencies
+        List<TaskState> tasks = jobState.getTasks();
+        for (TaskState ts : tasks) {
+            switch (ts.getStatus()) {
+                case SUBMITTED:
+                case PENDING:
+                case WAITING_ON_ERROR:
+                case WAITING_ON_FAILURE:
+                    eligibleTasks.put(ts.getId().value(), ts);
+                    break;
+                case FINISHED:
+                    finishedTasks.put(ts.getId().value(), ts);
+
+                case ABORTED:
+                case FAILED:
+                case FAULTY:
+                case NOT_RESTARTED:
+                case NOT_STARTED:
+                case SKIPPED:
+
+            }
+        }
+        // remove from eligible all tasks that have dependencies not contained
+        // in finished tasks list
+        Iterator<Map.Entry<String, TaskState>> it = eligibleTasks.entrySet()
+                .iterator();
+        while (it.hasNext()) {
+            TaskState ts = it.next().getValue();
+            if (ts.getDependences() != null) {
+                for (TaskState dep : ts.getDependences()) {
+                    if (!finishedTasks.containsKey(dep.getId().value())) {
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+        }
+        return eligibleTasks;
+    }
+
+    @Override
+    public void taskStateUpdatedEvent(NotificationData<TaskInfo> notification) {
+        switch (notification.getEventType()) {
+            case TASK_RUNNING_TO_FINISHED:
+                try {
+                    JobState jobState = scheduler.getJobState(notification.getData().getJobId());
+                    TaskState taskState = jobState.getHMTasks().get(notification.getData().getTaskId());
+                    removeTokenResourcesUsedByTask(taskState, jobState);
+
+                    for (TaskState eligibleTask : getEligibleTasks(jobState).values()) {
+                        JobState job = scheduler.getJobState(eligibleTask.getJobId());
+                        acquireNodesIfNeeded(job, eligibleTask, eligibleTask.getId().value());
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to retrieve job state", e);
+                }
+                break;
+        }
+    }
+
     private void removeTokenResourcesUsedByTask(TaskState task, JobState jobOfTask) {
         if ((isRequiredNodeSource(task) || isRequiredNodeSource(jobOfTask))
-                && isResourceShutdownRequired(task)) {
+                && isUndeployOperation(task.getGenericInformations())) {
             // token is mandatory
             logger.debug("Removing nodes used by task " + task.getId());
             removeTokenResources(getTokenFromTaskOrTaskJob(task, jobOfTask));
         }
-    }
-
-    private boolean isResourceShutdownRequired(TaskState task) {
-        Map<String, String> genericInformation = task.getGenericInformations();
-        return "true".equals(genericInformation.get(GenericInformation.SHUTDOWN));
     }
 
     private String getTokenFromTaskOrTaskJob(TaskState task, JobState jobOfTask) {
@@ -172,7 +215,6 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
     private void removeAllTokenResourcesUsedByTask(TaskState taskState) {
         Map<String, String> genericInformation = taskState.getGenericInformations();
         if (isRequiredNodeSource(taskState)) {
-            // token is mandatory
             logger.debug("Removing nodes used by task " + taskState.getId());
             removeTokenResources(genericInformation.get(GenericInformation.TOKEN));
         }
@@ -224,23 +266,6 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
     private void removeTokenResources(String token) {
         logger.debug("Removing nodes using token=" + token);
         removeNodes(token);
-        Queue<JobState> jobWaitingToRun = jobQueueByToken.get(token);
-        if (jobWaitingToRun != null) {
-            JobState nextJob = jobWaitingToRun.poll();
-            removeEmptyJobQueues();
-            acquireNodesForJobAndTasks(nextJob);
-        }
-
-    }
-
-    private void removeEmptyJobQueues() {
-        Iterator<Map.Entry<String, Queue<JobState>>> iterator = jobQueueByToken.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, Queue<JobState>> entry = iterator.next();
-            if (entry.getValue().isEmpty()) {
-                iterator.remove();
-            }
-        }
     }
 
     private void removeNodes(String token) {
@@ -311,26 +336,60 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
     public void nodeEvent(RMNodeEvent event) {
         switch (event.getEventType()) {
             case NODE_ADDED:
-                LinkedList<Node> aliveNodes = nodeSource.getAliveNodes();
-                for (Node node : aliveNodes) {
-                    if (node.getNodeInformation().getURL().equals(event.getNodeUrl())) {
-                        try {
-                            // no more jobs will use this token so the node can be removed immediately
-                            if (!jobQueueByToken.containsKey(readTokenFromNode(node))) {
-                                logger.warn(String.format("This node %s registered too late, remove it.", node));
-                                removeNode(event.getNodeUrl(), false);
-                            }
-                        } catch (ProActiveException e) {
-                            logger.warn("Failed to retrieve property", e);
-                        }
+                Node node = filterByNodeUrl(nodeSource.getAliveNodes(), event.getNodeUrl());
+                try {
+                    String nodeToken = readTokenFromNode(node);
+                    if (tokenNotUsedByActiveJobs(nodeToken)) {
+                        // node probably registered after job execution
+                        logger.warn(String.format("This node %s registered too late, remove it.", node));
+                        removeNode(event.getNodeUrl(), false);
                     }
+                } catch (ProActiveException e) {
+                    logger.warn("Failed to retrieve property", e);
                 }
                 break;
         }
     }
 
+    private boolean tokenNotUsedByActiveJobs(String token) {
+        Vector<JobState> activeJobs = state.getPendingJobs();
+        activeJobs.addAll(state.getRunningJobs());
+
+        for (JobState activeJob : activeJobs) {
+            if (jobUsesToken(activeJob, token)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean jobUsesToken(JobState job, String token) {
+        if (token.equals(job.getGenericInformations().get(GenericInformation.TOKEN))) {
+            return true;
+        }
+        for (TaskState task : job.getTasks()) {
+            if (token.equals(task.getGenericInformations().get(GenericInformation.TOKEN))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Node filterByNodeUrl(LinkedList<Node> nodes, String nodeUrl) {
+        for (Node node : nodes) {
+            if (nodeUrl.equals(node.getNodeInformation().getURL())) {
+                return node;
+            }
+        }
+        throw new IllegalStateException("There should always be one node matching");
+    }
+
     void setSchedulerForTests(Scheduler scheduler) {
         this.scheduler = scheduler;
+    }
+
+    void setSchedulerStateForTests(SchedulerState state) {
+        this.state = state;
     }
 
     public static class GenericInformation {
@@ -339,7 +398,21 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
         public static final String INSTANCE_NB = "IAAS_INSTANCE_NB";
         public static final String IMAGE_ID = "IAAS_IMAGE_ID";
         public static final String INSTANCE_TYPE = "IAAS_INSTANCE_TYPE";
-        public static final String SHUTDOWN = "IAAS_SHUTDOWN_AFTER_TASK";
+        public static final String OPERATION = "IAAS_OPERATION";
+
+        public enum Operation {
+            DEPLOY, UNDEPLOY, DEPLOY_AND_UNDEPLOY;
+
+            public static boolean isDeployOperation(Map<String, String> genericInformation) {
+                return DEPLOY.name().equals(genericInformation.get(GenericInformation.OPERATION))
+                        || DEPLOY_AND_UNDEPLOY.name().equals(genericInformation.get(OPERATION));
+            }
+
+            public static boolean isUndeployOperation(Map<String, String> genericInformation) {
+                return UNDEPLOY.name().equals(genericInformation.get(GenericInformation.OPERATION))
+                        || DEPLOY_AND_UNDEPLOY.name().equals(genericInformation.get(OPERATION));
+            }
+        }
 
         public enum InstanceType {
             SMALL, MEDIUM, LARGE

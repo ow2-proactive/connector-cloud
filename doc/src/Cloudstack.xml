@@ -13,7 +13,84 @@
 			is a open source cloud platform allowing you to build private, public and hybrid clouds. It offers a REST
 			API that has been used to integrate with ProActive in different ways. You can create a NodeSource in the
 			Resource Manager using a Cloudstack infrastructure or you can control deployment and undeployment of
-			Cloudstack instances directly from a Job using specific tasks.
+			Cloudstack instances directly from a job using specific tasks.
+		</para>
+	</chapter>
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Executables">
+		<info>
+			<title>Leveraging an existing Cloudstack installation from a job</title>
+		</info>
+		<para>
+			Two very simple implementations of Java tasks are provided and allow to deploy and undeploy instances from a
+			job. Using a selection script or the token mechanism, you can ensure that the enclosed tasks will run on the
+			new instance.
+			The new instance is expected to run as a ProActive node and register itself to the Resource Manager.
+		</para>
+		<para>
+			Below is a job description example using these tasks:
+			<programlisting language="xml"><textobject><textdata fileref="snippets/cloudstack_deploy_undeploy_job.xml"/></textobject></programlisting>
+		</para>
+		<para>
+			The parameters required by the tasks are :
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>providerName</emphasis>: selection of the Iaas API we target (here CLOUDSTACK). This
+						parameter is also mandatory when undeploying the instance.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>apiurl</emphasis>: the URL where the Cloudstack can be reached. This parameter is also
+						mandatory when undeploying the instance.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>apikey</emphasis>: the API key, created for each user. This parameter is also
+						mandatory when undeploying the instance.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>secretkey</emphasis>: the API secret key, created for each user and used to sign API
+						requests. This parameter is also mandatory when undeploying the instance.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>zoneid</emphasis>: the zone where the instance will be created.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>serviceofferingid</emphasis>: the service offering the new instance will use, i.e it's
+						CPU, memory, network.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>templateid</emphasis>: the template the new instance will use, i.e the operating
+						system, eventually pre configured.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>userdata</emphasis>: data that will be accessible from the new instance, for instance
+						the Resource Manager URL so the new instance knows how to reach it.
+					</para>
+				</listitem>
+			</itemizedlist>
+
+			You can also refer to the<link
+				xlink:href="http://download.cloud.com/releases/3.0.0/api_3.0.0/user/deployVirtualMachine.html">
+			Cloudstack API documentation</link>.
+		</para>
+		<para>
+			As you can see this simple approach requires you to expose your credentials in your job description. To
+			avoid security issues, we also expose a Cloudstack
+			<emphasis>infrastructure manager</emphasis>
+			described in<xref linkend="Infrastructure"/>.
 		</para>
 	</chapter>
 	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Infrastructure">
@@ -21,15 +98,81 @@
 			<title>Running a Cloudstack infrastructure</title>
 		</info>
 		<para>
-
+			The Cloudstack infrastructure can be created in the Resource Manager, either using command line or using the
+			portal. There is no particular requirements regarding the policy but it seems interesting to use a dynamic
+			policy such as the
+			<emphasis>SchedulerLoadingPolicy</emphasis>
+			to deploy instances as they are needed.
+		</para>
+		<para>
+			The parameters required by the infrastructure are :
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>maxNbOfInstances</emphasis>: the maximum number of instances that this infrastructure
+						can start.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>apiUrl</emphasis>: the URL where the Cloudstack Rest API is located.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>apiKey</emphasis>: the user's api key to query Cloudstack API.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>secretKey</emphasis>: the user's secret key to compute the signature of Cloudstack API
+						queries.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>serviceOfferingId</emphasis>: the identifier of the service offering used for the
+						instances.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>templateId</emphasis>: the identifier of the template used for the instances.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>zoneId</emphasis>: the identifier of the zone used for the instances.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>rmAddress</emphasis>: the location of the Resource Manager where new instances will
+						register. This parameter will be exposed to the new instance as userdata, they can be retrieved
+						using a HTTP request once the instance is running.
+					</para>
+				</listitem>
+			</itemizedlist>
+			You can also refer to the<link
+				xlink:href="http://download.cloud.com/releases/3.0.0/api_3.0.0/user/deployVirtualMachine.html">
+			Cloudstack API documentation</link>.
 		</para>
 	</chapter>
-	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Executables">
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="CloudstackNode">
 		<info>
-			<title>Using an existing Cloudstack installation from a job</title>
+			<title>Configuring a Cloudstack instance to run as ProActive node</title>
 		</info>
 		<para>
-
+			Running a Cloudstack infrastructure or directly creating instances from a job, you will need to configure your instances to register themselves as ProActive node.
+			Here is a sample boot script that can be used to do so.
+			<programlisting><textobject><textdata fileref="snippets/cloudstack_start_node.sh"/></textobject></programlisting>
+		</para>
+		<para>
+			The Cloudstack infrastructure will expose the following user data ('\n' separated).
+			<programlisting>rmAddress (as configured when creating the infrastructure)
+nodeSourceName (node source name of the infrastructure)
+nodeName (as computed by the infrastructure)
+token (to enable the token mechanism and protect usage of the instance)</programlisting>
 		</para>
 	</chapter>
 </part>

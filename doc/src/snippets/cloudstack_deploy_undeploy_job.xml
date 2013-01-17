@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:proactive:jobdescriptor:dev"
+	 xsi:schemaLocation="urn:proactive:jobdescriptor:dev http://www.activeeon.com/public_content/schemas/proactive/jobdescriptor/dev/schedulerjob.xsd"
+	 name="Cloudstack_Deploy_UnDeploy_Instance">
+	<taskFlow>
+		<task name="DeployInstance">
+			<javaExecutable class="org.ow2.proactive.iaas.IaasDeployExecutable">
+				<parameters>
+					<!-- Select the Iaas API we use -->
+					<parameter name="providerName" value="CLOUDSTACK"/>
+					<!-- Cloudstack specific parameters -->
+					<parameter name="apiurl" value="http://mycloudstack:8080/client/api"/>
+					<parameter name="apikey" value="apublickey"/>
+					<parameter name="secretkey" value="asecretkey"/>
+					<parameter name="name" value="Cloudstack-node-1"/>
+					<parameter name="zoneid" value="zone1"/>
+					<parameter name="serviceofferingid" value="smallInstance"/>
+					<parameter name="templateid" value="Linux32"/>
+					<parameter name="userdata" value="anything_you_want_to_expose_to_the_node"/>
+				</parameters>
+			</javaExecutable>
+		</task>
+		<task name="Run-ifconfig-on-instance">
+			<selection>
+				<script>
+					<file path="make_sure_we_are_on_cloudstack.js"/>
+				</script>
+			</selection>
+			<nativeExecutable>
+				<staticCommand
+						value="ifconfig">
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+		<task name="UndeployInstance">
+			<depends>
+				<!-- The deploy and undeploy tasks have a dependency relationship to retrieve the deployed instance when we want to undeploy it -->
+				<task ref="DeployInstance"/>
+				<!-- Just making sure we run ou task before undeploying the instance -->
+				<task ref="Run-ifconfig-on-instance"/>
+			</depends>
+			<javaExecutable class="org.ow2.proactive.iaas.IaasUndeployExecutable">
+				<parameters>
+					<parameter name="providerName" value="CLOUDSTACK"/>
+					<parameter name="apiurl" value="http://mycloudstack:8080/client/api"/>
+					<parameter name="apikey" value="apublickey"/>
+					<parameter name="secretkey" value="asecretkey"/>
+				</parameters>
+			</javaExecutable>
+		</task>
+	</taskFlow>
+</job>

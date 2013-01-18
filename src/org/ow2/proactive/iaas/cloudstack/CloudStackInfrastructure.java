@@ -78,8 +78,14 @@ public class CloudStackInfrastructure extends InfrastructureManager {
     @Configurable(description = "The user's secret key to compute the signature of Cloudstack API queries.")
     protected String secretKey = "";
 
-    @Configurable(description = "The identifier of the service offering used for the instances.")
-    protected String serviceOfferingId = "";
+    @Configurable(description = "The identifier of the default service offering used for the instances. The constant DEFAULT will refer to it.")
+    protected String defaultServiceOfferingId = "";
+    @Configurable(description = "The identifier of the small service offering used for the instances. The constant SMALL will refer to it.")
+    protected String smallServiceOfferingId = "";
+    @Configurable(description = "The identifier of the medium service offering used for the instances. The constant MEDIUM will refer to it.")
+    protected String mediumServiceOfferingId = "";
+    @Configurable(description = "The identifier of the large service offering used for the instances. The constant LARGE will refer to it.")
+    protected String largeServiceOfferingId = "";
 
     @Configurable(description = "The identifier of the template used for the instances.")
     protected String templateId = "";
@@ -96,10 +102,13 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         apiUrl = (String) parameters[1];
         apiKey = (String) parameters[2];
         secretKey = (String) parameters[3];
-        serviceOfferingId = (String) parameters[4];
-        templateId = (String) parameters[5];
-        zoneId = (String) parameters[6];
-        rmAddress = (String) parameters[7];
+        defaultServiceOfferingId = (String) parameters[4];
+        smallServiceOfferingId = (String) parameters[5];
+        mediumServiceOfferingId = (String) parameters[6];
+        largeServiceOfferingId = (String) parameters[7];
+        templateId = (String) parameters[8];
+        zoneId = (String) parameters[9];
+        rmAddress = (String) parameters[10];
     }
 
     @Override
@@ -120,7 +129,7 @@ public class CloudStackInfrastructure extends InfrastructureManager {
             return;
         }
 
-        logger.info("===>" + nodeConfiguration);
+        logger.debug("Starting a Cloudstack instance wih parameters " + nodeConfiguration);
         CloudStackAPI api = new CloudStackAPI(apiUrl, apiKey, secretKey);
 
         String nodeSourceName = this.nodeSource.getName();
@@ -132,7 +141,7 @@ public class CloudStackInfrastructure extends InfrastructureManager {
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE,
                 zoneId);
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING,
-                getFromNodeConfigurationOrDefault(nodeConfiguration, IaasPolicy.GenericInformation.INSTANCE_TYPE, serviceOfferingId));
+                resolveServiceOffering(getFromNodeConfigurationOrDefault(nodeConfiguration, IaasPolicy.GenericInformation.INSTANCE_TYPE, defaultServiceOfferingId)));
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME,
                 nodeName);
         args.put(CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA,
@@ -148,6 +157,20 @@ public class CloudStackInfrastructure extends InfrastructureManager {
             this.declareDeployingNodeLost(nodeUrl, "Failed to start Cloudstack instance: " + e.getMessage());
             logger.error("Failed to start Cloudstack instance", e);
         }
+    }
+
+    private String resolveServiceOffering(String serviceOfferingValue) {
+        if (IaasPolicy.GenericInformation.InstanceType.SMALL.name().equals(serviceOfferingValue)) {
+            return smallServiceOfferingId;
+        } else if (IaasPolicy.GenericInformation.InstanceType.MEDIUM.name().equals(serviceOfferingValue)) {
+            return mediumServiceOfferingId;
+        } else if (IaasPolicy.GenericInformation.InstanceType.LARGE.name().equals(serviceOfferingValue)) {
+            return largeServiceOfferingId;
+        } else if (IaasPolicy.GenericInformation.InstanceType.DEFAULT.name().equals(serviceOfferingValue)) {
+            return defaultServiceOfferingId;
+        }
+        logger.debug("Instance type is not a constant, using the parameter value as serviceofferingid");
+        return serviceOfferingValue;
     }
 
     private String getFromNodeConfigurationOrDefault(Map<String, ?> nodeConfiguration, String key, String defaultValue) {

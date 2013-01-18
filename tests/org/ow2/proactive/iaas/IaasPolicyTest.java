@@ -255,6 +255,49 @@ public class IaasPolicyTest {
     }
 
     @Test
+    public void twoTasksDeployingTwoInstances_StartsTwoInstances() throws Exception {
+        InternalTaskFlowJob job = new InternalTaskFlowJob();
+        InternalTask task1 = createTask(1, 1);
+        InternalTask task2 = createTask(1, 2);
+        job.setTasks(asList(task1, task2));
+
+        Map<String, String> genericInformation1 = new HashMap<String, String>();
+        genericInformation1.put(IaasPolicy.GenericInformation.TOKEN, "token1");
+        genericInformation1.put(IaasPolicy.GenericInformation.OPERATION, "DEPLOY");
+        task1.setGenericInformations(genericInformation1);
+
+        Map<String, String> genericInformation2 = new HashMap<String, String>();
+        genericInformation2.put(IaasPolicy.GenericInformation.TOKEN, "token2");
+        genericInformation2.put(IaasPolicy.GenericInformation.OPERATION, "DEPLOY");
+        task2.setGenericInformations(genericInformation2);
+
+        Map<String, String> jobGenericInformation = createGenericInformation("");
+        jobGenericInformation.remove(IaasPolicy.GenericInformation.OPERATION);
+        job.setGenericInformations(jobGenericInformation);
+
+        policy.jobSubmittedEvent(job);
+
+        verifyTotalNumberOfInstanceCreated(2);
+
+        when(scheduler.getJobState(Matchers.<JobId>any())).thenReturn(job);
+        LinkedList<Node> aliveNodes = createAliveNodes("token1", "token2");
+        when(nodeSource.getAliveNodes()).thenReturn(aliveNodes);
+
+        task1.setStatus(TaskStatus.FINISHED);
+        policy.taskStateUpdatedEvent(new NotificationData<TaskInfo>(TASK_RUNNING_TO_FINISHED, createTaskInfo(task1)));
+        verifyInstancesDestroyed(0);
+
+        task2.setStatus(TaskStatus.FINISHED);
+        policy.taskStateUpdatedEvent(new NotificationData<TaskInfo>(TASK_RUNNING_TO_FINISHED, createTaskInfo(task2)));
+        verifyInstancesDestroyed(0);
+
+        policy.jobStateUpdatedEvent(new NotificationData<JobInfo>(JOB_RUNNING_TO_FINISHED, createJobInfo(job)));
+        verifyInstancesDestroyed(2);
+
+        verifyTotalNumberOfInstanceCreated(2);
+    }
+
+    @Test
     public void severalInstancesRequired() throws Exception {
         InternalTaskFlowJob job = new InternalTaskFlowJob();
         Map<String, String> genericInformation = createGenericInformation("token");
@@ -322,6 +365,35 @@ public class IaasPolicyTest {
         policy.nodeEvent(new RMNodeEvent(rmNode, RMEventType.NODE_ADDED, NodeState.CONFIGURING, "me"));
 
         verifyInstanceDestroyed();
+    }
+
+    @Test
+    public void genericInformationInheritance() throws Exception {
+        InternalTaskFlowJob job = new InternalTaskFlowJob();
+        InternalTask task = createTask(1, 1);
+        job.setTasks(Collections.<InternalTask>singletonList(task));
+
+        Map<String, String> jobGenericInformation = createGenericInformation("");
+        jobGenericInformation.remove(IaasPolicy.GenericInformation.OPERATION);
+        job.setGenericInformations(jobGenericInformation);
+        // even though token, node source are not set, it should read it from the job generic information
+        Map<String, String> taskGenericInformation = new HashMap<String, String>();
+        taskGenericInformation.put(IaasPolicy.GenericInformation.OPERATION, "DEPLOY");
+        taskGenericInformation.put(IaasPolicy.GenericInformation.TOKEN, "token");
+        task.setGenericInformations(taskGenericInformation);
+
+        policy.jobSubmittedEvent(job);
+
+        verifyInstanceCreated();
+
+        when(scheduler.getJobState(Matchers.<JobId>any())).thenReturn(job);
+        LinkedList<Node> aliveNodes = createAliveNodes("token");
+        when(nodeSource.getAliveNodes()).thenReturn(aliveNodes);
+
+        policy.jobStateUpdatedEvent(new NotificationData<JobInfo>(JOB_RUNNING_TO_FINISHED, createJobInfo(job)));
+
+        verifyInstanceDestroyed();
+        verifyTotalNumberOfInstanceCreated(1);
     }
 
     private Map<String, String> createGenericInformation(String token) {

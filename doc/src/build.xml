@@ -5,6 +5,9 @@
 
 	<property name="doc.root.name" value="" />
 	<property name="snippets.start" value="${docs.dir}/../src:${docs.dir}/../samples" />
+	<tstamp>
+		<format property="TODAY" pattern="yyyy-MM-dd"/>
+	</tstamp>
 
 	<!-- javadoc paths are not include through subant-->
 	<path id="docs.utils.classpath.javadoc">

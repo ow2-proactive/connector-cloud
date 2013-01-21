@@ -37,11 +37,9 @@ package org.ow2.proactive.iaas.cloudstack;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -75,18 +73,24 @@ import static java.util.Arrays.asList;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
 import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
 
+/**
+ * A Cloudstack Rest API client capable of starting and stopping instances.
+ *
+ * Most of the accepted parameters are related to the Cloudstack API, refer to it's documentation for details.
+ * All the Cloudstack API dependant code and constants should be in this class.
+ */
 public class CloudStackAPI implements IaasApi {
 
     private static final String ENCODING = "UTF-8";
@@ -206,7 +210,6 @@ public class CloudStackAPI implements IaasApi {
     }
 
     private static String computeSignature(String secretKey, List<NameValuePair> params) throws NoSuchAlgorithmException, InvalidKeyException {
-
         Collections.sort(params, NAME_VALUE_PAIR_COMPARATOR);
 
         String paramAsString = URLEncodedUtils.format(params, ENCODING);
@@ -229,6 +232,9 @@ public class CloudStackAPI implements IaasApi {
         return new BasicNameValuePair(key, arguments.get(key));
     }
 
+    /**
+     * Cloudstack API parameters exposed to jobs.
+     */
     public class CloudStackAPIConstants {
         static final String JOB_STATE_PENDING = "0";
         static final String VM_STATE_RUNNING = "Running";
@@ -247,7 +253,7 @@ public class CloudStackAPI implements IaasApi {
             static final String USER_DATA = "userdata";
         }
 
-        public class Response {
+        class Response {
             static final String ID = "//id";
             static final String JOB_ID = "//jobid";
             static final String JOB_STATUS = "//jobstatus";

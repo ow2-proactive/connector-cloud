@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:proactive:jobdescriptor:dev"
+	 xsi:schemaLocation="urn:proactive:jobdescriptor:dev http://www.activeeon.com/public_content/schemas/proactive/jobdescriptor/dev/schedulerjob.xsd"
+	 name="VM_Info_Iaas_Policy">
+
+	<genericInformation>
+		<info name="NODE_ACCESS_TOKEN" value="cloustack$PAS_JOB_ID"/>
+		<info name="IAAS_OPERATION" value="DEPLOY"/>
+		<info name="IAAS_NODE_SOURCE" value="CS"/>
+		<info name="IAAS_INSTANCE_NB" value="1"/>
+		<info name="IAAS_INSTANCE_TYPE" value="SMALL"/>
+		<info name="IAAS_IMAGE_ID" value="e7263d5f-1ba1-4c6d-b217-2e4c1b535df1"/>
+	</genericInformation>
+	<taskFlow>
+		<task name="Run-uname">
+			<genericInformation>
+				<info name="NODE_ACCESS_TOKEN" value="cloustack$PAS_JOB_ID"/>
+			</genericInformation>
+			<nativeExecutable>
+				<staticCommand
+						value="uname">
+					<arguments>
+						<argument value="-a"/>
+					</arguments>
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+		<task name="Run-ifconfig">
+			<genericInformation>
+				<info name="NODE_ACCESS_TOKEN" value="cloustack$PAS_JOB_ID"/>
+			</genericInformation>
+			<nativeExecutable>
+				<staticCommand
+						value="ifconfig">
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+	</taskFlow>
+</job>

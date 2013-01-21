@@ -36,10 +36,38 @@ package org.ow2.proactive.iaas;
 
 import java.util.Map;
 
+/**
+ * Implementations are targeted at specific Iaas implementation, for instance Cloudstack, Openstack, Eucalyptus, ...
+ */
 public interface IaasApi {
+
+    /**
+     * Starts a new instance on a Iaas.
+     *
+     * Should be synchronous, i.e wait until instance is started and ready.
+     *
+     * @param arguments generic arguments that will be interpreted by the called API
+     * @return an identifier of the new instance
+     * @throws Exception anything can happen from the misconfiguration to the API not reachable
+     */
     IaasInstance startInstance(Map<String, String> arguments) throws Exception;
 
+    /**
+     * Stop a running instance on a Iaas.
+     *
+     * Should be synchronous, i.e wait until instance is started and ready.
+     *
+     * @param instance an identifier of the instance to stop
+     * @throws Exception anything can happen from the misconfiguration to the API not reachable
+     */
     void stopInstance(IaasInstance instance) throws Exception;
 
+    /**
+     * A utility method to check if an instance is running.
+     *
+     * @param instance an identifier of the target instance
+     * @return true if instance is running, false otherwise
+     * @throws Exception anything can happen from the misconfiguration to the API not reachable
+     */
     boolean isInstanceStarted(IaasInstance instance) throws Exception;
 }

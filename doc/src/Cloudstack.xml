@@ -10,7 +10,7 @@
 		</info>
 		<para>
 			<link xlink:href="http://incubator.apache.org/cloudstack/">Cloudstack</link>
-			is a open source cloud platform allowing you to build private, public and hybrid clouds. It offers a REST
+			is an open source cloud platform allowing you to build private, public and hybrid clouds. It offers a REST
 			API that has been used to integrate with ProActive in different ways. You can create a NodeSource in the
 			Resource Manager using a Cloudstack infrastructure or you can control deployment and undeployment of
 			Cloudstack instances directly from a job using specific tasks.
@@ -25,6 +25,10 @@
 			job. Using a selection script or the token mechanism, you can ensure that the enclosed tasks will run on the
 			new instance.
 			The new instance is expected to run as a ProActive node and register itself to the Resource Manager.
+		</para>
+		<para>
+			This behavior can be considered when you have an existing Cloudstack installation and do not wish to
+			integrate it fully with ProActive, rather just use it on a per job basis.
 		</para>
 		<para>
 			Below is a job description example using these tasks:
@@ -90,7 +94,7 @@
 			As you can see this simple approach requires you to expose your credentials in your job description. To
 			avoid security issues, we also expose a Cloudstack
 			<emphasis>infrastructure manager</emphasis>
-			described in<xref linkend="Infrastructure"/>.
+			described in <xref linkend="Infrastructure"/>.
 		</para>
 	</chapter>
 	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Infrastructure">
@@ -99,7 +103,7 @@
 		</info>
 		<para>
 			The Cloudstack infrastructure can be created in the Resource Manager, either using command line or using the
-			portal. There is no particular requirements regarding the policy but it seems interesting to use a dynamic
+			portal. There is no particular requirements regarding the policy but you may find interesting to use a dynamic
 			policy such as the
 			<emphasis>SchedulerLoadingPolicy</emphasis>
 			to deploy instances as they are needed.
@@ -131,8 +135,26 @@
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>serviceOfferingId</emphasis>: the identifier of the service offering used for the
-						instances.
+						<emphasis>defaultServiceOfferingId</emphasis>: the identifier of the default service offering
+						used for the instances. The constant DEFAULT will refer to it.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>smallServiceOfferingId</emphasis>: the identifier of the small service offering
+						used for the instances. The constant SMALL will refer to it.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>mediumServiceOfferingId</emphasis>: the identifier of the medium service offering
+						used for the instances. The constant MEDIUM will refer to it.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>largeServiceOfferingId</emphasis>: the identifier of the large service offering
+						used for the instances. The constant LARGE will refer to it.
 					</para>
 				</listitem>
 				<listitem>

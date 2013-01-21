@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:proactive:jobdescriptor:dev"
+	 xsi:schemaLocation="urn:proactive:jobdescriptor:dev http://www.activeeon.com/public_content/schemas/proactive/jobdescriptor/dev/schedulerjob.xsd"
+	 name="VM_Info_Iaas_Policy">
+
+	<genericInformation>
+		<!-- We need one node, running on the Cloudstack node source, that will be deployed once the job is submitted -->
+		<info name="NODE_ACCESS_TOKEN" value="cloustack$PAS_JOB_ID"/>
+		<info name="IAAS_OPERATION" value="DEPLOY"/>
+		<info name="IAAS_NODE_SOURCE" value="Cloudstack"/>
+		<info name="IAAS_INSTANCE_NB" value="1"/>
+		<!-- The node will a small instance and will the image called Linux 32 -->
+		<info name="IAAS_INSTANCE_TYPE" value="SMALL"/>
+		<info name="IAAS_IMAGE_ID" value="Linux32"/>
+	</genericInformation>
+	<taskFlow>
+		<task name="Run-uname">
+			<genericInformation>
+				<!-- We make sure the task runs on the new node -->
+				<info name="NODE_ACCESS_TOKEN" value="cloustack$PAS_JOB_ID"/>
+			</genericInformation>
+			<nativeExecutable>
+				<staticCommand
+						value="uname">
+					<arguments>
+						<argument value="-a"/>
+					</arguments>
+				</staticCommand>
+			</nativeExecutable>
+		</task>
+	</taskFlow>
+</job>

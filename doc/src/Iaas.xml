@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<part xml:id="Iaas">
+	<info>
+		<title>Infrastructure as a service (Iaas)</title>
+	</info>
+
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="IaasIntro">
+		<info>
+			<title>Introduction</title>
+		</info>
+		<para>
+			As infrastructure can be provided as services, a need for more control over resources allocation arises.
+			This is why we introduced dedicated policies and infrastructures giving fine grained control over when to
+			deploy to new nodes and what nodes to deploy.
+		</para>
+	</chapter>
+	<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="IaasPolicy">
+		<info>
+			<title>Iaas policy</title>
+		</info>
+		<para>
+			The Iaas policy reads parameters from jobs and tasks specified in the
+			<emphasis>genericInformation</emphasis>
+			tag. It will read information such as the type of instance to start, the template to use, ... and
+			communicate these parameters to the infrastructure, responsible for creating the nodes.To ensure that the
+			new nodes are reserved to the job requiring them, the token mechanism can be used. The
+			token must be specified when creating the nodes and when the tasks are requiring these created nodes. As
+			multiple users can be running concurrent tasks with the same token, we introduced placeholders such as
+			<emphasis>$PAS_JOB_ID</emphasis>
+			to make sure the token is unique. The Iaas policy requires no more that the information to contact the
+			scheduler as it must be aware of the
+			jobs and tasks running.
+		</para>
+		<para>
+			Here is a few examples of jobs using the Iaas policy.
+			<programlisting language="xml"><textobject><textdata fileref="snippets/iaas_policy_job.xml"/></textobject></programlisting>
+			<programlisting language="xml"><textobject><textdata fileref="snippets/iaas_policy_job_task_level.xml"/></textobject></programlisting>
+		</para>
+	</chapter>
+</part>

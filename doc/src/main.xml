@@ -8,11 +8,13 @@
 		<!ENTITY BookInfo            SYSTEM "BookInfo.xml">
 		<!ENTITY Contributors            SYSTEM "Contributors.xml">
 
+		<!ENTITY Iaas            SYSTEM "Iaas.xml">
 		<!ENTITY Cloudstack            SYSTEM "Cloudstack.xml">
 		]>
 
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
 	&BookInfo;
 	&Contributors;
+	&Iaas;
 	&Cloudstack;
 </book>

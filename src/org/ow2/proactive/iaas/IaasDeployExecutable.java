@@ -38,6 +38,11 @@ import org.ow2.proactive.scheduler.common.task.TaskResult;
 
 import java.io.Serializable;
 
+/**
+ * A simple executable to be used as a task that will start a new instance on a Iaas.
+ * <p/>
+ * Executable should be parametrized will all parameters necessary to use the target Iaas API, including parameters required by {@link IaasExecutable}.
+ */
 public class IaasDeployExecutable extends IaasExecutable {
 
     @Override

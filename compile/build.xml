@@ -18,7 +18,7 @@
 
 	<import file="../doc/src/build.xml" optional="true"/>
 
-	<target name="copyDependencies">
+	<target name="copyDependencies" description="Copy dependencies on other modules">
 		<mkdir dir="${ourlib.dir}"/>
 		<mkdir dir="${ourpalib.dir}"/>
 		<copy todir="${ourpalib.dir}">
@@ -40,12 +40,12 @@
 		<pathelement location="${classes.test.dir}"/>
 	</path>
 
-	<target name="clean">
+	<target name="clean" description="Clean build folders" depends="doc.clean">
 		<delete dir="${build.dir}"/>
 		<delete dir="${dist.dir}"/>
 	</target>
 
-	<target name="compile" depends="copyDependencies">
+	<target name="compile" depends="copyDependencies" description="Compile">
 		<mkdir dir="${classes.dir}"/>
 		<copy todir="${classes.dir}">
 			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico"/>
@@ -54,15 +54,15 @@
 			   debuglevel="lines,vars,source" includeantruntime="false"/>
 	</target>
 
-	<target name="dist" depends="compile, test">
+	<target name="dist" depends="compile, test" description="Build jar">
 		<mkdir dir="${dist.dir}"/>
 		<jar destfile="${dist.dir}/cloud_service_provider_connectors-${version}.jar" basedir="${classes.dir}"/>
 	</target>
 
-	<target name="clean-build" depends="clean,dist"/>
+	<target name="clean-build" depends="clean,dist" description="Clean and build jar"/>
 	<target name="jar" depends="dist"/>
 
-	<target name="test" depends="compile">
+	<target name="test" depends="compile" description="Run unit tests">
 		<mkdir dir="${classes.test.dir}"/>
 		<javac srcdir="${test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
 			   includeantruntime="false"/>

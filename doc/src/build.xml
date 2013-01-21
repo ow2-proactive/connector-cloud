@@ -4,6 +4,7 @@
 	<import file="../toolchain/doc_macros.xml" />
 
 	<property name="doc.root.name" value="" />
+	<property name="docs.output.name" value="CloudServiceProviderConnectors" />
 	<property name="snippets.start" value="${docs.dir}/../src:${docs.dir}/../samples" />
 	<tstamp>
 		<format property="TODAY" pattern="yyyy-MM-dd"/>
@@ -16,48 +17,51 @@
 		</fileset>
 	</path>
 
+	<target name="doc.clean">
+		<clean/>
+	</target>
 
-	<target name="doc.docs" depends="doc.javadoc.all, doc.manual, doc.doc.zips" description="Generate the Scheduler Programming javadoc, manual, and zip archives" />
-	<target name="doc.doc.zips" depends="doc.manualSingleHtmlZip, doc.manualHtmlZip, doc.javadoc.completeZip" description="Generate the Scheduler Programming javadoc and manual zip archives" />
+	<target name="doc.docs" depends="doc.javadoc.all, doc.manual, doc.doc.zips" description="Generate the javadoc, manual, and zip archives" />
+	<target name="doc.doc.zips" depends="doc.manualSingleHtmlZip, doc.manualHtmlZip, doc.javadoc.completeZip" description="Generate the javadoc and manual zip archives" />
 	<target name="doc.javadoc.all" depends="doc.javadoc.complete"/>
 
-	<target name="doc.manualHtml" description="Generate the Scheduler Programming HTML manual">
+	<target name="doc.manualHtml" description="Generate the HTML manual">
 		<subant target="manualHtml" 			inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.manualHtmlZip" description="Generate the Scheduler Programming HTML manual zip" depends="doc.manualHtml" >
+	<target name="doc.manualHtmlZip" description="Generate the HTML manual zip" depends="doc.manualHtml" >
 		<subant target="manualHtmlZip" inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.manualPdf" description="Generate the Scheduler Programming PDF manual">
+	<target name="doc.manualPdf" description="Generate the PDF manual">
 		<subant target="manualPdf" inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.manualSingleHtml" description="Generate the Scheduler Programming single HTML manual">
+	<target name="doc.manualSingleHtml" description="Generate the single HTML manual">
 		<subant target="manualSingleHtml" inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.manualSingleHtmlZip" description="Generate the Scheduler Programming single HTML manual zip" depends="doc.manualSingleHtml" >
+	<target name="doc.manualSingleHtmlZip" description="Generate the single HTML manual zip" depends="doc.manualSingleHtml" >
 		<subant target="manualSingleHtmlZip" inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.javadoc.completeZip" description="Generate the Scheduler Programming complete javadoc zip" depends="doc.javadoc.complete">
+	<target name="doc.javadoc.completeZip" description="Generate the complete javadoc zip" depends="doc.javadoc.complete">
 		<subant target="javadoc.completeZip" inheritall="true">
 			<fileset dir="${docs.toolchain.dir}" 	includes="doc.xml"/>
 		</subant>
 	</target>
 
-	<target name="doc.manual" description="Generate the Scheduler Programming manuals  (html, single html, pdf)" depends="doc.manualSingleHtml,doc.manualHtml,doc.manualPdf" />
+	<target name="doc.manual" description="Generate the manuals  (html, single html, pdf)" depends="doc.manualSingleHtml,doc.manualHtml,doc.manualPdf" />
 
 	<!-- javadoc paths are not include through subant-->
 	<path id="docs.utils.classpath.javadoc">
@@ -66,7 +70,7 @@
 		</fileset>
 	</path>
 
-	<target name="doc.javadoc.complete"  depends="compile" description="Generate the Scheduler complete javadoc">
+	<target name="doc.javadoc.complete"  depends="compile" description="Generate the complete javadoc">
 		<setProperties />
 		<javadoc
 				destdir="${docs.built.dir}/api_complete"

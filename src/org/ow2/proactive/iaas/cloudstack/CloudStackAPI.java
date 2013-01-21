@@ -87,9 +87,11 @@ import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConst
 
 /**
  * A Cloudstack Rest API client capable of starting and stopping instances.
- *
+ * <p>
  * Most of the accepted parameters are related to the Cloudstack API, refer to it's documentation for details.
+ * <br/>
  * All the Cloudstack API dependant code and constants should be in this class.
+ * </p>
  */
 public class CloudStackAPI implements IaasApi {
 

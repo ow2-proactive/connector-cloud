@@ -81,8 +81,10 @@ import static org.ow2.proactive.iaas.IaasPolicy.GenericInformation.TOKEN;
  * A {@link SchedulerAwarePolicy} reading generic information from jobs and tasks and
  * sending them to the infrastructure to provider dynamic node provisioning.
  *
- * See {@link GenericInformation} for the expected parameters expected in genericInformation tag.
+ * <p>See {@link GenericInformation} for the expected parameters expected in genericInformation tag.</p>
+ * <p>
  * Generic information are read from the task first and then from the job.
+ * </p>
  * Nodes can be provisioned per job or per task.
  * Nodes are expected to be protected using the token mechanism, i.e specifying a token when the node is provisioned
  * and when a task requires an provisioned node.

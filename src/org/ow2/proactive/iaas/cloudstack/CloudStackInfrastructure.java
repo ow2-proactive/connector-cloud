@@ -51,7 +51,13 @@ import org.objectweb.proactive.core.util.ProActiveCounter;
 
 /**
  *
- * Cloudstack Infrastructure
+ * An infrastructure spawning Cloudstack nodes.
+ *
+ * <p>
+ *     Either use the parameters specified when created or parameters given by the policy.
+ * </p>
+ *
+ * @see CloudStackInfrastructure
  *
  * @author The ProActive Team
  *

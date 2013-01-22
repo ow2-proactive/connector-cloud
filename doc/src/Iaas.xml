@@ -19,6 +19,33 @@
 			<title>Iaas policy</title>
 		</info>
 		<para>
+			The Iaas policy is a NodeSource Policy that must be installed in the addons/ directory and listed in the
+			<emphasis>config/rm/nodesource/policies</emphasis>
+			file. Here are the steps to follow:
+			<itemizedlist>
+				<listitem>
+					<para>
+						Build the Cloud Service Provider Connectors module
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						Copy the built JAR file (from dist folder) in the addons/ folder of your ProActive installation
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						Add the line <emphasis>org.ow2.proactive.iaas.IaasPolicy</emphasis> to the config/rm/nodesource/policies configuration file
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						Restart the Resource Manager to make sure the new policy is loaded
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
 			The Iaas policy reads parameters from jobs and tasks specified in the
 			<emphasis>genericInformation</emphasis>
 			tag. It will read information such as the type of instance to start, the template to use, ... and

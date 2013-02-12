@@ -1,0 +1,6 @@
+pid=$1
+device=$2
+
+tap-ctl close -m $device -p $pid
+tap-ctl detach -m $device -p $pid
+tap-ctl free -m $device

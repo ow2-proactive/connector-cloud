@@ -1,0 +1,14 @@
+device=$(tap-ctl allocate)
+deviceid=${device#/dev/xen/blktap-2/tapdev}
+
+echo $deviceid
+
+spawn=$(tap-ctl spawn)
+pid=${spawn#tapdisk spawned with pid }
+
+echo $pid
+
+
+tap-ctl attach -p $pid -m $deviceid
+
+tap-ctl open -p $pid -m $deviceid -a vhd:$1

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export JAVA_HOME=/opt/jdk1.6.0_25/
+export PATH=$PATH:$JAVA_HOME/bin
+
+cd /opt/scheduling
+
+./bin/unix/rm-start-node -r $rm_url -v $credentials -s $node_source_name -n $node_name -Dproactive.useIPaddress=true -Dproactive.net.nolocal=true -Dproactive.node.access.token=$token &

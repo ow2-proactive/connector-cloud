@@ -1,13 +1,9 @@
 package org.ow2.proactive.iaas.nova;
 
-
-
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasInstance;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +11,7 @@ import javax.security.sasl.AuthenticationException;
 
 import net.minidev.json.JSONObject;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -24,11 +21,17 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasApiFactory;
+import org.ow2.proactive.iaas.IaasInstance;
 
 import com.jayway.jsonpath.JsonPath;
 
 
 public class NovaAPI implements IaasApi {
+
+    private static final Logger logger = Logger.getLogger(NovaAPI.class);
 
     private static Map<Integer, NovaAPI> instances;
 
@@ -42,11 +45,12 @@ public class NovaAPI implements IaasApi {
     // NOVA FACTORY
     // ////////////////////////
 
-    public static IaasApi getNovaAPI(Map<String, String> args) throws URISyntaxException, AuthenticationException {
-        return getNovaAPI(args.get("username"),
-                args.get("password"),
-                args.get("tenantName"),
-                new URI(args.get("endpoint")));
+    public static IaasApi getNovaAPI(Map<String, String> args) throws URISyntaxException,
+            AuthenticationException {
+        return getNovaAPI(args.get(NovaAPIConstants.ApiParameters.USER_NAME),
+                args.get(NovaAPIConstants.ApiParameters.PASSWORD),
+                args.get(NovaAPIConstants.ApiParameters.TENANT_NAME),
+                new URI(args.get(NovaAPIConstants.ApiParameters.API_URL)));
     }
 
     public static synchronized NovaAPI getNovaAPI(String username, String password, String tenantName,
@@ -95,74 +99,73 @@ public class NovaAPI implements IaasApi {
     private void authenticate(String username, String password, String tenant) throws IOException {
         // Retrieve a token id to list tenants
         JSONObject jsonCreds = new JSONObject();
-        jsonCreds.put("username", username);
-        jsonCreds.put("password", password);
+        jsonCreds.put(NovaAPIConstants.ApiParameters.USER_NAME, username);
+        jsonCreds.put(NovaAPIConstants.ApiParameters.PASSWORD, password);
         JSONObject jsonAuth = new JSONObject();
-        jsonAuth.put("passwordCredentials", jsonCreds);
-        jsonAuth.put("tenantName", tenant);
+        jsonAuth.put(NovaAPIConstants.ApiParameters.PASSWORD_CREDENTIALS, jsonCreds);
+        jsonAuth.put(NovaAPIConstants.ApiParameters.TENANT_NAME, tenant);
         JSONObject jsonReq = new JSONObject();
-        jsonReq.put("auth", jsonAuth);
+        jsonReq.put(NovaAPIConstants.ApiParameters.AUTH, jsonAuth);
 
         // Here we cannot use post() yet because sessionId is not set
-        HttpPost post = new HttpPost(endpoint);
+        HttpPost post = new HttpPost(endpoint + "/tokens");
         post.addHeader("Content-type", "application/json");
         post.setEntity(new StringEntity(jsonReq.toString(), "UTF-8"));
 
         HttpResponse response = httpClient.execute(post);
         String entity = EntityUtils.toString(response.getEntity());
 
-        System.out.println(entity);
-        
+        logger.debug(entity);
+
         // Retrieve useful information from this response
         sessionId = JsonPath.read(entity, "$.access.token.id");
-        novaUri = JsonPath.read(entity, "$.access.serviceCatalog[?(@.name=='Compute')].endpoints[0].publicURL");
-   
-    
-    
+        try {
+            novaUri = JsonPath.read(entity,
+                    "$.access.serviceCatalog[?(@.type=='compute')].endpoints[0].publicURL");
+            logger.info("Compute url is " + novaUri);
+        } catch (RuntimeException ex) {
+            throw new RuntimeException("Cannot parse service catalog - check your tenant name");
+        }
     }
-    
-    
-    
-    public void listAvailableImages() throws ClientProtocolException, IOException{
-    	
+
+    public void listAvailableImages() throws ClientProtocolException, IOException {
+
         //JSONObject jReq = new JSONObject();
         //jReq.put("server", jServer);
-    	System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         HttpResponse response = get("/servers/detail");
         String entity = EntityUtils.toString(response.getEntity());
 
-        System.out.println(entity);
-        
-        
-        
-        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-         response = get("/flavors/detail");
-         entity = EntityUtils.toString(response.getEntity());
+        logger.debug(entity);
+        response = get("/flavors/detail");
+        entity = EntityUtils.toString(response.getEntity());
 
-        System.out.println(entity);
-        
+        logger.debug(entity);
     }
-    
-    
-    
 
-    public String createServer(String name, String imageRef, String flavorRef, Map<String, String> metadata)
-            throws ClientProtocolException, IOException {
+    public String createServer(String name, String imageRef, String flavorRef, String userData,
+            Map<String, String> metaData) throws ClientProtocolException, IOException {
 
-        JSONObject jMetadata = new JSONObject();
-        jMetadata.putAll(metadata);
+        JSONObject jsonMetaData = new JSONObject();
+        jsonMetaData.putAll(metaData);
+
         JSONObject jServer = new JSONObject();
-        jServer.put("name", name);
-        jServer.put("imageRef", imageRef);
-        jServer.put("flavorRef", flavorRef);
-        jServer.put("metadata", jMetadata);
+        jServer.put(NovaAPIConstants.InstanceParameters.NAME, name);
+        jServer.put(NovaAPIConstants.InstanceParameters.IMAGE_REF, imageRef);
+        jServer.put(NovaAPIConstants.InstanceParameters.FLAVOR_REF, flavorRef);
+        jServer.put(NovaAPIConstants.InstanceParameters.META_DATA, jsonMetaData);
+        jServer.put(NovaAPIConstants.InstanceParameters.USER_DATA, userData);
+
         JSONObject jReq = new JSONObject();
         jReq.put("server", jServer);
 
+        logger.debug(jReq.toJSONString());
+
         HttpResponse response = post("/servers", jReq);
         String entity = EntityUtils.toString(response.getEntity());
+        logger.debug(entity);
 
-        return entity;
+        String serverId = JsonPath.read(entity, "$.server.id");
+        return serverId;
     }
 
     public boolean rebootServer(String serverId, String method) throws ClientProtocolException, IOException {
@@ -178,6 +181,7 @@ public class NovaAPI implements IaasApi {
 
     public boolean deleteServer(String serverId) throws ClientProtocolException, IOException {
         HttpResponse response = delete("/servers/" + serverId);
+        logger.debug(response.getEntity());
         return response.getStatusLine().getStatusCode() == 204;
     }
 
@@ -216,12 +220,18 @@ public class NovaAPI implements IaasApi {
 
     @Override
     public IaasInstance startInstance(Map<String, String> arguments) throws Exception {
-        return new IaasInstance(createServer(
-                arguments.get("name"),
-                arguments.get("imageRef"),
-                arguments.get("flavorRef"),
-                null) // TODO
-        );
+
+        Map<String, String> metaData = Collections.emptyMap();
+
+        String userData = "";
+        if (arguments.containsKey(NovaAPIConstants.InstanceParameters.USER_DATA)) {
+            userData = arguments.get(NovaAPIConstants.InstanceParameters.USER_DATA);
+            userData = new String(Base64.encodeBase64(userData.getBytes()));
+        }
+
+        return new IaasInstance(createServer(arguments.get(NovaAPIConstants.InstanceParameters.NAME),
+                arguments.get(NovaAPIConstants.InstanceParameters.IMAGE_REF),
+                arguments.get(NovaAPIConstants.InstanceParameters.FLAVOR_REF), userData, metaData));
     }
 
     @Override
@@ -233,4 +243,30 @@ public class NovaAPI implements IaasApi {
     public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         throw new UnsupportedOperationException("not implemented");
     }
+
+    @Override
+    public String getName() {
+        return IaasApiFactory.IaasProvider.NOVA.name();
+    }
+
+    public class NovaAPIConstants {
+        public class ApiParameters {
+            static final String API_URL = "apiurl";
+            static final String AUTH = "auth";
+            static final String USER_NAME = "username";
+            static final String PASSWORD = "password";
+            static final String PASSWORD_CREDENTIALS = "passwordCredentials";
+            static final String TENANT_NAME = "tenantName";
+        }
+
+        public class InstanceParameters {
+            public static final String NAME = "name";
+            public static final String TENANT_NAME = "";
+            public static final String IMAGE_REF = "imageRef";
+            public static final String FLAVOR_REF = "flavorRef";
+            public static final String META_DATA = "metadata";
+            public static final String USER_DATA = "user_data";
+        }
+    }
+
 }

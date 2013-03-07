@@ -9,6 +9,7 @@ package org.ow2.proactive.iaas.openstack;
 
 import org.ow2.proactive.iaas.CloudProvider;
 import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 
 import java.io.IOException;
@@ -263,5 +264,10 @@ public class OpenStackAPI implements IaasApi {
                 new URI(args.get("endpoint")),
                 CloudProvider.valueOf(args.get("provider"))
         );
+    }
+
+    @Override
+    public String getName() {
+        return IaasApiFactory.IaasProvider.OPENSTACK.name();
     }
 }

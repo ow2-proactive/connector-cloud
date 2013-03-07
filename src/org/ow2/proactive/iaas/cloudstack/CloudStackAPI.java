@@ -35,6 +35,7 @@
 package org.ow2.proactive.iaas.cloudstack;
 
 import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 
 import java.io.InputStream;
@@ -269,4 +270,9 @@ public class CloudStackAPI implements IaasApi {
             return o1.getName().compareTo(o2.getName());
         }
     };
+
+    @Override
+    public String getName() {
+        return IaasApiFactory.IaasProvider.CLOUDSTACK.name();
+    }
 }

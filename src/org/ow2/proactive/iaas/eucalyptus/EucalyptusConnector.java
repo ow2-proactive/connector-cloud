@@ -3,6 +3,7 @@ package org.ow2.proactive.iaas.eucalyptus;
 
 
 import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 
 import java.util.ArrayList;
@@ -478,5 +479,10 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
     @Override
     public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public String getName() {
+        return IaasApiFactory.IaasProvider.EUCALYPTUS.name();
     }
 }

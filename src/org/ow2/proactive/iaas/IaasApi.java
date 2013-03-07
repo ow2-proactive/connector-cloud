@@ -70,4 +70,11 @@ public interface IaasApi {
      * @throws Exception anything can happen from the misconfiguration to the API not reachable
      */
     boolean isInstanceStarted(IaasInstance instance) throws Exception;
+
+    /**
+     * Returns the name of Iaas API
+     * 
+     * @return name of Iaas API
+     */
+    String getName();
 }

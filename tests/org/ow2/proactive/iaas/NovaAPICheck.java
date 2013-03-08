@@ -7,7 +7,7 @@ import java.util.Map;
 import org.ow2.proactive.iaas.nova.NovaAPI;
 import org.ow2.proactive.iaas.nova.NovaAPI.NovaAPIConstants;
 
-public class NovaTest {
+public class NovaAPICheck {
     
     private static Map<String, String> getInstanceParams() {
         String nodeSourceName = "node-source-nova";

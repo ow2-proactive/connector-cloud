@@ -70,7 +70,9 @@
 			<classpath refid="classpath.test"/>
 			<formatter type="brief" usefile="false"/>
 			<batchtest fork="yes">
-				<fileset dir="${test.dir}"/>
+				<fileset dir="${test.dir}">
+					<include name="**/*Test*" />
+				</fileset>
 			</batchtest>
 		</junit>
 	</target>

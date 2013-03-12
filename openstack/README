@@ -4,7 +4,7 @@ USER GUIDE
 
 
 2. Put bin/org + all jars from lib into scheduler addons
-
+copy src/org/ow2/proactive/iaas/nova/start-proactive-node to bin/org/ow2/proactive/iaas/nova/
 
 3. Add
 

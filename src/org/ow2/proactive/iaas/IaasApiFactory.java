@@ -61,6 +61,6 @@ public class IaasApiFactory {
         } else if (EUCALYPTUS.name().equals(providerName)) {
             return new EucalyptusConnector(args);
         }
-        throw new IllegalArgumentException("Unknown Iaas provider");
+        throw new IllegalArgumentException("Unknown Iaas provider : " + providerName);
     }
 }

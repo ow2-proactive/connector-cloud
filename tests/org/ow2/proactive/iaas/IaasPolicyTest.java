@@ -298,6 +298,48 @@ public class IaasPolicyTest {
     }
 
     @Test
+    public void eligibleTasksButAlreadyProvisionned() throws Exception {
+        InternalTaskFlowJob job = new InternalTaskFlowJob();
+        InternalTask task1 = createTask(1, 1);
+        InternalTask task2 = createTask(1, 2);
+        InternalTask task3 = createTask(1, 3);
+        job.setTasks(asList(task1, task2, task3));
+
+        Map<String, String> genericInformation1 = new HashMap<String, String>();
+        genericInformation1.put(IaasPolicy.GenericInformation.TOKEN, "token1");
+        genericInformation1.put(IaasPolicy.GenericInformation.OPERATION, "DEPLOY");
+        task1.setGenericInformations(genericInformation1);
+
+        Map<String, String> genericInformation2 = new HashMap<String, String>();
+        genericInformation2.put(IaasPolicy.GenericInformation.TOKEN, "token1");
+        task2.addDependence(task1);
+        task2.setGenericInformations(genericInformation2);
+
+        // this task will be removed from eligible tasks for two reasons
+        // it has unfinished dependencies (task2) and is already provisionned (token1)
+        Map<String, String> genericInformation3 = new HashMap<String, String>();
+        genericInformation3.put(IaasPolicy.GenericInformation.TOKEN, "token1");
+        task3.addDependence(task2);
+        task3.setGenericInformations(genericInformation3);
+
+        Map<String, String> jobGenericInformation = createGenericInformation("token1");
+        jobGenericInformation.remove(IaasPolicy.GenericInformation.OPERATION);
+        job.setGenericInformations(jobGenericInformation);
+
+        policy.jobSubmittedEvent(job);
+
+        verifyTotalNumberOfInstanceCreated(1);
+
+        when(scheduler.getJobState(Matchers.<JobId>any())).thenReturn(job);
+        LinkedList<Node> aliveNodes = createAliveNodes("token1");
+        when(nodeSource.getAliveNodes()).thenReturn(aliveNodes);
+
+        task1.setStatus(TaskStatus.FINISHED);
+        policy.taskStateUpdatedEvent(new NotificationData<TaskInfo>(TASK_RUNNING_TO_FINISHED, createTaskInfo(task1)));
+        verifyInstancesDestroyed(0);
+    }
+
+    @Test
     public void severalInstancesRequired() throws Exception {
         InternalTaskFlowJob job = new InternalTaskFlowJob();
         Map<String, String> genericInformation = createGenericInformation("token");

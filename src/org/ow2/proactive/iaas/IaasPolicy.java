@@ -205,21 +205,25 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
         }
         // remove from eligible all tasks that have dependencies not contained
         // in finished tasks list and already provisioned tasks
-        Iterator<Map.Entry<String, TaskState>> it = eligibleTasks.entrySet().iterator();
-        while (it.hasNext()) {
-            TaskState taskState = it.next().getValue();
+        Iterator<Map.Entry<String, TaskState>> taskIterator = eligibleTasks.entrySet().iterator();
+        while (taskIterator.hasNext()) {
+            TaskState taskState = taskIterator.next().getValue();
             if (taskState.getDependences() != null) {
                 for (TaskState dep : taskState.getDependences()) {
                     if (!finishedTasks.containsKey(dep.getId().value())) {
-                        it.remove();
+                        taskIterator.remove();
                         break;
                     }
 
                 }
             }
+        }
+        taskIterator = eligibleTasks.entrySet().iterator();
+        while (taskIterator.hasNext()) {
+            TaskState taskState = taskIterator.next().getValue();
             // Avoid starting an already started instance
             if (taskAlreadyProvisioned(jobState, taskState)) {
-                it.remove();
+                taskIterator.remove();
             }
         }
         return eligibleTasks;

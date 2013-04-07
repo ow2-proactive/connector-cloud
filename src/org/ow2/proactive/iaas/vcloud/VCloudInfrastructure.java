@@ -48,12 +48,10 @@ import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 public class VCloudInfrastructure extends IaasInfrastructure {
     private static final Logger logger = Logger.getLogger(VCloudInfrastructure.class);
 
-    @Configurable(description = "User name for vCloud.")
-    protected String userName;
-    @Configurable(description = "User password for vCloud.")
+    @Configurable(description = "Login (format: user@organization)")
+    protected String login;
+    @Configurable(description = "Password")
     protected String password;
-    @Configurable(description = "Organization name for vCloud.")
-    protected String orgName;
     @Configurable(description = "Virtual DataCenter (VDC) name.")
     protected String vdcName;
     @Configurable(credential = true, description = "Absolute path of the credential file")
@@ -64,10 +62,9 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     protected void configure(Object... parameters) {
         super.configure(parameters);
 
-        userName = (String) parameters[2];
+        login = (String) parameters[2];
         password = (String) parameters[3];
-        orgName = (String) parameters[4];
-        vdcName = (String) parameters[5];
+        vdcName = (String) parameters[4];
         credentials = new String((byte[]) parameters[6]);
     }
 
@@ -75,7 +72,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     protected IaasApi getAPI() {
         IaasApi api;
         try {
-            api = VCloudAPI.getVCloudAPI(userName, password, orgName, new URI(iaasApiUrl), vdcName);
+            api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), vdcName);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

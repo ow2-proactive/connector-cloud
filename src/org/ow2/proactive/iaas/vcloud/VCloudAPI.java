@@ -44,22 +44,48 @@ import java.security.UnrecoverableKeyException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import javax.security.sasl.AuthenticationException;
+import javax.xml.bind.JAXBElement;
 
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 
+import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
+import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
+import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
 import com.vmware.vcloud.api.rest.schema.InstantiateVAppTemplateParamsType;
+import com.vmware.vcloud.api.rest.schema.InstantiationParamsType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.api.rest.schema.NatServiceType;
+import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
+import com.vmware.vcloud.api.rest.schema.NetworkConfigSectionType;
+import com.vmware.vcloud.api.rest.schema.NetworkConfigurationType;
+import com.vmware.vcloud.api.rest.schema.NetworkFeaturesType;
+import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
+import com.vmware.vcloud.api.rest.schema.ObjectFactory;
+import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
+import com.vmware.vcloud.api.rest.schema.VAppNetworkConfigurationType;
+import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
+import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
 import com.vmware.vcloud.sdk.Organization;
+import com.vmware.vcloud.sdk.Task;
 import com.vmware.vcloud.sdk.VCloudException;
+import com.vmware.vcloud.sdk.VM;
 import com.vmware.vcloud.sdk.Vapp;
+import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
+import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
+import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
+import com.vmware.vcloud.sdk.constants.NatPolicyType;
+import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.Version;
 
 
@@ -73,7 +99,6 @@ public class VCloudAPI implements IaasApi {
     private long created;
     private VcloudClient vcd;
     private Organization org;
-    private Vdc vdc;
     private URI endpoint;
 
     /////
@@ -83,22 +108,21 @@ public class VCloudAPI implements IaasApi {
             AuthenticationException {
         return getVCloudAPI(args.get(VCloudAPIConstants.ApiParameters.USER_NAME),
                 args.get(VCloudAPIConstants.ApiParameters.PASSWORD),
-                args.get(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME),
                 new URI(args.get(VCloudAPIConstants.ApiParameters.API_URL)),
-                args.get(VCloudAPIConstants.ApiParameters.DEFAULT_VDC_NAME));
+                args.get(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME));
     }
 
-    public static synchronized VCloudAPI getVCloudAPI(String username, String password,
-            String organizationName, URI endpoint, String vdcName) throws AuthenticationException {
+    public static synchronized VCloudAPI getVCloudAPI(String login, String password, URI endpoint,
+            String orgName) throws AuthenticationException {
         if (instances == null) {
             instances = new HashMap<Integer, VCloudAPI>();
         }
-        int hash = (username + password + organizationName).hashCode();
+        int hash = (login + password).hashCode();
         VCloudAPI instance = instances.get(hash);
         if (instance == null) {
             try {
                 instances.remove(hash);
-                instance = new VCloudAPI(username, password, organizationName, endpoint, vdcName);
+                instance = new VCloudAPI(login, password, endpoint, orgName);
             } catch (Throwable t) {
                 throw new AuthenticationException("Authentication failed to " + endpoint, t);
             }
@@ -107,57 +131,107 @@ public class VCloudAPI implements IaasApi {
         return instance;
     }
 
-    public VCloudAPI(String username, String password, String organizationName, URI endpoint, String vdcName)
-            throws IOException, KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException,
-            KeyStoreException, VCloudException {
+    public VCloudAPI(String login, String password, URI endpoint, String orgName) throws IOException,
+            KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+            VCloudException {
         this.vapps = new HashMap<IaasInstance, Vapp>();
         this.created = System.currentTimeMillis();
         this.endpoint = endpoint;
-        authenticate(username, password, organizationName, vdcName);
+        authenticate(login, password, orgName);
     }
 
-    public void authenticate(String username, String password, String organizationName, String vdcName)
-            throws VCloudException, KeyManagementException, UnrecoverableKeyException,
-            NoSuchAlgorithmException, KeyStoreException {
+    public void authenticate(String login, String password, String orgName) throws VCloudException,
+            KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
         VcloudClient.setLogLevel(Level.OFF);
         vcd = new VcloudClient(this.endpoint.toString(), Version.V5_1);
         vcd.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
-        vcd.login(username + "@" + organizationName, password);
+        vcd.login(login, password);
+        org = Organization.getOrganizationByReference(vcd, vcd.getOrgRefsByName().get(orgName));
 
-        org = Organization.getOrganizationByReference(vcd, vcd.getOrgRefsByName().get(organizationName));
-        vdc = Vdc.getVdcByReference(vcd, org.getVdcRefsByName().get(vdcName));
-
+        logger.info("Authentication success for " + login);
     }
 
     @Override
     public IaasInstance startInstance(Map<String, String> arguments) throws Exception {
-        String instanceName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME);
-//        String orgName = arguments.get(VCloudAPI.VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME);
+        IaasInstance iaasInstance = createInstance(arguments);
+        arguments.put(VCloudAPIConstants.InstanceParameters.INSTANCE_ID, iaasInstance.getInstanceId());
+        deployInstance(arguments);
+        return iaasInstance;
+    }
+
+    public IaasInstance createInstance(Map<String, String> arguments) throws Exception {
         String templateName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME);
+        String instanceName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME);
+        String vdcName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
+
+        Vdc vdc = Vdc.getVdcByReference(vcd, org.getVdcRefsByName().get(vdcName));
 
         InstantiateVAppTemplateParamsType instVappTemplParamsType = new InstantiateVAppTemplateParamsType();
         instVappTemplParamsType.setName(instanceName);
-        instVappTemplParamsType.setSource(getVappTemplateByName(templateName));
-        //        instVappTemplParamsType.setInstantiationParams(instantiationParamsType);
-
+        instVappTemplParamsType.setSource(getVAppTemplate(templateName).getReference());
         Vapp vapp = vdc.instantiateVappTemplate(instVappTemplParamsType);
-//        int retries = 100;
-//        while (!vapp.isDeployed() && retries >= 0) {
-//            Thread.sleep(10000);
-//            retries--;
-//        }
-//        if(!vapp.isDeployed()) {
-//            return null;
-//        }
-//        vapp.powerOn();
-        IaasInstance iaasInstance = new IaasInstance(vapp.getReference().getId());
+
+        vapp.getTasks().get(0).waitForTask(0);
+
+        String instanceID = vapp.getReference().getId();
+
+        IaasInstance iaasInstance = new IaasInstance(instanceID);
         vapps.put(iaasInstance, vapp);
+
+        logger.info("[" + instanceID + "] Instanciated '" + templateName + "' as '" + instanceName + "' on " +
+            vdcName + " ");
 
         return iaasInstance;
     }
 
+    public void configureNetwork(Map<String, String> arguments) throws Exception {
+        String instanceID = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
+        String vdcName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
+
+        Vapp vapp = Vapp.getVappById(vcd, instanceID);
+        Vdc vdc = Vdc.getVdcByReference(vcd, org.getVdcRefsByName().get(vdcName));
+
+        String vappNet = vapp.getNetworkNames().iterator().next();
+        VM vm = vapp.getChildrenVms().get(0);
+        String id = vm.getResource().getVAppScopedLocalId();
+
+        NetworkConfigSectionType networkConfigSectionType = buildNetworkConfigSection(vdc, id, vappNet);
+
+        InstantiationParamsType instantiationParamsType = new InstantiationParamsType();
+        List<JAXBElement<? extends SectionType>> section = instantiationParamsType.getSection();
+        section.add(new ObjectFactory().createNetworkConfigSection(networkConfigSectionType));
+
+        RecomposeVAppParamsType recomposeVappParamsType = new RecomposeVAppParamsType();
+        recomposeVappParamsType.setName(vapp.getReference().getName());
+        recomposeVappParamsType.setInstantiationParams(instantiationParamsType);
+
+        Task recomposeVapp = vapp.recomposeVapp(recomposeVappParamsType);
+        recomposeVapp.waitForTask(0);
+
+        logger.info("[" + instanceID + "] vApp network reconfigured");
+    }
+
+    public String deployInstance(Map<String, String> arguments) throws Exception {
+        String instanceID = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
+
+        Vapp vapp = Vapp.getVappById(vcd, instanceID);
+        vapp.deploy(true, 0, false).waitForTask(0);
+
+        vapp = Vapp.getVappByReference(vcd, vapp.getReference());
+        String ip = vapp.getNetworkConfigSection().getNetworkConfig().iterator().next().getConfiguration()
+                .getRouterInfo().getExternalIp();
+
+        logger.info("[" + instanceID + "] vApp deployed on " + ip);
+
+        return ip;
+    }
+
     @Override
     public void stopInstance(IaasInstance instance) throws Exception {
+        vapps.get(instance).shutdown();
+    }
+
+    public void deleteInstance(IaasInstance instance) throws Exception {
         vapps.get(instance).delete();
     }
 
@@ -177,31 +251,139 @@ public class VCloudAPI implements IaasApi {
             static final String USER_NAME = "username";
             static final String PASSWORD = "password";
             static final String ORGANIZATION_NAME = "organizationName";
-            static final String DEFAULT_VDC_NAME = "vdcName";
         }
 
         public class InstanceParameters {
             public static final String INSTANCE_NAME = "instanceName";
+            public static final String INSTANCE_ID = "instanceID";
             public static final String TEMPLATE_NAME = "templateName";
             public static final String VDC_NAME = "vdcName";
         }
     }
 
-    private ReferenceType getVappTemplateByName(String templateName) {
-        Iterator<ReferenceType> it = org.getVdcRefs().iterator();
-        while (it.hasNext()) {
-            try {
-                ReferenceType vdcRef = it.next();
-                Vdc vdc = Vdc.getVdcByReference(vcd, vdcRef);
-                Collection<ReferenceType> set = vdc.getVappTemplateRefsByName(templateName);
-                if (set.size() > 0) {
-                    return set.iterator().next();
-                }
+    private VappTemplate getVAppTemplate(String vappTemplateName) throws VCloudException {
+        logger.debug("Searching vApp Template named : " + vappTemplateName);
+        Iterator<ReferenceType> itOrg = vcd.getOrgRefs().iterator();
+        while (itOrg.hasNext()) {
+            VappTemplate vappTemplate = getVAppTemplate(itOrg.next(), vappTemplateName);
+            if (vappTemplate != null) {
+                return vappTemplate;
+            }
+        }
+        throw new VCloudException("vApp Template '" + vappTemplateName + "' not found.");
+    }
 
-            } catch (Throwable e) {
-                System.err.println("Failed...");
+    private VappTemplate getVAppTemplate(ReferenceType orgRef, String vappTemplateName)
+            throws VCloudException {
+        logger.debug("Looking for a vApp Template : " + vappTemplateName);
+        Organization org = Organization.getOrganizationByReference(vcd, orgRef);
+        Iterator<ReferenceType> itVdc = org.getVdcRefs().iterator();
+        while (itVdc.hasNext()) {
+            Vdc vdc = Vdc.getVdcByReference(vcd, itVdc.next());
+            Iterator<ReferenceType> itTpl = vdc.getVappTemplateRefs().iterator();
+            while (itTpl.hasNext()) {
+                ReferenceType vappTemplateRef = itTpl.next();
+                if (vappTemplateRef.getName().equals(vappTemplateName)) {
+                    logger.debug("vApp Template Found : " + vappTemplateRef.getName() + " [" +
+                        org.getReference().getName() + "/" + vdc.getReference().getName() + "]");
+                    return VappTemplate.getVappTemplateByReference(vcd, vappTemplateRef);
+                }
             }
         }
         return null;
+    }
+
+    private NetworkConfigSectionType buildNetworkConfigSection(Vdc vdc, String vmId, String networkName) {
+        logger.debug("[" + vmId + "] Build network configuration");
+        Collection<ReferenceType> availableNetworkRefs = vdc.getAvailableNetworkRefs();
+
+        NetworkConfigurationType networkConfigurationType = new NetworkConfigurationType();
+        networkConfigurationType.setParentNetwork(availableNetworkRefs.iterator().next());
+        networkConfigurationType.setFenceMode(FenceModeValuesType.NATROUTED.value());
+
+        NetworkFeaturesType features = new NetworkFeaturesType();
+        List<JAXBElement<? extends NetworkServiceType>> networkService = features.getNetworkService();
+
+        // Setup NAT Port-forwarding
+        logger.debug("[" + vmId + "] Setup NAT Port Forwarding");
+        NatServiceType natServiceType = new NatServiceType();
+        natServiceType.setIsEnabled(true);
+        natServiceType.setNatType(NatTypeType.PORTFORWARDING.value());
+        natServiceType.setPolicy(NatPolicyType.ALLOWTRAFFIC.value());
+
+        addNatRule(natServiceType.getNatRule(), "SSH", "TCP", 22, 22, vmId);
+        addNatRule(natServiceType.getNatRule(), "RDP", "TCP", 3389, 3389, vmId);
+
+        JAXBElement<NetworkServiceType> networkServiceType = new ObjectFactory()
+                .createNetworkService(natServiceType);
+        networkService.add(networkServiceType);
+
+        // Setup Firewall
+        logger.debug("[" + vmId + "] Setup Firewall");
+        FirewallServiceType firewallServiceType = new FirewallServiceType();
+        firewallServiceType.setIsEnabled(true);
+        firewallServiceType.setDefaultAction(FirewallPolicyType.DROP.value());
+        firewallServiceType.setLogDefaultAction(false);
+
+        List<FirewallRuleType> fwRules = firewallServiceType.getFirewallRule();
+        addFirewallRule(fwRules, "PING", "ICMP", "Any", "Any", "Any");
+        addFirewallRule(fwRules, "SSH", "TCP", "Any", "Any", "22");
+        addFirewallRule(fwRules, "RDP", "TCP", "Any", "Any", "3389");
+        addFirewallRule(fwRules, "In-Out", "ANY", "internal", "external", "Any");
+
+        JAXBElement<FirewallServiceType> firewall = (new ObjectFactory())
+                .createFirewallService(firewallServiceType);
+        networkService.add(firewall);
+
+        networkConfigurationType.setFeatures(features);
+
+        VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
+        vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
+
+        vAppNetworkConfigurationType.setNetworkName(networkName);
+
+        NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
+        MsgType networkMsgType = new MsgType();
+        networkConfigSectionType.setInfo(networkMsgType);
+        List<VAppNetworkConfigurationType> networkConfig = networkConfigSectionType.getNetworkConfig();
+        networkConfig.add(vAppNetworkConfigurationType);
+
+        return networkConfigSectionType;
+    }
+
+    private void addNatRule(List<NatRuleType> natRules, String name, String protocol, int intPort,
+            int extPort, String vmId) {
+        NatVmRuleType natVmRuleType = new NatVmRuleType();
+        natVmRuleType.setExternalPort(extPort);
+        natVmRuleType.setInternalPort(intPort);
+        natVmRuleType.setVAppScopedVmId(vmId);
+        natVmRuleType.setVmNicId(0);
+        natVmRuleType.setProtocol(protocol);
+        NatRuleType natRuleType = new NatRuleType();
+        natRuleType.setVmRule(natVmRuleType);
+        natRuleType.setDescription(name);
+        natRules.add(natRuleType);
+    }
+
+    private void addFirewallRule(List<FirewallRuleType> fwRules, String name, String protocol, String srcIp,
+            String dstIp, String portRange) {
+        FirewallRuleType firewallRuleType = new FirewallRuleType();
+        firewallRuleType.setDescription(name);
+        firewallRuleType.setSourceIp(srcIp);
+        firewallRuleType.setSourcePort(-1);
+        firewallRuleType.setDestinationIp(dstIp);
+        FirewallRuleProtocols protocols = new FirewallRuleProtocols();
+        if (protocol.equalsIgnoreCase("ICMP")) {
+            protocols.setIcmp(true);
+            firewallRuleType.setIcmpSubType("any");
+        } else if (protocol.equalsIgnoreCase("TCP")) {
+            protocols.setTcp(true);
+            firewallRuleType.setDestinationPortRange(portRange);
+        } else if (protocol.equalsIgnoreCase("ANY")) {
+            protocols.setAny(true);
+            firewallRuleType.setDestinationPortRange(portRange);
+        }
+        firewallRuleType.setProtocols(protocols);
+        fwRules.add(firewallRuleType);
     }
 }

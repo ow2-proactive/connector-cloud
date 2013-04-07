@@ -95,6 +95,7 @@ public class VCloudAPI implements IaasApi {
 
     private static Map<Integer, VCloudAPI> instances;
 
+    private Map<String, IaasInstance> iaasInstances;
     private Map<IaasInstance, Vapp> vapps;
     private long created;
     private VcloudClient vcd;
@@ -176,6 +177,7 @@ public class VCloudAPI implements IaasApi {
         String instanceID = vapp.getReference().getId();
 
         IaasInstance iaasInstance = new IaasInstance(instanceID);
+        iaasInstances.put(instanceID, iaasInstance);
         vapps.put(iaasInstance, vapp);
 
         logger.info("[" + instanceID + "] Instanciated '" + templateName + "' as '" + instanceName + "' on " +
@@ -235,6 +237,15 @@ public class VCloudAPI implements IaasApi {
         vapps.get(instance).delete();
     }
 
+    public void rebootInstance(IaasInstance instance) throws Exception {
+        vapps.get(instance).reboot();
+    }
+
+    public void snapshotInstance(IaasInstance instance, String name, String description, boolean memory,
+            boolean quiesce) throws Exception {
+        vapps.get(instance).createSnapshot(name, description, memory, quiesce);
+    }
+
     @Override
     public boolean isInstanceStarted(IaasInstance instance) throws Exception {
         return vapps.get(instance).isDeployed();
@@ -243,6 +254,10 @@ public class VCloudAPI implements IaasApi {
     @Override
     public String getName() {
         return "VMWare vCloud";
+    }
+
+    public IaasInstance getIaasInstance(String instanceID) {
+        return iaasInstances.get(instanceID);
     }
 
     public class VCloudAPIConstants {

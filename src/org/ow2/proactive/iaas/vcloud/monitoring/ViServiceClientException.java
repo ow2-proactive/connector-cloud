@@ -35,9 +35,23 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas.monitoring;
+package org.ow2.proactive.iaas.vcloud.monitoring;
 
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+public class ViServiceClientException extends Exception {
 
-public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi{
+    /** The default serialization identifier */
+    private static final long serialVersionUID = 1L;
+
+    public ViServiceClientException(String message) {
+        super(message);
+    }
+
+    public ViServiceClientException(Throwable cause) {
+        super(cause);
+    }
+
+    public ViServiceClientException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }

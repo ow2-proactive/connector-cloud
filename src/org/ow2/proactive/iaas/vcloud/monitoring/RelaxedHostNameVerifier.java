@@ -35,10 +35,19 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas.nova;
+package org.ow2.proactive.iaas.vcloud.monitoring;
 
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceMBean;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 
-public interface NovaMonServiceMBean extends IaaSMonitoringServiceMBean {
+/**
+ * Utility class, bypasses any host name verification.
+ */
+public class RelaxedHostNameVerifier implements HostnameVerifier {
+
+    @Override
+    public boolean verify(String arg0, SSLSession arg1) {
+        return true;
+    }
 
 }

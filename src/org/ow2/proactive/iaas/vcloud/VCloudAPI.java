@@ -46,15 +46,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
 import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
@@ -89,7 +90,7 @@ import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.Version;
 
 
-public class VCloudAPI implements IaasApi {
+public class VCloudAPI implements IaasApi, IaaSMonitoringApi{
 
     private static final Logger logger = Logger.getLogger(VCloudAPI.class);
 
@@ -102,16 +103,25 @@ public class VCloudAPI implements IaasApi {
     private Organization org;
     private URI endpoint;
 
+    
+    private VimServiceClient vimServiceClient;
+    
     /////
     // VCLOUD FACTORY
     /////
-    public static IaasApi getVCloudAPI(Map<String, String> args) throws URISyntaxException,
-            AuthenticationException {
-        return getVCloudAPI(args.get(VCloudAPIConstants.ApiParameters.USER_NAME),
-                args.get(VCloudAPIConstants.ApiParameters.PASSWORD),
-                new URI(args.get(VCloudAPIConstants.ApiParameters.API_URL)),
-                args.get(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME));
-    }
+	public static IaasApi getVCloudAPI(Map<String, String> args)
+			throws URISyntaxException, AuthenticationException {
+		VCloudAPI vCloudAPI = getVCloudAPI(
+				args.get(VCloudAPIConstants.ApiParameters.USER_NAME),
+				args.get(VCloudAPIConstants.ApiParameters.PASSWORD), new URI(
+						args.get(VCloudAPIConstants.ApiParameters.API_URL)),
+				args.get(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME));
+		vCloudAPI.initializeMonitoringService(
+				VCloudAPIConstants.MonitoringParameters.URL,
+				VCloudAPIConstants.MonitoringParameters.USERNAME,
+				VCloudAPIConstants.MonitoringParameters.PASSWORD);
+		return vCloudAPI;
+	}
 
     public static synchronized VCloudAPI getVCloudAPI(String login, String password, URI endpoint,
             String orgName) throws AuthenticationException {
@@ -274,6 +284,12 @@ public class VCloudAPI implements IaasApi {
             public static final String TEMPLATE_NAME = "templateName";
             public static final String VDC_NAME = "vdcName";
         }
+        
+        public class MonitoringParameters {
+        	public static final String URL = "vim.service.url";
+        	public static final String USERNAME = "vim.service.username";
+        	public static final String PASSWORD = "vim.service.password";
+        }
     }
 
     private VappTemplate getVAppTemplate(String vappTemplateName) throws VCloudException {
@@ -404,6 +420,77 @@ public class VCloudAPI implements IaasApi {
     
     @Override
     public void disconnect() throws Exception {
+    	vimServiceClient.close();
     }
+
+	private void initializeMonitoringService(String url, String username,
+			String password) {
+		try {
+			vimServiceClient = new VimServiceClient();
+			vimServiceClient.initialize(url, username, password);
+		} catch (Exception e) {
+			logger.error("Cannot initialize the VimSerivceClient instance: "
+					+ e);
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	@Override
+	public Map<String, Object> getSummary() throws Exception {
+		Map<String, Object> summary = new HashMap<String, Object>();
+
+		String[] hosts = this.getHosts();
+		for (String host : hosts) {
+			// put host properties
+			Map<String, Object> hostinfo = convert(getHostProperties(host));
+
+			// put a list of vms with their properties
+			Map<String, Object> vmsinfo = new HashMap<String, Object>();
+			String[] vms = this.getVMs();
+			for (String vm : vms) {
+				vmsinfo.put(vm, this.getVMProperties(vm));
+			}
+			hostinfo.put("vmsinfo", vmsinfo);
+
+			summary.put(host, hostinfo);
+		}
+
+		return summary;
+	}
+
+	private Map<String, Object> convert(Map<String, String> a) {
+		Map<String, Object> r = new HashMap<String, Object>();
+		r.putAll(a);
+		return r;
+	}
+
+	@Override
+	public String[] getHosts() throws Exception {
+		return vimServiceClient.getHosts();
+	}
+
+	@Override
+	public String[] getVMs() throws Exception {
+		return vimServiceClient.getVMs();
+	}
+
+	@Override
+	public String[] getVMs(String hostId) throws Exception {
+		return vimServiceClient.getVMs(hostId);
+	}
+
+	@Override
+	public Map<String, String> getHostProperties(String hostId)
+			throws Exception {
+		return vimServiceClient.getHostProperties(hostId);
+	}
+
+	@Override
+	public Map<String, String> getVMProperties(String vmId) throws Exception {
+		return vimServiceClient.getVMProperties(vmId);
+	}
+    
+    
 
 }

@@ -35,9 +35,25 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas.monitoring;
+package org.ow2.proactive.iaas.vcloud.monitoring;
 
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+/**
+ * Utility class, bypasses any X509Certificate verifications.
+ */
+public class RelaxedTrustManager implements javax.net.ssl.TrustManager,
+        javax.net.ssl.X509TrustManager {
 
-public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi{
+    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+        return null;
+    }
+
+    public void checkServerTrusted(java.security.cert.X509Certificate[] certs,
+            String authType) throws java.security.cert.CertificateException {
+        return;
+    }
+
+    public void checkClientTrusted(java.security.cert.X509Certificate[] certs,
+            String authType) throws java.security.cert.CertificateException {
+        return;
+    }
 }

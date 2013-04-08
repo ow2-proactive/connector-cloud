@@ -1,22 +1,17 @@
 package org.ow2.proactive.iaas.eucalyptus;
 
-
-
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.util.log.ProActiveLogger;
-
 import com.xerox.amazonws.ec2.AvailabilityZone;
 import com.xerox.amazonws.ec2.EC2Exception;
 import com.xerox.amazonws.ec2.ImageDescription;
@@ -485,4 +480,8 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
     public String getName() {
         return IaasApiFactory.IaasProvider.EUCALYPTUS.name();
     }
+
+	@Override
+	public void disconnect() throws Exception {
+	}
 }

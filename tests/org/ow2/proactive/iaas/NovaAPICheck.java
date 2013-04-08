@@ -27,10 +27,11 @@ public class NovaAPICheck {
     public static void main(String[] args) throws Exception {
         String apiUrl = "http://127.0.0.1:5000/v2.0";
         String userName = "admin";
-        String password = "sa";
+        String password = "cperUser";
         String tenantName = "Admin";
         
         NovaAPI api = NovaAPI.getNovaAPI(userName, password, tenantName, new URI(apiUrl));
-        api.startInstance(getInstanceParams());
+        api.listAvailableImages();
+//        api.startInstance(getInstanceParams());
     }
 }

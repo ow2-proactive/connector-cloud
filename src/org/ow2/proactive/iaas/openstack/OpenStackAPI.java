@@ -2,8 +2,6 @@
  * This class has been created to connect with different cloud platforms supporting the openstack API, i.e. Nova, HPCloud.
  *
  * */
-
-
 package org.ow2.proactive.iaas.openstack;
 
 
@@ -11,17 +9,13 @@ import org.ow2.proactive.iaas.CloudProvider;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.security.sasl.AuthenticationException;
-
 import net.minidev.json.JSONObject;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -31,7 +25,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-
 import com.jayway.jsonpath.JsonPath;
 
 
@@ -270,4 +263,8 @@ public class OpenStackAPI implements IaasApi {
     public String getName() {
         return IaasApiFactory.IaasProvider.OPENSTACK.name();
     }
+
+	@Override
+	public void disconnect() throws Exception {
+	}
 }

@@ -77,4 +77,11 @@ public interface IaasApi {
      * @return name of Iaas API
      */
     String getName();
+    
+    /**
+     * Disconnects from the API.
+     * 
+     * @throws Exception anything can happen from the misconfiguration to the API not reachable
+     */
+    void disconnect() throws Exception;
 }

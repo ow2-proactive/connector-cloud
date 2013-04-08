@@ -34,9 +34,21 @@
  */
 package org.ow2.proactive.iaas.cloudstack;
 
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
-import org.ow2.proactive.iaas.IaasInstance;
+import static java.util.Arrays.asList;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
 
 import java.io.InputStream;
 import java.io.StringReader;
@@ -58,9 +70,9 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -68,23 +80,10 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasApiFactory;
+import org.ow2.proactive.iaas.IaasInstance;
 import org.xml.sax.InputSource;
-
-import static java.util.Arrays.asList;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
 
 /**
  * A Cloudstack Rest API client capable of starting and stopping instances.
@@ -275,4 +274,8 @@ public class CloudStackAPI implements IaasApi {
     public String getName() {
         return IaasApiFactory.IaasProvider.CLOUDSTACK.name();
     }
+
+	@Override
+	public void disconnect() throws Exception {
+	}
 }

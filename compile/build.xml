@@ -48,7 +48,7 @@
 	<target name="compile" depends="copyDependencies" description="Compile">
 		<mkdir dir="${classes.dir}"/>
 		<copy todir="${classes.dir}">
-			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico"/>
+			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico,**/start-proactive-node"/>
 		</copy>
 		<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="on"
 			   debuglevel="lines,vars,source" includeantruntime="false"/>

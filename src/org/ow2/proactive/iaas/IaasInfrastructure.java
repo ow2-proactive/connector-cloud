@@ -111,6 +111,12 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             this.declareDeployingNodeLost(nodeUrl,
                     "Failed to start " + api.getName() + " instance: " + e.getMessage());
             logger.error("Failed to start " + api.getName() + " instance", e);
+        } finally {
+        	try {
+        		api.disconnect();
+        	} catch(Exception e) {
+        		logger.warn("Could not disconnect from the API.", e);
+        	}
         }
     }
 
@@ -136,6 +142,12 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             nodeNameToInstance.remove(nodeName);
         } catch (Exception e) {
             throw new RMException("Failed to remove " + api.getName() + " node", e);
+        } finally {
+        	try {
+        		api.disconnect();
+        	} catch(Exception e) {
+        		logger.warn("Could not disconnect from the API.", e);
+        	}
         }
     }
 

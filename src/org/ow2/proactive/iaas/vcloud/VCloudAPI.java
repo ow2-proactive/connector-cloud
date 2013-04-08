@@ -401,4 +401,9 @@ public class VCloudAPI implements IaasApi {
         firewallRuleType.setProtocols(protocols);
         fwRules.add(firewallRuleType);
     }
+    
+    @Override
+    public void disconnect() throws Exception {
+    }
+
 }

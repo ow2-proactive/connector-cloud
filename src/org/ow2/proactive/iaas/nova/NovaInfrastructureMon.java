@@ -42,9 +42,11 @@ import javax.management.MBeanRegistrationException;
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.util.ProActiveCounter;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInfrastructure;
+import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasPolicy;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
@@ -161,11 +163,53 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     protected IaasApi getAPI() {
         IaasApi api;
         try {
-            api = NovaAPI.getNovaAPI(userName, password, tenantName, new URI(iaasApiUrl));
+            logger.error("MAURICIO: put the right NOVA API! Not this MOCKUP!");
+            api = NovaAPIMockup.getNovaAPI(userName, password, tenantName, new URI(iaasApiUrl));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return api;
+    }
+    
+    @Override
+    public void acquireNode() {
+        acquireNode(USE_CONFIGURED_VALUES);
+    }
+    
+    @Override
+    public void acquireNodes(int n, Map<String, ?> nodeConfiguration) {
+        for (int i = 0; i < n; i++) {
+            acquireNode(nodeConfiguration);
+        }
+    }
+
+    private void acquireNode(Map<String, ?> nodeConfiguration) {
+        IaasApi api = getAPI();
+
+        logger.debug("Starting a " + api.getName() + " instance wih parameters " + nodeConfiguration);
+
+        String nodeSourceName = this.nodeSource.getName();
+        String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
+
+        // This line below needs to be commented, so the usingDeployedNodes flag in InfrastrucutreManager
+        // is not set and it is possible to register RMNodes without having them going through 
+        // the process of "node deploying".
+        //String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + " node ", TEN_MINUTES_TIMEOUT);
+        try {
+            IaasInstance instance = api.startInstance(getInstanceParams(nodeName, nodeSourceName,
+                    nodeConfiguration));
+            nodeNameToInstance.put(nodeName, instance);
+            logger.info("Waiting for " + api.getName() + " instance to start...");
+        } catch (Exception e) {
+            //this.declareDeployingNodeLost(nodeUrl, "Failed to start " + api.getName() + " instance: " + e.getMessage());
+            logger.error("Failed to start " + api.getName() + " instance.", e);
+        } finally {
+        	try {
+        		api.disconnect();
+        	} catch(Exception e) {
+        		logger.warn("Could not disconnect from the API.", e);
+        	}
+        }
     }
     
     @Override
@@ -246,15 +290,18 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     	}
     	
     	try {
-            String jmxurlrmi = node.getProperty(
+    	    logger.error("TO CHANGE TO RO.");
+            String jmxurlro = node.getProperty(
             		RMNodeStarter.JMX_URL + JMXTransportProtocol.RMI);
             String token = node.getProperty(
             		RMNodeStarter.NODE_ACCESS_TOKEN);
             
+            logger.info("New node registered (NAME='" + node.getNodeInformation().getName() + "', TOKEN='" + token + "').");
+            
             NodeType type = ("IAASHOST".equals(token)?NodeType.HOST:NodeType.VM);
             monitoringService.registerNode(
             		node.getNodeInformation().getName(), 
-            		jmxurlrmi, 
+            		jmxurlro, 
             		type);
 		} catch (ProActiveException e) {
 			logger.error("Error while getting node properties.", e);

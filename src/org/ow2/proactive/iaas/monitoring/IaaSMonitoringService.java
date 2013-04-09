@@ -71,12 +71,14 @@ public class IaaSMonitoringService implements
 
     @Override
     public void registerNode(String nodeId, String jmxUrl, NodeType type) {
+        logger.info("Registered node '" + nodeId + "' with jmxUrl '" + jmxUrl + "' of type '" + type + "'.");
         jmxSupportedNodes.put(nodeId, jmxUrl);
     }
 
     @Override
     public void unregisterNode(String nodeId) {
         jmxSupportedNodes.remove(nodeId);
+        logger.info("Unregistered node '" + nodeId + "'.");
     }
 
     @Override
@@ -93,15 +95,17 @@ public class IaaSMonitoringService implements
     public Map<String, String> getHostProperties(String hostId)
             throws IaaSMonitoringServiceException {
         try {
+            logger.info("Getting host properties of '"+hostId+"': " + jmxSupportedNodes);
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
+            
             if (jmxSupportedNodes.containsKey(hostId)) {
             	String jmxurl = jmxSupportedNodes.get(hostId);
-                properties.put("proactive.sigar.jmx.url",
-                        jmxurl);
-                Map<String, String> sigarProps = 
-                		queryProps(jmxurl, user, pass);
+                properties.put("proactive.sigar.jmx.url", jmxurl);
+                Map<String, String> sigarProps = queryProps(jmxurl, user, pass);
                 properties.putAll(sigarProps);
+            } else {
+                logger.info("No RMNode running on the host.");
             }
             return properties;
         } catch (Exception e) {

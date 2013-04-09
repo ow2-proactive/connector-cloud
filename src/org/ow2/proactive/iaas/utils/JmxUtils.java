@@ -44,6 +44,7 @@ import java.util.Map;
 
 import javax.management.remote.JMXServiceURL;
 
+import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClientHost;
 import org.ow2.proactive.iaas.monitoring.OSMonitoringException;
 
@@ -60,12 +61,12 @@ public class JmxUtils {
     }
 
     public static Map<String, Object> getSigarProperties(
-            String jmxurl, String user, String pass) 
+            String jmxurl, Map<String, Object> jmxenv) 
                     throws OSMonitoringException {
         FormattedSigarMBeanClientHost a;
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            a = new FormattedSigarMBeanClientHost(jmxurl, user, pass);
+            a = new FormattedSigarMBeanClientHost(jmxurl, jmxenv);
         } catch (MalformedURLException e) {
             throw new OSMonitoringException(e);
         } catch (IOException e) {

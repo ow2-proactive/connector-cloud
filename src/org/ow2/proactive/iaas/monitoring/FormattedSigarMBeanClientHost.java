@@ -23,27 +23,13 @@ public class FormattedSigarMBeanClientHost {
 
     private static final Logger logger = Logger.getLogger(FormattedSigarMBeanClientHost.class);
     
-	public static void main(String[] args) throws Exception{
-        String serviceURL = "service:jmx:rmi:///jndi/rmi://dalek.activeeon.com:56667/rmnode";
-		FormattedSigarMBeanClientHost a = new FormattedSigarMBeanClientHost(serviceURL, "admin", "admin");
-		Map<String, Object> map = a.getPropertyMap();
-		
-		for (String key : map.keySet()){
-			System.out.println("   " + key + " : " + map.get(key));
-		}
-		a.disconnect();
-	}
-	
 	private String serviceurl;
 	private JMXConnector connector;
 	
-	public FormattedSigarMBeanClientHost(String url, String user, String pass) 
+	public FormattedSigarMBeanClientHost(String url, Map<String, Object> jmxenv) 
 	        throws MalformedURLException, IOException {
 		this.serviceurl = url;
-        Hashtable<String, Object> h = new Hashtable<String, Object>();
-        String[] credentials = new String[] {user ,pass};
-        h.put("jmx.remote.credentials", credentials); 
-        connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), h);
+        connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), jmxenv);
 	}
 	
 	public void disconnect() throws IOException{

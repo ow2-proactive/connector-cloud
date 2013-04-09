@@ -142,7 +142,7 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
 	        
         	try{
 	
-				IaaSMonitoringService m = new IaaSMonitoringService((IaaSMonitoringApi) getAPI());	
+				IaaSMonitoringService m = new IaaSMonitoringService((IaaSMonitoringApi) getAPI(), credentialvm);	
 				MBeanExposer e =  new MBeanExposer();
 				e.registerMBeanLocally(nodeSourceName, m);
 			
@@ -290,9 +290,8 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     	}
     	
     	try {
-    	    logger.error("TO CHANGE TO RO.");
             String jmxurlro = node.getProperty(
-            		RMNodeStarter.JMX_URL + JMXTransportProtocol.RMI);
+            		RMNodeStarter.JMX_URL + JMXTransportProtocol.RO);
             String token = node.getProperty(
             		RMNodeStarter.NODE_ACCESS_TOKEN);
             

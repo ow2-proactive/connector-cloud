@@ -37,10 +37,15 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
+
 import org.apache.log4j.Logger;
+import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
@@ -55,14 +60,14 @@ public class IaaSMonitoringService implements
 
     private Map<String, String> jmxSupportedNodes = new HashMap<String, String>();
     private IaaSMonitoringApi iaaSMonitoringApi;
+    private Credentials credentials;
     
-    private String user = "demo";
-    private String pass = "demo";
-
-    public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi)
+    public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi, String credentials)
             throws IaaSMonitoringServiceException {
         try {
             this.iaaSMonitoringApi = iaaSMonitoringApi;
+            this.credentials = Credentials.getCredentials(
+                    new ByteArrayInputStream(credentials.getBytes()));
         } catch (Exception e) {
             logger.error("Cannot instantiate IasSClientApi:", e);
             throw new IaaSMonitoringServiceException(e);
@@ -95,17 +100,17 @@ public class IaaSMonitoringService implements
     public Map<String, String> getHostProperties(String hostId)
             throws IaaSMonitoringServiceException {
         try {
-            logger.info("Getting host properties of '"+hostId+"': " + jmxSupportedNodes);
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
             
             if (jmxSupportedNodes.containsKey(hostId)) {
             	String jmxurl = jmxSupportedNodes.get(hostId);
                 properties.put("proactive.sigar.jmx.url", jmxurl);
-                Map<String, String> sigarProps = queryProps(jmxurl, user, pass);
+                Map<String, Object> jmxenv = getJmxEnv(credentials);
+                Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                 properties.putAll(sigarProps);
             } else {
-                logger.info("No RMNode running on the host.");
+                logger.info("No RMNode running on the host '" + hostId + "'.");
             }
             return properties;
         } catch (Exception e) {
@@ -142,13 +147,15 @@ public class IaaSMonitoringService implements
         try {
             Map<String, String> properties = iaaSMonitoringApi
                     .getVMProperties(vmId);
+            
             if (jmxSupportedNodes.containsKey(vmId)) {
             	String jmxurl = jmxSupportedNodes.get(vmId);
-                properties.put(PROP_PA_SIGAR_JMX_URL,
-                        jmxurl);
-                Map<String, String> sigarProps = 
-                		queryProps(jmxurl, user, pass);
+                properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
+                Map<String, Object> jmxenv = getJmxEnv(credentials);
+                Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                 properties.putAll(sigarProps);
+            } else {
+                logger.info("No RMNode running on the VM '" + vmId + "'.");
             }
             return properties;
         } catch (Exception e) {
@@ -166,14 +173,21 @@ public class IaaSMonitoringService implements
 		}
 	}
 	
-	private Map<String, String> queryProps(String jmxurl, String user, String pass){
+	private Map<String, String> queryProps(String jmxurl, Map<String, Object> env){
 		Map<String, Object> outp = new HashMap<String, Object>();
 		try {
-			outp = JmxUtils.getSigarProperties(jmxurl, user, pass);
+			outp = JmxUtils.getSigarProperties(jmxurl, env);
 		} catch (Exception e) {
 			logger.warn("Could not get sigar properties from '" + jmxurl + "'.", e);
 		}
 		return Utils.convert(outp);
 	}
 
+    private Map<String, Object> getJmxEnv(Credentials credentials) {
+        Map<String, Object> env = new HashMap<String, Object> ();
+        env.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "org.ow2.proactive.jmx.provider");
+        Object[] obj = new Object[]{"", credentials};
+        env.put(JMXConnector.CREDENTIALS, obj);
+        return env;
+    }
 }

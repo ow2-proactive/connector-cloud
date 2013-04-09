@@ -23,13 +23,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 import com.jayway.jsonpath.JsonPath;
 
 
-public class NovaAPIMockup implements IaasApi {
+public class NovaAPIMockup implements IaasApi, IaaSMonitoringApi  {
 
     private static final Logger logger = Logger.getLogger(NovaAPIMockup.class);
     private static Map<Integer, NovaAPIMockup> instances;
@@ -110,5 +111,42 @@ public class NovaAPIMockup implements IaasApi {
 	@Override
 	public void disconnect() throws Exception {
 	}
+
+    @Override
+    public Map<String, Object> getSummary() throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String[] getHosts() throws Exception {
+        return new String[]{"host-1", "host-2"};
+    }
+
+    @Override
+    public String[] getVMs() throws Exception {
+        return new String[]{"host-1", "host-2"};
+    }
+
+    @Override
+    public String[] getVMs(String hostId) throws Exception {
+        return new String[]{"host-1", "host-2"};
+    }
+
+    @Override
+    public Map<String, String> getHostProperties(String hostId) throws Exception {
+        Map<String, String> prop = new HashMap<String, String> ();
+        prop.put("cpu.usage", "0.1");
+        prop.put("mem.usage", "0.1");
+        return prop;
+    }
+
+    @Override
+    public Map<String, String> getVMProperties(String vmId) throws Exception {
+        Map<String, String> prop = new HashMap<String, String> ();
+        prop.put("cpu.usage", "0.1");
+        prop.put("mem.usage", "0.1");
+        return prop;
+    }
 
 }

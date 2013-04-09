@@ -116,7 +116,7 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     /**
      * Exposer of IaaS monitoring mbean.
      */
-    private MBeanExposer mbeanexposer;
+    private MBeanExposer mbeanExposer;
     
     /**
      * IaaS monitoring service.
@@ -127,7 +127,7 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     protected void configure(Object... parameters) {
         super.configure(parameters);
         
-    	logger.debug("Configuring Nova infrastructure...");
+    	logger.debug("Configuring Monitored Nova infrastructure...");
         
         userName = (String) parameters[2];
         password = (String) parameters[3];
@@ -141,14 +141,13 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
 	        nodeSourceName = parameters[9].toString();
 	        
         	try{
-	
-				IaaSMonitoringService m = new IaaSMonitoringService((IaaSMonitoringApi) getAPI(), credentialvm);	
+				IaaSMonitoringService m = new IaaSMonitoringService(
+				        (IaaSMonitoringApi) getAPI(), credentialvm);	
 				MBeanExposer e =  new MBeanExposer();
 				e.registerMBeanLocally(nodeSourceName, m);
 			
-				mbeanexposer = e;
+				mbeanExposer = e;
 				monitoringService = m;    
-
         	} catch (MBeanRegistrationException e) {
         		logger.error("Could not register IaaS Monitoring MBean.", e);
         	} catch (IaaSMonitoringServiceException e) {
@@ -163,7 +162,8 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     protected IaasApi getAPI() {
         IaasApi api;
         try {
-            logger.error("MAURICIO: put the right NOVA API! Not this MOCKUP!");
+            logger.error("MMM: put the right NOVA API, not this MOCKUP...");
+            // TODO To replace here.
             api = NovaAPIMockup.getNovaAPI(userName, password, tenantName, new URI(iaasApiUrl));
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -172,15 +172,19 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     }
     
     @Override
-    // This method is owerwritten to avoid setting the flag usingDeployingNodes = true that 
-    // prevents the user to add manually RMNodes later.
+    /**
+     *  This method is overwritten to avoid setting the flag usingDeployingNodes=true 
+     *  that prevents the user to add manually RMNodes later.
+     */
     public void acquireNode() {
         acquireNode(USE_CONFIGURED_VALUES);
     }
     
     @Override
-    // This method is owerwritten to avoid setting the flag usingDeployingNodes = true that 
-    // prevents the user to add manually RMNodes later.
+    /**
+     *  This method is overwritten to avoid setting the flag usingDeployingNodes=true 
+     *  that prevents the user to add manually RMNodes later.
+     */
     public void acquireNodes(int n, Map<String, ?> nodeConfiguration) {
         for (int i = 0; i < n; i++) {
             acquireNode(nodeConfiguration);
@@ -190,20 +194,26 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     private void acquireNode(Map<String, ?> nodeConfiguration) {
         IaasApi api = getAPI();
 
-        logger.debug("Starting a " + api.getName() + " instance wih parameters " + nodeConfiguration);
+        logger.debug("Starting a '" + api.getName() + "' instance wih parameters: " + nodeConfiguration);
 
         String nodeSourceName = this.nodeSource.getName();
         String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
 
-        // This line below needs to be commented, so the usingDeployedNodes flag in InfrastrucutreManager
-        // is not set and it is possible to register RMNodes without having them going through 
-        // the process of "node deploying".
-        //String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + " node ", TEN_MINUTES_TIMEOUT);
+        /* 
+         * This line below needs to be commented, so the usingDeployedNodes flag in 
+         * InfrastrucutreManager is not set and it is possible to register RMNodes 
+         * without having them going through the process of "node deploying". 
+         */
+        //String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + 
+        //      " node ", TEN_MINUTES_TIMEOUT);
         try {
-            IaasInstance instance = api.startInstance(getInstanceParams(nodeName, nodeSourceName,
-                    nodeConfiguration));
+            IaasInstance instance = api.startInstance(
+                    getInstanceParams(nodeName, nodeSourceName, nodeConfiguration));
+            
             nodeNameToInstance.put(nodeName, instance);
+            
             logger.info("Waiting for " + api.getName() + " instance to start...");
+            
         } catch (Exception e) {
             logger.error("Failed to start " + api.getName() + " instance.", e);
         } finally {
@@ -275,11 +285,11 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     
     @Override
     public void shutDown(){
-    	if (mbeanexposer!=null) { 
+    	if (mbeanExposer!=null) { 
     		try {
-				mbeanexposer.stop();
+				mbeanExposer.stop();
 			} catch (Exception e) {
-				logger.warn("Error while stopping mbeanexposer.", e);
+				logger.warn("Error while stopping mbeanExposer.", e);
 			}
     	}
     }
@@ -298,7 +308,9 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
             String token = node.getProperty(
             		RMNodeStarter.NODE_ACCESS_TOKEN);
             
-            logger.info("New node registered (NAME='" + node.getNodeInformation().getName() + "', TOKEN='" + token + "').");
+            logger.info("New node registered (NAME='" + 
+                    node.getNodeInformation().getName() + 
+                    "', TOKEN='" + token + "').");
             
             NodeType type = ("IAASHOST".equals(token)?NodeType.HOST:NodeType.VM);
             monitoringService.registerNode(

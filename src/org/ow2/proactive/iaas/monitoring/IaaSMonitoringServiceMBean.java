@@ -41,8 +41,14 @@ import java.util.Map;
 
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 
-public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi{
+public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi {
     
+    /**
+     * Exposes a summary of all the information of the Infrastructure.
+     * It includes all the details of each host, with details of their VMs.
+     * @return a map with a summary of all Infrastructure's information.
+     * @throws Exception
+     */
 	public Map<String, Object> getSummary() throws Exception;
 
 }

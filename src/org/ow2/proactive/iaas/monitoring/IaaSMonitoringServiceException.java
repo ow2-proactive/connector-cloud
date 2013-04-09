@@ -39,9 +39,6 @@ package org.ow2.proactive.iaas.monitoring;
 
 public class IaaSMonitoringServiceException extends Exception {
 
-    /** Default serial version identifier */
-    private static final long serialVersionUID = 1L;
-
     public IaaSMonitoringServiceException(String message, Throwable cause) {
         super(message, cause);
     }

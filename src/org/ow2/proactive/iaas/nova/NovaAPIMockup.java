@@ -103,12 +103,12 @@ public class NovaAPIMockup implements IaasApi, IaaSMonitoringApi  {
 
     @Override
     public String[] getVMs() throws Exception {
-        return new String[]{"host-1", "host-2"};
+        return new String[]{"vm-1", "vm-2"};
     }
 
     @Override
     public String[] getVMs(String hostId) throws Exception {
-        return new String[]{"host-1", "host-2"};
+        return new String[]{"vm-1", "vm-2"};
     }
 
     @Override

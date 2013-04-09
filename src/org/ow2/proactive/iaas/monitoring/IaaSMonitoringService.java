@@ -37,6 +37,8 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import org.apache.log4j.Logger;
@@ -49,12 +51,38 @@ import org.ow2.proactive.authentication.crypto.Credentials;
 public class IaaSMonitoringService implements
         IaaSMonitoringServiceMBean, IaaSNodesListener {
 
+    /** 
+     * Key used for referencing the URL of the Sigar MBean of the entity (host/vm). 
+     */
     public static final String PROP_PA_SIGAR_JMX_URL = "proactive.sigar.jmx.url";
     
+    /** 
+     * Key that belongs to the host properties map. 
+     * Its value contains information about all its VMs. 
+     */
+    public static final String VMS_INFO_KEY = "vmsinfo";
+    
+    /** Logger. */
     private static final Logger logger = Logger.getLogger(IaaSMonitoringService.class);
-
-    private Map<String, String> jmxSupportedNodes = new HashMap<String, String>();
+    
+    /** 
+     * Map to save jmx urls per host.
+     */
+    private Map<String, String> jmxSupportedHosts = new HashMap<String, String>();
+    
+    /** 
+     * Map to save jmx urls per VM.
+     */
+    private Map<String, String> jmxSupportedVMs = new HashMap<String, String>();
+    
+    /**
+     * Monitoring API.
+     */
     private IaaSMonitoringApi iaaSMonitoringApi;
+    
+    /**
+     * Credentials to get connected to the RMNodes.
+     */
     private Credentials credentials;
     
     public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi, String credentials)
@@ -72,19 +100,30 @@ public class IaaSMonitoringService implements
     @Override
     public void registerNode(String nodeId, String jmxUrl, NodeType type) {
         logger.info("Registered node '" + nodeId + "' with jmxUrl '" + jmxUrl + "' of type '" + type + "'.");
-        jmxSupportedNodes.put(nodeId, jmxUrl);
+        if (type.equals(NodeType.HOST)) {
+            jmxSupportedHosts.put(nodeId, jmxUrl);
+        } else if (type.equals(NodeType.VM)) {
+            jmxSupportedVMs.put(nodeId, jmxUrl);
+        } else {
+            logger.error("Node '" + nodeId + "' has an incorrect type. Its jmx url will not be registered.");
+        }
     }
 
     @Override
     public void unregisterNode(String nodeId) {
-        jmxSupportedNodes.remove(nodeId);
+        // Since they are both RMNodes, they can't have the same name.
+        jmxSupportedHosts.remove(nodeId);
+        jmxSupportedVMs.remove(nodeId);
         logger.info("Unregistered node '" + nodeId + "'.");
     }
 
     @Override
     public String[] getHosts() throws IaaSMonitoringServiceException {
         try {
-            return iaaSMonitoringApi.getHosts();
+            HashSet<String> hosts = new HashSet<String>();
+            hosts.addAll(Arrays.asList(iaaSMonitoringApi.getHosts()));
+            hosts.addAll(jmxSupportedHosts.keySet());
+            return hosts.toArray(new String[]{});
         } catch (Exception e) {
             logger.error("Cannot retrieve the list of hosts.", e);
             throw new IaaSMonitoringServiceException(e);
@@ -98,8 +137,8 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
             
-            if (jmxSupportedNodes.containsKey(hostId)) {
-            	String jmxurl = jmxSupportedNodes.get(hostId);
+            if (jmxSupportedHosts.containsKey(hostId)) {
+            	String jmxurl = jmxSupportedHosts.get(hostId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
                 Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
@@ -117,7 +156,10 @@ public class IaaSMonitoringService implements
     @Override
     public String[] getVMs() throws IaaSMonitoringServiceException {
         try {
-            return iaaSMonitoringApi.getVMs();
+            HashSet<String> vms = new HashSet<String>();
+            vms.addAll(Arrays.asList(iaaSMonitoringApi.getVMs()));
+            vms.addAll(jmxSupportedVMs.keySet());
+            return vms.toArray(new String[]{});
         } catch (Exception e) {
             logger.error("Cannot retrieve the list of VMs.", e);
             throw new IaaSMonitoringServiceException(e);
@@ -143,8 +185,8 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getVMProperties(vmId);
             
-            if (jmxSupportedNodes.containsKey(vmId)) {
-            	String jmxurl = jmxSupportedNodes.get(vmId);
+            if (jmxSupportedVMs.containsKey(vmId)) {
+            	String jmxurl = jmxSupportedVMs.get(vmId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
                 Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
@@ -176,9 +218,9 @@ public class IaaSMonitoringService implements
         		for (String vm: vms) {
         			vmsinfo.put(vm, this.getVMProperties(vm));
         		}
-    			hostinfo.put("vmsinfo", vmsinfo);	
+    			hostinfo.put(VMS_INFO_KEY, vmsinfo);	
     			
-    			summary.put(host,  hostinfo);
+    			summary.put(host, hostinfo);
         	}
     	
 			return summary;
@@ -187,6 +229,13 @@ public class IaaSMonitoringService implements
 		}
 	}
 	
+    /**
+     * Query all the monitoring properties of a target RMNode using 
+     * the remote Sigar MBean.
+     * @param jmxurl URL of the RM JMX Server.
+     * @param env Jmx initialization map.
+     * @return a map of properties of the target RMNode.
+     */
 	private Map<String, String> queryProps(String jmxurl, Map<String, Object> env){
 		Map<String, Object> outp = new HashMap<String, Object>();
 		try {

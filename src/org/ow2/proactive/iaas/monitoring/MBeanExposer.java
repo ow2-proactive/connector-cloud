@@ -86,7 +86,7 @@ public class MBeanExposer {
         List<MBeanServer> mbss = RMJMXHelper.findMBeanServer(null);
         for (MBeanServer s: mbss) {
         	List<String> domains = Arrays.asList(s.getDomains());
-        	if (domains.contains("ProActiveResourceManager")) {
+        	if (domains.contains(RM_MBEAN_DOMAIN_NAME)) {
         		mbs = s;
         	}
         }

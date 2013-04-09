@@ -30,7 +30,7 @@ public class Utils {
 		return argsToString(Arrays.asList(args));
 	}
 	
-	public static Map<String, String> convert (Map<String, Object> src) {
+	public static Map<String, String> convertToStringMap (Map<String, Object> src) {
 	    HashMap<String, String> outp = new HashMap<String, String> ();
 	    for (String key: src.keySet()) {
 	        Object value = src.get(key);
@@ -39,4 +39,10 @@ public class Utils {
 	    }
 	    return outp;
 	}
+	
+    public static Map<String, Object> convertToObjectMap (Map<String, String> a){
+    	Map<String, Object> r = new HashMap<String, Object>();
+    	r.putAll(a);
+    	return r;
+    }
 }

@@ -1,34 +1,18 @@
 package org.ow2.proactive.iaas.nova;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-
-import javax.security.sasl.AuthenticationException;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+import java.util.HashMap;
+import java.io.IOException;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import java.net.URISyntaxException;
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
-import com.jayway.jsonpath.JsonPath;
-
+import org.ow2.proactive.iaas.IaasApiFactory;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import javax.security.sasl.AuthenticationException;
+import org.apache.http.client.ClientProtocolException;
 
 public class NovaAPIMockup implements IaasApi, IaaSMonitoringApi  {
 
@@ -111,12 +95,6 @@ public class NovaAPIMockup implements IaasApi, IaaSMonitoringApi  {
 	@Override
 	public void disconnect() throws Exception {
 	}
-
-    @Override
-    public Map<String, Object> getSummary() throws Exception {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     @Override
     public String[] getHosts() throws Exception {

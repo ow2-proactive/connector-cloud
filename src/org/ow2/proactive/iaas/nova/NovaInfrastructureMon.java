@@ -87,7 +87,7 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     @Configurable(description = "[VM] An id of existing flavor type (1 - m1.tiny, 2 - m1.small, etc).")
     protected String flavorRef;
     
-    @Configurable(credential = true, description = "[VM] Path to credential file (in VM) so VM registers to RM.")
+    @Configurable(credential = true, description = "[VM] Path to local RM credential file.")
     protected String credentialvm = "";
     
     @Configurable(description = "[HOSTS] Tells whether to monitor hosts or not. If set to " + 
@@ -172,11 +172,15 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     }
     
     @Override
+    // This method is owerwritten to avoid setting the flag usingDeployingNodes = true that 
+    // prevents the user to add manually RMNodes later.
     public void acquireNode() {
         acquireNode(USE_CONFIGURED_VALUES);
     }
     
     @Override
+    // This method is owerwritten to avoid setting the flag usingDeployingNodes = true that 
+    // prevents the user to add manually RMNodes later.
     public void acquireNodes(int n, Map<String, ?> nodeConfiguration) {
         for (int i = 0; i < n; i++) {
             acquireNode(nodeConfiguration);
@@ -201,7 +205,6 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
             nodeNameToInstance.put(nodeName, instance);
             logger.info("Waiting for " + api.getName() + " instance to start...");
         } catch (Exception e) {
-            //this.declareDeployingNodeLost(nodeUrl, "Failed to start " + api.getName() + " instance: " + e.getMessage());
             logger.error("Failed to start " + api.getName() + " instance.", e);
         } finally {
         	try {

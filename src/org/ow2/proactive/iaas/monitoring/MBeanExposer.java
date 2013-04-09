@@ -54,7 +54,8 @@ public class MBeanExposer {
 
     private static final Logger logger = Logger.getLogger(MBeanExposer.class);
     
-    public static final String IAASMONITORING_MBEAN_NAME = "ProActiveResourceManager:name=IaasMonitoring";
+    public static final String RM_MBEAN_DOMAIN_NAME = "ProActiveResourceManager";
+    public static final String IAASMONITORING_MBEAN_NAME = RM_MBEAN_DOMAIN_NAME + ":name=IaasMonitoring";
     
 	private ObjectName name;
 	

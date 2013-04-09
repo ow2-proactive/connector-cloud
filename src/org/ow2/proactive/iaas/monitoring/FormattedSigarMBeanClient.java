@@ -1,177 +1,241 @@
 package org.ow2.proactive.iaas.monitoring;
-/*
- * ################################################################
- *
- * ProActive Parallel Suite(TM): The Java(TM) library for
- *    Parallel, Distributed, Multi-Core Computing for
- *    Enterprise Grids & Clouds
- *
- * Copyright (C) 1997-2012 INRIA/University of
- *                 Nice-Sophia Antipolis/ActiveEon
- * Contact: proactive@ow2.org or contact@activeeon.com
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Affero General Public License
- * as published by the Free Software Foundation; version 3 of
- * the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
- * USA
- *
- * If needed, contact us to obtain a release under GPL Version 2 or 3
- * or a different license than the AGPL.
- *
- *  Initial developer(s):               The ProActive Team
- *                        http://proactive.inria.fr/team_members.htm
- *  Contributor(s):
- *
- * ################################################################
- * %$ACTIVEEON_INITIAL_DEV$
- */
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
-import java.util.*;
-
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.MBeanServerConnection;
+import java.util.Set;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
+import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-import javax.management.QueryExp;
+import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-
+import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 public class FormattedSigarMBeanClient {
-    private static final String[] nic_attr = new String[] { "Name", "TxBytes", "RxBytes" };
 
-    private JMXConnector connector;
-    private MBeanServerConnection connection;
-    private Map<String, Object> environment;
-
-    // Testing.
-    public static void main(String[] args) {
-        FormattedSigarMBeanClient a = new FormattedSigarMBeanClient();
-        Map<String, Object> env = new HashMap<String, Object>();
-        a.initialize("service:jmx:rmi:///jndi/rmi://127.0.1.1:55555/vmware", env);
-
-        Map<String, Object> res = a.getAllProperties();
-        a.close();
-        System.out.println(res);
-    }
-
-    public void initialize(String jmxUrl, Map<String, Object> environment) {
-        setEnvironment(environment);
-        initialize(jmxUrl);
-    }
-
-    public void initialize(String jmxUrl) {
+    private static final Logger logger = Logger.getLogger(FormattedSigarMBeanClient.class);
+    
+	private String serviceurl;
+	private JMXConnector connector;
+	
+	public FormattedSigarMBeanClient(String url, Map<String, Object> jmxenv) 
+	        throws MalformedURLException, IOException {
+		this.serviceurl = url;
+        connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), jmxenv);
+	}
+	
+	public void disconnect() throws IOException{
+		if (connector != null){
+	        connector.close();
+		}
+	}
+	
+	
+    public Map<String, Object> getPropertyMap() {
+        Map<String, Object> propertyMap = new HashMap<String, Object>();
         try {
-            if (connector != null) {
-                close();
-            }
-            connector = JMXConnectorFactory.connect(new JMXServiceURL(jmxUrl), environment);
-            connection = connector.getMBeanServerConnection();
-
-        } catch (Exception e) {
-            close();
-            throw new RuntimeException(e);
+            addCpuCoresProperty(propertyMap);
+            addCpuFrequencyProperty(propertyMap);
+            addCpuUsageProperty(propertyMap);
+            addMemoryProperties(propertyMap);
+            addNetworkProperties(propertyMap);
+            addProcessProperties(propertyMap);
+            addStorageProperties(propertyMap);
+            addVMProcessesProperties(propertyMap);
+        } catch (Exception se) {
+            logger.error("Error getting some properties.", se);
         }
-
+        return propertyMap;
+    }
+		
+    private void addVMProcessesProperties(Map<String, Object> properties) 
+    		throws IaaSMonitoringException {
+        Map<String, Object> props = VMPLister.getVMPsAsMap((Object)connector);
+        properties.putAll(props);
+    }
+    
+    private void addCpuCoresProperty(Map<String, Object> properties) throws IaaSMonitoringException{
+		Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
+        properties.put("cpu.cores", (Integer)a);
     }
 
-    public void setEnvironment(Map<String, Object> environment) {
-        this.environment = environment;
-    }
-
-    public void close() {
-        try {
-            if (connector != null) {
-                connector.close();
-            }
-        } catch (IOException e) {
-        }
-    }
-
-    public Map<String, Object> getAllProperties() {
-        Map<String, Object> properties = new HashMap<String, Object>();
-        addCpuCoresProperty(properties);
-        addCpuFrequencyProperty(properties);
-        addCpuUsageProperty(properties);
-        addMemoryProperties(properties);
-        addNetworkProperties(properties);
-        return properties;
-    }
-
-    private void addCpuCoresProperty(Map<String, Object> properties) {
-        properties.put("cpu.cores", getNodeAttribute("sigar:Type=Cpu", "TotalCores"));
-    }
-
-    private void addCpuFrequencyProperty(Map<String, Object> properties) {
-        int fmhz = (Integer) getNodeAttribute("sigar:Type=Cpu", "Mhz");
+    private void addCpuFrequencyProperty(Map<String, Object> properties) throws IaaSMonitoringException {
+		Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
+        int fmhz = (Integer) a;
         float fghz = (float) fmhz / 1000;
         properties.put("cpu.frequency", fghz);
     }
 
-    private void addCpuUsageProperty(Map<String, Object> properties) {
-        double idle = (Double) getNodeAttribute("sigar:Type=CpuUsage", "Idle");
-        float usage = (float) (1.0 - idle);
+    private void addCpuUsageProperty(Map<String, Object> properties) throws IaaSMonitoringException {
+		Double a = (Double)getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
+        float usage = (float) (1.0 - a);
         properties.put("cpu.usage", usage);
     }
 
-    private void addMemoryProperties(Map<String, Object> properties) {
-        properties.put("memory.total", getNodeAttribute("sigar:Type=Mem", "Total"));
-        properties.put("memory.free", getNodeAttribute("sigar:Type=Mem", "Free"));
-        properties.put("memory.actualfree", getNodeAttribute("sigar:Type=Mem", "ActualFree"));
+    private void addMemoryProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+		Long total = (Long)getJMXSigarAttribute("sigar:Type=Mem", "Total");
+		Long free = (Long)getJMXSigarAttribute("sigar:Type=Mem", "Free");
+		Long actualFree = (Long)getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
+		
+        properties.put("memory.total", total);
+        properties.put("memory.free", free);
+        properties.put("memory.actualfree", actualFree);
     }
 
-    private void addNetworkProperties(Map<String, Object> properties) {
-        Set<ObjectName> nics = getNodeMbeans("sigar:Type=NetInterface,*", null);
-        int index = 0;
-        for (ObjectName name : nics) {
-            Object[] attributeList = getNodeAttributes(name, nic_attr);
-            properties.put("network." + index + ".name", getAttributeValue(attributeList[0]));
-            properties.put("network." + index + ".tx", getAttributeValue(attributeList[1]));
-            properties.put("network." + index + ".rx", getAttributeValue(attributeList[2]));
-            index++;
+    private void addNetworkProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    	Set<ObjectName> mbeans;
+    	
+    	try{
+	        mbeans = connector.getMBeanServerConnection().queryNames(null, null); 
+    	}catch(IOException e){
+			throw new IaaSMonitoringException(e);
+    	}
+    	
+        int counter = 0;
+        Long ttx = 0L;
+        Long trx = 0L;
+        for (ObjectName on: mbeans){
+	        if (on.getCanonicalName().contains("Type=NetInterface")){
+				try {
+			        Object name = connector.getMBeanServerConnection().getAttribute(on, "Name");
+			        Long tx = (Long)connector.getMBeanServerConnection().getAttribute(on, "TxBytes");
+			        Long rx = (Long)connector.getMBeanServerConnection().getAttribute(on, "RxBytes");
+			        
+			        properties.put("network."+counter+".name", name);
+			        properties.put("network."+counter+".tx", tx);
+			        properties.put("network."+counter+".rx", rx);
+			        ttx += tx;
+			        trx += rx;
+			        counter++;
+				} catch (AttributeNotFoundException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (InstanceNotFoundException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (MBeanException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (ReflectionException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (IOException e) {
+					throw new IaaSMonitoringException(e);
+				}
+	        }
         }
+        properties.put("network.count", counter);
+        properties.put("network.tx", ttx);
+        properties.put("network.rx", trx);
     }
 
-    private Set<ObjectName> getNodeMbeans(String name, QueryExp query) {
-        try {
-            return connection.queryNames(new ObjectName(name), query);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+    private void addStorageProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    	Set<ObjectName> mbeans;
+    	
+    	try{
+	        mbeans = connector.getMBeanServerConnection().queryNames(null, null); 
+    	}catch(IOException e){
+			throw new IaaSMonitoringException(e);
+    	}
+    	
+        int counter = 0;
+        Long ttotal = 0L;
+        Long tused = 0L;
+        for (ObjectName on: mbeans){
+	        if (on.getCanonicalName().contains("Type=FileSystem")){
+				try {
+			        Object name = connector.getMBeanServerConnection().getAttribute(on, "DirName");
+			        Long total = (Long)connector.getMBeanServerConnection().getAttribute(on, "Total");
+			        Long used = (Long)connector.getMBeanServerConnection().getAttribute(on, "Used");
+			        
+			        properties.put("storage."+counter+".name", name);
+			        properties.put("storage."+counter+".total", total);
+			        properties.put("storage."+counter+".used", used);
+			        ttotal += total;
+			        tused += used;
+			        counter++;
+				} catch (AttributeNotFoundException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (InstanceNotFoundException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (MBeanException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (ReflectionException e) {
+					throw new IaaSMonitoringException(e);
+				} catch (IOException e) {
+					throw new IaaSMonitoringException(e);
+				}
+	        }
         }
+        properties.put("storage.count", counter);
+        properties.put("storage.total", ttotal);
+        properties.put("storage.used", tused);
     }
 
-    private Object getNodeAttribute(String name, String attribute) {
-        try {
-            return connection.getAttribute(new ObjectName(name), attribute);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private void addProcessProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+        StringBuilder process = new StringBuilder();
+        StringBuilder process3 = new StringBuilder();
+        
+		try {
+	    	ObjectName oname = new ObjectName("sigar:Type=Processes");
+	    	Object a = connector.getMBeanServerConnection().getAttribute(oname, "Processes");
+	    	CompositeData[] bb = (CompositeData[]) a;
+	    	for (CompositeData c: bb){
+	    		Integer pid = (Integer)c.get("pid");
+	    		String desc = (String)c.get("description");
+	    		String mem = (String)c.get("memSize");
+	    		String cpu = (String)c.get("cpuPerc");
+	    		//String[] args = (String[])c.get("commandline");
+	    		// TODO serialize correctly, name and desc. may include ',' and ';' characters.
+	            process.append(pid).append(';').append(desc).append(',');
+	            process3.append(pid).append(';').append(desc).append(',').append(cpu).append(';').append(mem).append(',');
+	    	}
+	        String ps = process.toString();
+	        properties.put("system.process", ps.substring(0, ps.length() - 1));
+	        String ps3 = process3.toString();
+	        properties.put("system.process.3", ps3.substring(0, ps3.length() - 1));
+		} catch (AttributeNotFoundException e) {
+			throw new IaaSMonitoringException(e);
+		} catch (InstanceNotFoundException e) {
+			throw new IaaSMonitoringException(e);
+		} catch (MBeanException e) {
+			throw new IaaSMonitoringException(e);
+		} catch (ReflectionException e) {
+			throw new IaaSMonitoringException(e);
+		} catch (IOException e) {
+			throw new IaaSMonitoringException(e);
+		} catch (MalformedObjectNameException e) {
+			throw new IaaSMonitoringException(e);
+		} 
     }
-
-    private Object[] getNodeAttributes(ObjectName name, String[] attributeNameList) {
-        try {
-            AttributeList attributes = connection.getAttributes(name, attributeNameList);
-            return attributes.toArray(new Object[attributes.size()]);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Object getAttributeValue(Object attribute) {
-        return ((Attribute) attribute).getValue();
-    }
+    
+	public Object getJMXSigarAttribute(String objname, String attribute) throws IaaSMonitoringException{
+        Object a = null;
+		try {
+	        ObjectName name = new ObjectName(objname);
+			a = connector.getMBeanServerConnection().getAttribute(name, attribute);
+		} catch (MalformedObjectNameException e) {
+		    logger.error(e);
+		} catch (AttributeNotFoundException e) {
+		    logger.error(e);
+		} catch (InstanceNotFoundException e) {
+		    logger.error(e);
+		} catch (MBeanException e) {
+		    logger.error(e);
+		} catch (ReflectionException e) {
+		    logger.error(e);
+		} catch (IOException e) {
+		    logger.error(e);
+		}
+	
+		if (a == null){
+			throw new IaaSMonitoringException();
+		}
+		return a;
+	}
+	
 }

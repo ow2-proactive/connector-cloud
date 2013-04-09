@@ -42,11 +42,13 @@ import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.remote.JMXConnector;
+import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClientHost;
-import org.ow2.proactive.iaas.monitoring.OSMonitoringException;
+import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 
 
 public class JmxUtils {
@@ -62,15 +64,15 @@ public class JmxUtils {
 
     public static Map<String, Object> getSigarProperties(
             String jmxurl, Map<String, Object> jmxenv) 
-                    throws OSMonitoringException {
-        FormattedSigarMBeanClientHost a;
+                    throws IaaSMonitoringException {
+        FormattedSigarMBeanClient a;
         Map<String, Object> map = new HashMap<String, Object>();
         try {
-            a = new FormattedSigarMBeanClientHost(jmxurl, jmxenv);
+            a = new FormattedSigarMBeanClient(jmxurl, jmxenv);
         } catch (MalformedURLException e) {
-            throw new OSMonitoringException(e);
+            throw new IaaSMonitoringException(e);
         } catch (IOException e) {
-            throw new OSMonitoringException(e);
+            throw new IaaSMonitoringException(e);
         }
         
         map = a.getPropertyMap();
@@ -82,6 +84,14 @@ public class JmxUtils {
         return map;
     }
 
+    public static Map<String, Object> getROJmxEnv(Credentials credentials) {
+        Map<String, Object> env = new HashMap<String, Object> ();
+        env.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "org.ow2.proactive.jmx.provider");
+        Object[] obj = new Object[]{"", credentials};
+        env.put(JMXConnector.CREDENTIALS, obj);
+        return env;
+    }
+    
     // non-instantiable
     private JmxUtils() {
     }

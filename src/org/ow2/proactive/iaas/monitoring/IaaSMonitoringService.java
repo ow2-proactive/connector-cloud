@@ -37,26 +37,21 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
-import java.io.ByteArrayInputStream;
-import java.util.HashMap;
 import java.util.Map;
-
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-
+import java.util.HashMap;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
-import org.ow2.proactive.iaas.utils.JmxUtils;
+import java.io.ByteArrayInputStream;
 import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.iaas.utils.JmxUtils;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.authentication.crypto.Credentials;
 
 public class IaaSMonitoringService implements
         IaaSMonitoringServiceMBean, IaaSNodesListener {
 
-    private static final Logger logger = Logger
-            .getLogger(IaaSMonitoringService.class);
-
     public static final String PROP_PA_SIGAR_JMX_URL = "proactive.sigar.jmx.url";
+    
+    private static final Logger logger = Logger.getLogger(IaaSMonitoringService.class);
 
     private Map<String, String> jmxSupportedNodes = new HashMap<String, String>();
     private IaaSMonitoringApi iaaSMonitoringApi;
@@ -105,8 +100,8 @@ public class IaaSMonitoringService implements
             
             if (jmxSupportedNodes.containsKey(hostId)) {
             	String jmxurl = jmxSupportedNodes.get(hostId);
-                properties.put("proactive.sigar.jmx.url", jmxurl);
-                Map<String, Object> jmxenv = getJmxEnv(credentials);
+                properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
+                Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
                 Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                 properties.putAll(sigarProps);
             } else {
@@ -151,7 +146,7 @@ public class IaaSMonitoringService implements
             if (jmxSupportedNodes.containsKey(vmId)) {
             	String jmxurl = jmxSupportedNodes.get(vmId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
-                Map<String, Object> jmxenv = getJmxEnv(credentials);
+                Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
                 Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                 properties.putAll(sigarProps);
             } else {
@@ -164,10 +159,29 @@ public class IaaSMonitoringService implements
         }
     }
 
-	@Override
-	public Map<String, Object> getSummary()  throws IaaSMonitoringServiceException {
+    @Override
+	public Map<String, Object> getSummary() throws IaaSMonitoringServiceException {
 		try {
-			return iaaSMonitoringApi.getSummary();
+		    
+        	Map<String, Object> summary = new HashMap<String, Object>();
+        	
+        	String[] hosts = this.getHosts();
+        	for (String host: hosts) {
+        		// Put host properties.
+        		Map<String, Object> hostinfo = Utils.convertToObjectMap(getHostProperties(host));
+        		
+        		// Put a list of VMs with their properties.
+        		Map<String, Object> vmsinfo = new HashMap<String, Object>();
+        		String[] vms = this.getVMs();
+        		for (String vm: vms) {
+        			vmsinfo.put(vm, this.getVMProperties(vm));
+        		}
+    			hostinfo.put("vmsinfo", vmsinfo);	
+    			
+    			summary.put(host,  hostinfo);
+        	}
+    	
+			return summary;
 		} catch (Exception e) {
 			throw new IaaSMonitoringServiceException(e);
 		}
@@ -180,14 +194,7 @@ public class IaaSMonitoringService implements
 		} catch (Exception e) {
 			logger.warn("Could not get sigar properties from '" + jmxurl + "'.", e);
 		}
-		return Utils.convert(outp);
+		return Utils.convertToStringMap(outp);
 	}
 
-    private Map<String, Object> getJmxEnv(Credentials credentials) {
-        Map<String, Object> env = new HashMap<String, Object> ();
-        env.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "org.ow2.proactive.jmx.provider");
-        Object[] obj = new Object[]{"", credentials};
-        env.put(JMXConnector.CREDENTIALS, obj);
-        return env;
-    }
 }

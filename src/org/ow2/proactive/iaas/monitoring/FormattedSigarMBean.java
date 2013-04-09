@@ -66,9 +66,6 @@ public class FormattedSigarMBean implements NodeAgentMXBean {
     }
     
     public Map<String, String> getPropertyMap() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("OpenStackAgent.getPropertyMap()");
-        }
         Map<String, String> propertyMap = new HashMap<String,String>();
         try {
             addCpuCoresProperty(propertyMap, getSigarProxy());
@@ -170,5 +167,4 @@ public class FormattedSigarMBean implements NodeAgentMXBean {
         properties.put("system.process.3", ps3.substring(0, ps3.length() - 1));
     }
     
-
 }

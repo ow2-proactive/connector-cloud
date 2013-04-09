@@ -5,12 +5,12 @@ import java.util.Map;
 
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarProxy;
-import org.ow2.proactive.iaas.monitoring.OSMonitoringException;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 
 
 public class Test {
 	
-	public static void main(String[] args) throws OSMonitoringException{ 
+	public static void main(String[] args) throws IaaSMonitoringException{ 
 		SigarProxy sigar = new Sigar();
 		List<VMProcess> vmps = VMPLister.getLocalVMPs(sigar);
 		if (vmps.size() != 0){

@@ -16,14 +16,14 @@ import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import org.hyperic.sigar.SigarException;
 import org.hyperic.sigar.SigarProxy;
-import org.ow2.proactive.iaas.monitoring.OSMonitoringException;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 import org.ow2.proactive.iaas.utils.Utils;
 
 public class VMPLister {
 
     
 	public static List<VMProcess> getRemoteVMPs(
-			JMXConnector connector) throws OSMonitoringException{ 
+			JMXConnector connector) throws IaaSMonitoringException{ 
 		
 		List<VMProcess> vmps = new ArrayList<VMProcess>();
 		
@@ -51,17 +51,17 @@ public class VMPLister {
 				}
 	    	}
 		} catch (AttributeNotFoundException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} catch (InstanceNotFoundException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} catch (MBeanException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} catch (ReflectionException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} catch (IOException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} catch (MalformedObjectNameException e) {
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		} 
     
     
@@ -69,7 +69,7 @@ public class VMPLister {
 	}
 	
 	public static List<VMProcess> getLocalVMPs(
-			SigarProxy sigar) throws OSMonitoringException{ 
+			SigarProxy sigar) throws IaaSMonitoringException{ 
 		
 		List<VMProcess> vmps = new ArrayList<VMProcess>();
 		long[] listpids;
@@ -77,7 +77,7 @@ public class VMPLister {
 		try{
 			listpids = sigar.getProcList();
 		}catch(SigarException e){
-			throw new OSMonitoringException(e);
+			throw new IaaSMonitoringException(e);
 		}
 		
 		for (long pid: listpids){
@@ -96,14 +96,14 @@ public class VMPLister {
 					vmps.add(proc);
 				}
 			}catch(SigarException e){
-				throw new OSMonitoringException(e);
+				throw new IaaSMonitoringException(e);
 			}
 		}
 		return vmps;
 	}
 
 	public static Map<String, Object> getVMPsAsMap(
-			Object connector) throws OSMonitoringException{ 
+			Object connector) throws IaaSMonitoringException{ 
 		Map<String, Object> output = new HashMap<String, Object>();
 		List<String> vmslist = new ArrayList<String>();
 		
@@ -113,7 +113,7 @@ public class VMPLister {
 		} else if (connector instanceof JMXConnector){
 			vmps = getRemoteVMPs((JMXConnector)connector);
 		} else {
-			throw new OSMonitoringException();
+			throw new IaaSMonitoringException();
 		}
 		
 		for (VMProcess vmp: vmps){
@@ -126,7 +126,11 @@ public class VMPLister {
 				}
 			}
 		}
-		output.put("vms", Utils.argsToString(vmslist, ";"));
+		
+		if (!vmslist.isEmpty()) {
+    		output.put("vms", Utils.argsToString(vmslist, ";"));
+		}
+		
 		return output;
 	}
 	

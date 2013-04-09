@@ -41,7 +41,6 @@ import java.util.Map;
 
 public interface IaaSMonitoringApi {
 
-	public Map<String, Object> getSummary() throws Exception;
 	
     public String[] getHosts() throws Exception;
 

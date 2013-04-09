@@ -37,8 +37,12 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
+import java.util.Map;
+
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 
 public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi{
+    
+	public Map<String, Object> getSummary() throws Exception;
 
 }

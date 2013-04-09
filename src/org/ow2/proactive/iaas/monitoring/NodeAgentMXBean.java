@@ -35,54 +35,10 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas.utils;
+package org.ow2.proactive.iaas.monitoring;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashMap;
 import java.util.Map;
 
-import javax.management.remote.JMXServiceURL;
-
-import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClientHost;
-import org.ow2.proactive.iaas.monitoring.OSMonitoringException;
-
-
-public class JmxUtils {
-
-    public static final String getHostName(String jmxServiceUrl) {
-        try {
-            return new JMXServiceURL(jmxServiceUrl).getHost();
-        } catch (MalformedURLException e) {
-            // TODO: Consider throwing a checked exception.
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public static Map<String, Object> getSigarProperties(
-            String jmxurl, String user, String pass) 
-                    throws OSMonitoringException {
-        FormattedSigarMBeanClientHost a;
-        Map<String, Object> map = new HashMap<String, Object>();
-        try {
-            a = new FormattedSigarMBeanClientHost(jmxurl, user, pass);
-        } catch (MalformedURLException e) {
-            throw new OSMonitoringException(e);
-        } catch (IOException e) {
-            throw new OSMonitoringException(e);
-        }
-        
-        map = a.getPropertyMap();
-        try {
-            a.disconnect();
-        } catch (IOException e) {
-            // Ignore it.
-        }
-        return map;
-    }
-
-    // non-instantiable
-    private JmxUtils() {
-    }
-
+public interface NodeAgentMXBean {
+    public Map<String, String> getPropertyMap();
 }

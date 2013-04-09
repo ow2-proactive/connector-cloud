@@ -97,7 +97,7 @@ public class MBeanExposer {
         return mbs;
     }
     public void stop() throws MBeanRegistrationException, InstanceNotFoundException {
-        MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
+        MBeanServer mbs = getRMMBeanServer();
         mbs.unregisterMBean(name);
     }
     

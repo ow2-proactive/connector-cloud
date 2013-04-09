@@ -42,6 +42,8 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.utils.JmxUtils;
+import org.ow2.proactive.iaas.utils.Utils;
 
 public class IaaSMonitoringService implements
         IaaSMonitoringServiceMBean, IaaSNodesListener {
@@ -53,6 +55,9 @@ public class IaaSMonitoringService implements
 
     private Map<String, String> jmxSupportedNodes = new HashMap<String, String>();
     private IaaSMonitoringApi iaaSMonitoringApi;
+    
+    private String user = "demo";
+    private String pass = "demo";
 
     public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi)
             throws IaaSMonitoringServiceException {
@@ -91,8 +96,12 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
             if (jmxSupportedNodes.containsKey(hostId)) {
+            	String jmxurl = jmxSupportedNodes.get(hostId);
                 properties.put("proactive.sigar.jmx.url",
-                        jmxSupportedNodes.get(hostId));
+                        jmxurl);
+                Map<String, String> sigarProps = 
+                		queryProps(jmxurl, user, pass);
+                properties.putAll(sigarProps);
             }
             return properties;
         } catch (Exception e) {
@@ -130,8 +139,12 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getVMProperties(vmId);
             if (jmxSupportedNodes.containsKey(vmId)) {
+            	String jmxurl = jmxSupportedNodes.get(vmId);
                 properties.put(PROP_PA_SIGAR_JMX_URL,
-                        jmxSupportedNodes.get(vmId));
+                        jmxurl);
+                Map<String, String> sigarProps = 
+                		queryProps(jmxurl, user, pass);
+                properties.putAll(sigarProps);
             }
             return properties;
         } catch (Exception e) {
@@ -147,7 +160,16 @@ public class IaaSMonitoringService implements
 		} catch (Exception e) {
 			throw new IaaSMonitoringServiceException(e);
 		}
-		
+	}
+	
+	private Map<String, String> queryProps(String jmxurl, String user, String pass){
+		Map<String, Object> outp = new HashMap<String, Object>();
+		try {
+			outp = JmxUtils.getSigarProperties(jmxurl, user, pass);
+		} catch (Exception e) {
+			logger.warn("Could not get sigar properties from '" + jmxurl + "'.", e);
+		}
+		return Utils.convert(outp);
 	}
 
 }

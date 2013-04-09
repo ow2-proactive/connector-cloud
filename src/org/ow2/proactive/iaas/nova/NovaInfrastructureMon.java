@@ -168,24 +168,6 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
         return api;
     }
     
-//    @Override
-//    protected IaasApi getAPI() {
-//        IaasApi api;
-//        try {
-//        	logger.error("SET TO THE REAL NOVA API.");
-//        	// TODO SET TO THE REAL NOVA API.
-//        	
-//            api = NovaAPIMockup.getNovaAPI(
-//            		userName, 
-//            		password, 
-//            		tenantName, 
-//            		new URI(iaasApiUrl));
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
-//        return api;
-//    }
-
     @Override
     protected Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
             Map<String, ?> nodeConfiguration) {

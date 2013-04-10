@@ -41,6 +41,7 @@ import org.ow2.proactive.resourcemanager.frontend.RMEventListener;
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
 import org.ow2.proactive.scheduler.common.NotificationData;
 import org.ow2.proactive.scheduler.common.Scheduler;
+import org.ow2.proactive.scheduler.common.SchedulerConstants;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
 import org.ow2.proactive.scheduler.common.SchedulerEventListener;
 import org.ow2.proactive.scheduler.common.SchedulerState;
@@ -392,7 +393,7 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
         /**
          * The token that the new instances will use.
          */
-        public static final String TOKEN = Scheduler.NODE_ACCESS_TOKEN;
+        public static final String TOKEN = SchedulerConstants.NODE_ACCESS_TOKEN;
         /**
          * The node source to select.
          */

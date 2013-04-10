@@ -37,12 +37,18 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
+import java.security.KeyException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import org.apache.log4j.Logger;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
@@ -81,19 +87,41 @@ public class IaaSMonitoringService implements
     private IaaSMonitoringApi iaaSMonitoringApi;
     
     /**
-     * Credentials to get connected to the RMNodes.
+     * Credentials to get connected to the RMNodes (information obtained from JMX Sigar MBeans).
      */
-    private Credentials credentials;
+    private Credentials credentials = null;
     
-    public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi, String credentials)
+
+    public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi)
             throws IaaSMonitoringServiceException {
         try {
             this.iaaSMonitoringApi = iaaSMonitoringApi;
-            this.credentials = Credentials.getCredentials(
-                    new ByteArrayInputStream(credentials.getBytes()));
         } catch (Exception e) {
             logger.error("Cannot instantiate IasSClientApi:", e);
             throw new IaaSMonitoringServiceException(e);
+        }
+    }
+    
+    public void setCredentials(File fcredentials) throws KeyException {
+        if (fcredentials != null) {
+            FileInputStream fis = null;
+            try {
+                fis = new FileInputStream(fcredentials); 
+                credentials = Credentials.getCredentials(fis);
+            } catch (FileNotFoundException e) {
+                throw new KeyException(e);
+            } catch (KeyException e) {
+                throw new KeyException(e);
+            } catch (IOException e) {
+                throw new KeyException(e);
+            } finally {
+                if (fis != null)
+                    try {
+                        fis.close();
+                    } catch (IOException e) {
+                        // Ignore it.
+                    }
+            }
         }
     }
 
@@ -105,7 +133,7 @@ public class IaaSMonitoringService implements
         } else if (type.equals(NodeType.VM)) {
             jmxSupportedVMs.put(nodeId, jmxUrl);
         } else {
-            logger.error("Node '" + nodeId + "' has an incorrect type. Its jmx url will not be registered.");
+            logger.error("Node '" + nodeId + "' has an incorrect type. Its JMX URL will not be registered.");
         }
     }
 
@@ -137,7 +165,7 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
             
-            if (jmxSupportedHosts.containsKey(hostId)) {
+            if (credentials!=null && jmxSupportedHosts.containsKey(hostId)) {
             	String jmxurl = jmxSupportedHosts.get(hostId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
@@ -185,7 +213,7 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getVMProperties(vmId);
             
-            if (jmxSupportedVMs.containsKey(vmId)) {
+            if (credentials!=null && jmxSupportedVMs.containsKey(vmId)) {
             	String jmxurl = jmxSupportedVMs.get(vmId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);

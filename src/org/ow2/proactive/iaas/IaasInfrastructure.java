@@ -34,16 +34,27 @@
  */
 package org.ow2.proactive.iaas;
 
+import java.io.File;
+import java.security.KeyException;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.Map;
 
+import javax.management.MBeanRegistrationException;
+
 import org.apache.log4j.Logger;
+import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
+import org.ow2.proactive.iaas.monitoring.MBeanExposer;
+import org.ow2.proactive.iaas.monitoring.NodeType;
+import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
 import org.ow2.proactive.resourcemanager.exception.RMException;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
+import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
 
 
 public abstract class IaasInfrastructure extends InfrastructureManager {
@@ -65,13 +76,17 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
     protected abstract Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
             Map<String, ?> nodeConfiguration);
-
+    
+    protected IaaSMonitoringService iaaSMonitoringService;
+    protected MBeanExposer mbeanExposer;
+    
     public IaasInfrastructure() {
     }
 
     protected void configure(Object... parameters) {
         maxNbOfInstances = Integer.parseInt(parameters[0].toString());
         iaasApiUrl = parameters[1].toString();
+        startIaaSMonitoringService(parameters);
     }
 
     @Override
@@ -149,12 +164,32 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         		logger.warn("Could not disconnect from the API.", e);
         	}
         }
+        unregisterWithIaaSMonitoringService(node);
     }
 
     @Override
     protected void notifyAcquiredNode(Node node) throws RMException {
         logger.info("Node has been acquired " + node.getNodeInformation().getName());
+        registerWithIaaSMonitoringService(node);
     }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     // required by PluginDescriptor#PluginDescriptor()
     @SuppressWarnings("unused")
@@ -170,4 +205,138 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         }
         return defaultValue;
     }
+    
+    private void startIaaSMonitoringService(Object... parameters) {
+        if (isIaaSMonitoringServiceEnabled(parameters)) {
+            String nodeSource = getNodeSourceName(parameters);
+            String credentialsPath = getCredentialsPath(parameters);
+            
+            if (nodeSource == null) {
+                throw new RuntimeException(
+                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected -ns <node-source-name>");
+            }
+            
+            try {
+                IaaSMonitoringService mbean = new IaaSMonitoringService(
+                        (IaaSMonitoringApi) getAPI());
+                
+                if (credentialsPath != null) {
+                    mbean.setCredentials(new File(credentialsPath));
+                }
+                
+                MBeanExposer ep = new MBeanExposer();
+                ep.registerMBeanLocally(nodeSource, mbean);
+                
+                iaaSMonitoringService = mbean;
+                mbeanExposer = ep;
+
+            } catch (MBeanRegistrationException e) {
+                logger.error("Could not register IaaS Monitoring MBean.", e);
+            } catch (IaaSMonitoringServiceException e) {
+                logger.error("Cannot initialize IaaSMonitoringService MBean:", e);
+            } catch (KeyException e) {
+                logger.error("Problem while processing credentials file: ", e);
+            }
+        } else {
+            logger.debug("Host monitoring: disabled (monitorHostDisabled).");
+        }
+    }
+    
+    private boolean isIaaSMonitoringServiceEnabled(Object... parameters) {
+        for (Object param : parameters) {
+            if ("monitorHostEnabled".equals(param.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private String getCredentialsPath(Object... params) {
+        return getValueFromParameters("-cred", params);
+    }
+    
+    private String getNodeSourceName(Object... params) {
+        return getValueFromParameters("-ns", params);
+    }
+    
+    protected String getValueFromParameters(String flag, Object... params) {
+        String value = null;
+        for (int index = 0; index < params.length; index++) {
+            if (flag.equals(params[index].toString())) {
+                if (params.length < (index + 1)) {
+                    value = params[index + 1].toString();
+                }
+                break;
+            }
+        }
+        return value;
+    }
+    
+    /*
+     * Register a PANode with Infrastructure Monitoring Service, if enabled.
+     */
+    private void registerWithIaaSMonitoringService(Node node) {
+        if (iaaSMonitoringService != null) {
+            try {
+                String jmxurlro = node.getProperty(RMNodeStarter.JMX_URL
+                        + JMXTransportProtocol.RO);
+                String token = node
+                        .getProperty(RMNodeStarter.NODE_ACCESS_TOKEN);
+                NodeType type = ("IAASHOST".equals(token)) ? NodeType.HOST
+                        : NodeType.VM;
+                
+                logger.info("New node registered (NAME='" + 
+                    node.getNodeInformation().getName() + 
+                    "', TOKEN='" + token + "').");
+                
+                iaaSMonitoringService.registerNode(node.getNodeInformation()
+                        .getName(), jmxurlro, type);
+
+            } catch (ProActiveException e) {
+                logger.error("Error while getting node properties.", e);
+            }
+        }
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /*
+     * Unregister the specified PANode from Infrastructure Monitoring Service,
+     * if the service is enabled.
+     */
+    private void unregisterWithIaaSMonitoringService(Node node) {
+        if (iaaSMonitoringService != null) {
+            iaaSMonitoringService.unregisterNode(node.getNodeInformation()
+                    .getName());
+        }
+    }
+    
+    
+    
+    @Override
+    public void shutDown(){
+    	if (mbeanExposer!=null) { 
+    		try {
+				mbeanExposer.stop();
+			} catch (Exception e) {
+				logger.warn("Error while stopping mbeanExposer.", e);
+			}
+    	}
+    }
+    
+    
 }

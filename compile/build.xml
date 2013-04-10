@@ -22,7 +22,7 @@
 		<mkdir dir="${ourlib.dir}"/>
 		<mkdir dir="${ourpalib.dir}"/>
 		<copy todir="${ourpalib.dir}">
-			<fileset dir="${palib.dir}" includes="**/*.jar" excludes="typica.jar"/>
+			<fileset dir="${palib.dir}" includes="**/*.jar" excludes="typica.jar,vim25.jar"/>
 		</copy>
 		<copy todir="${ourpalib.dir}">
 			<fileset dir="${typica.jar.dir}/" includes="**/*.jar"/>
@@ -43,6 +43,7 @@
 	<target name="clean" description="Clean build folders" depends="doc.clean">
 		<delete dir="${build.dir}"/>
 		<delete dir="${dist.dir}"/>
+		<delete dir="${ourlib.dir}/scheduling"/>
 	</target>
 
 	<target name="compile" depends="copyDependencies" description="Compile">

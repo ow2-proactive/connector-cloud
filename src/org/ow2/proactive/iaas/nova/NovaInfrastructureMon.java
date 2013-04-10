@@ -35,7 +35,9 @@
 package org.ow2.proactive.iaas.nova;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.security.KeyException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.management.MBeanRegistrationException;
@@ -90,14 +92,6 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     @Configurable(credential = true, description = "[VM] Path to local RM credential file.")
     protected String credentialvm = "";
     
-    @Configurable(description = "[HOSTS] Tells whether to monitor hosts or not. If set to " + 
-		    "'monitorHostEnabled' a JMX monitoring service will be started to monitor the infrastrucutre.")
-    protected boolean monitorHosts = false;
-    
-    @Configurable(description = "Node Source name (to be fixed, at configure level NSName is not set).")
-    protected String nodeSourceName;
-    
-    
     /**
      * The type of the OS on the Hosts.
      */
@@ -136,26 +130,6 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
         flavorRef = (String) parameters[6];
         credentialvm = new String((byte[]) parameters[7]);
         
-        if (parameters[8] != null && parameters[8].toString().equals("monitorHostEnabled")){
-        	monitorHosts = true;
-	        nodeSourceName = parameters[9].toString();
-	        
-        	try{
-				IaaSMonitoringService m = new IaaSMonitoringService(
-				        (IaaSMonitoringApi) getAPI(), credentialvm);	
-				MBeanExposer e =  new MBeanExposer();
-				e.registerMBeanLocally(nodeSourceName, m);
-			
-				mbeanExposer = e;
-				monitoringService = m;    
-        	} catch (MBeanRegistrationException e) {
-        		logger.error("Could not register IaaS Monitoring MBean.", e);
-        	} catch (IaaSMonitoringServiceException e) {
-				logger.error("Could not initialize IaaS monitoring service.", e);
-			}
-        } else {
-        	logger.debug("Host monitoring: disabled (monitorHostDisabled).");
-        }
     }
 
     @Override
@@ -282,54 +256,5 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
         logger.debug("Invalid instance type specified - using SMALL instances");
         return "2";
     }
-    
-    @Override
-    public void shutDown(){
-    	if (mbeanExposer!=null) { 
-    		try {
-				mbeanExposer.stop();
-			} catch (Exception e) {
-				logger.warn("Error while stopping mbeanExposer.", e);
-			}
-    	}
-    }
-    
-    @Override
-    protected void notifyAcquiredNode(Node node) throws RMException {
-    	super.notifyAcquiredNode(node);
-    	
-    	if (monitoringService == null){
-    		return;
-    	}
-    	
-    	try {
-            String jmxurlro = node.getProperty(
-            		RMNodeStarter.JMX_URL + JMXTransportProtocol.RO);
-            String token = node.getProperty(
-            		RMNodeStarter.NODE_ACCESS_TOKEN);
-            
-            logger.info("New node registered (NAME='" + 
-                    node.getNodeInformation().getName() + 
-                    "', TOKEN='" + token + "').");
-            
-            NodeType type = ("IAASHOST".equals(token)?NodeType.HOST:NodeType.VM);
-            monitoringService.registerNode(
-            		node.getNodeInformation().getName(), 
-            		jmxurlro, 
-            		type);
-		} catch (ProActiveException e) {
-			logger.error("Error while getting node properties.", e);
-		}
-    }
-    
-    @Override
-    public void removeNode(Node node) throws RMException{
-    	super.removeNode(node);
-    	
-    	if (monitoringService == null){
-    		return;
-    	}
-    	
-        monitoringService.unregisterNode(node.getNodeInformation().getName());
-    }
+     
 }

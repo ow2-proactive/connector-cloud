@@ -173,24 +173,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         registerWithIaaSMonitoringService(node);
     }
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
     // required by PluginDescriptor#PluginDescriptor()
     @SuppressWarnings("unused")
     public String getDescription() {
@@ -208,12 +190,12 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     
     private void startIaaSMonitoringService(Object... parameters) {
         if (isIaaSMonitoringServiceEnabled(parameters)) {
-            String nodeSource = getNodeSourceName(parameters);
-            String credentialsPath = getCredentialsPath(parameters);
+            String nodeSource = getValueFromParameters("-ns", parameters);
+            String credentialsPath = getValueFromParameters("-cred", parameters);
             
             if (nodeSource == null) {
                 throw new RuntimeException(
-                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected ns <node-source-name>");
+                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected -ns <node-source-name>");
             }
             
             try {
@@ -251,14 +233,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             }
         }
         return false;
-    }
-    
-    private String getCredentialsPath(Object... params) {
-        return getValueFromParameters("-cred", params);
-    }
-    
-    private String getNodeSourceName(Object... params) {
-        return getValueFromParameters("-ns", params);
     }
     
     protected String getValueFromParameters(String flag, Object... params) {
@@ -302,22 +276,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             }
         }
     }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     /*
      * Unregister the specified PANode from Infrastructure Monitoring Service,
@@ -329,8 +287,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                     .getName());
         }
     }
-    
-    
     
     @Override
     public void shutDown(){

@@ -108,6 +108,7 @@ public class IaaSMonitoringService implements
             try {
                 fis = new FileInputStream(fcredentials); 
                 credentials = Credentials.getCredentials(fis);
+                logger.info("Credentials set.");
             } catch (FileNotFoundException e) {
                 throw new KeyException(e);
             } catch (KeyException e) {
@@ -165,17 +166,23 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getHostProperties(hostId);
             
-            if (credentials!=null && jmxSupportedHosts.containsKey(hostId)) {
+            if (credentials == null) {
+                return properties;
+            }
+            
+            if (jmxSupportedHosts.containsKey(hostId)) {
             	String jmxurl = jmxSupportedHosts.get(hostId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
                 Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                 properties.putAll(sigarProps);
             } else {
-                logger.info("No RMNode running on the host '" + hostId + "'.");
+                logger.debug("No RMNode running on the host '" + hostId + "'.");
             }
+            
             return properties;
         } catch (Exception e) {
+            logger.error("Cannot retrieve properties of the Host: " + hostId, e);
             throw new IaaSMonitoringServiceException(e);
         }
 
@@ -213,7 +220,11 @@ public class IaaSMonitoringService implements
             Map<String, String> properties = iaaSMonitoringApi
                     .getVMProperties(vmId);
             
-            if (credentials!=null && jmxSupportedVMs.containsKey(vmId)) {
+            if (credentials == null) {
+                return properties;
+            }
+            
+            if (jmxSupportedVMs.containsKey(vmId)) {
             	String jmxurl = jmxSupportedVMs.get(vmId);
                 properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
@@ -222,6 +233,7 @@ public class IaaSMonitoringService implements
             } else {
                 logger.info("No RMNode running on the VM '" + vmId + "'.");
             }
+            
             return properties;
         } catch (Exception e) {
             logger.error("Cannot retrieve properties of the VM: " + vmId, e);

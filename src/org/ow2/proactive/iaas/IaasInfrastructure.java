@@ -213,7 +213,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             
             if (nodeSource == null) {
                 throw new RuntimeException(
-                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected -ns <node-source-name>");
+                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected ns <node-source-name>");
             }
             
             try {
@@ -222,6 +222,8 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 
                 if (credentialsPath != null) {
                     mbean.setCredentials(new File(credentialsPath));
+                } else {
+                    logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
                 }
                 
                 MBeanExposer ep = new MBeanExposer();
@@ -262,9 +264,12 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     protected String getValueFromParameters(String flag, Object... params) {
         String value = null;
         for (int index = 0; index < params.length; index++) {
+            logger.info(" --- '" + params[index] + "' against '" + flag + "'...");
             if (flag.equals(params[index].toString())) {
-                if (params.length < (index + 1)) {
+                if (params.length >= (index + 1 + 1)) { 
                     value = params[index + 1].toString();
+                } else {
+                    throw new RuntimeException("Could not retrieve value for parameter '"+flag+"'.");
                 }
                 break;
             }

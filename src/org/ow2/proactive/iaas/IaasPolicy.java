@@ -393,7 +393,7 @@ public class IaasPolicy extends SchedulerAwarePolicy implements InitActive, RMEv
         /**
          * The token that the new instances will use.
          */
-        public static final String TOKEN = SchedulerConstants.NODE_ACCESS_TOKEN;
+        public static final String TOKEN = Scheduler.NODE_ACCESS_TOKEN;
         /**
          * The node source to select.
          */

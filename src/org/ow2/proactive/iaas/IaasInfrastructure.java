@@ -54,6 +54,7 @@ import org.ow2.proactive.iaas.monitoring.MBeanExposer;
 import org.ow2.proactive.iaas.monitoring.NodeType;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
 import org.ow2.proactive.resourcemanager.exception.RMException;
+import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
@@ -95,9 +96,13 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         maxNbOfInstances = Integer.parseInt(parameters[0].toString());
         iaasApiUrl = parameters[1].toString();
         monitoringOptions = parameters[2].toString();
-        startIaaSMonitoringService(monitoringOptions);
     }
 
+    public void setNodeSource (NodeSource ns){
+        super.setNodeSource(ns);
+        startIaaSMonitoringService(monitoringOptions);
+    }
+    
     @Override
     public void acquireNode() {
         acquireNode(USE_CONFIGURED_VALUES);
@@ -199,20 +204,17 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     }
     
     private void startIaaSMonitoringService(String options) {
+        
+        String nodeSourceName = nodeSource.getName();
+        
         if (isIaaSMonitoringServiceEnabled(options)) {
             
-            String nodeSourceName = getValueFromParameters("nodesource", options);
             String credentialsPath = getValueFromParameters("cred", options);
             String hostsFile = getValueFromParameters("hostsfile", options);
             
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
             logger.debug(String.format("Params: ns='%s', cp='%s', hostsfile='%s'", 
                     nodeSourceName, credentialsPath, hostsFile));
-            
-            if (nodeSourceName == null) {
-                throw new RuntimeException(
-                        "Required paramater nodesource.");
-            }
             
             try {
                 IaaSMonitoringService monitService = new IaaSMonitoringService(
@@ -227,7 +229,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 if (hostsFile != null) {
                     try {
                         monitService.setHosts(hostsFile);
-                    } catch(IaaSMonitoringException e){
+                    } catch(IaaSMonitoringServiceException e){
                         logger.error("Error loading the hosts monitoring file '" + hostsFile + "'.", e);
                     }
                 }
@@ -246,7 +248,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 logger.error("Problem while processing credentials file: ", e);
             }
         } else {
-            logger.info("Monitoring of insfrastructure '" + nodeSource + "': disabled.");
+            logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': disabled.");
         }
     }
     

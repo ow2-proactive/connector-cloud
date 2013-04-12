@@ -107,12 +107,13 @@ public class IaaSMonitoringService implements
         }
     }
     
-    public void setHosts(String filepath) throws IaaSMonitoringException{
+    public void setHosts(String filepath) throws IaaSMonitoringServiceException{
         BufferedReader br;
         try {
             br = new BufferedReader(new FileReader(filepath));
         } catch (FileNotFoundException e) {
-            throw new IaaSMonitoringException("Could not load hosts monitoring file.", e);
+            throw new IaaSMonitoringServiceException(
+                    "Could not load hosts monitoring file: " + filepath, e);
         }
         
         String line;
@@ -128,7 +129,7 @@ public class IaaSMonitoringService implements
                 this.registerNode(nameAndUrl[0], nameAndUrl[1], NodeType.HOST);
             }
         } catch (IOException e) {
-            throw new IaaSMonitoringException("Error reading hosts monitoring file.", e);
+            throw new IaaSMonitoringServiceException("Error reading hosts monitoring file.", e);
         } finally {
             try {
                 br.close();
@@ -145,7 +146,7 @@ public class IaaSMonitoringService implements
             try {
                 fis = new FileInputStream(fcredentials); 
                 credentials = Credentials.getCredentials(fis);
-                logger.info("Credentials set.");
+                logger.info("Monitoring credentials set correctly.");
             } catch (FileNotFoundException e) {
                 throw new KeyException(e);
             } catch (KeyException e) {
@@ -196,34 +197,6 @@ public class IaaSMonitoringService implements
         }
     }
 
-    @Override
-    public Map<String, String> getHostProperties(String hostId)
-            throws IaaSMonitoringServiceException {
-        try {
-            Map<String, String> properties = iaaSMonitoringApi
-                    .getHostProperties(hostId);
-            
-            if (credentials == null) {
-                return properties;
-            }
-            
-            if (jmxSupportedHosts.containsKey(hostId)) {
-            	String jmxurl = jmxSupportedHosts.get(hostId);
-                properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
-                Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
-                Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
-                properties.putAll(sigarProps);
-            } else {
-                logger.debug("No RMNode running on the host '" + hostId + "'.");
-            }
-            
-            return properties;
-        } catch (Exception e) {
-            logger.error("Cannot retrieve properties of the Host: " + hostId, e);
-            throw new IaaSMonitoringServiceException(e);
-        }
-
-    }
 
     @Override
     public String[] getVMs() throws IaaSMonitoringServiceException {
@@ -251,12 +224,62 @@ public class IaaSMonitoringService implements
     }
 
     @Override
+    public Map<String, String> getHostProperties(String hostId)
+            throws IaaSMonitoringServiceException {
+        
+        Map<String, String> properties = new HashMap<String, String>();
+        
+        try {
+            Map<String, String> apiprops = iaaSMonitoringApi
+                    .getHostProperties(hostId);
+            properties.putAll(apiprops);
+        } catch (Exception e) {
+            logger.warn("Cannot retrieve IaaS API properties from host: " + 
+                    hostId, e);
+        }
+        
+        try {
+            if (credentials == null) {
+                return properties;
+            }
+            
+            if (jmxSupportedHosts.containsKey(hostId)) {
+            	String jmxurl = jmxSupportedHosts.get(hostId);
+                properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
+                Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentials);
+                Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
+                properties.putAll(sigarProps);
+            } else {
+                logger.debug("No RMNode running on the host '" + hostId + "'.");
+            }
+            
+        } catch (Exception e) {
+            logger.warn("Cannot retrieve Sigar properties from host: " + hostId, e);
+        }
+
+        if (properties.isEmpty()){
+            throw new IaaSMonitoringServiceException("No property found for host: " + hostId);
+        }
+        
+        return properties;
+    }
+    
+    @Override
     public Map<String, String> getVMProperties(String vmId)
             throws IaaSMonitoringServiceException {
+        
+        Map<String, String> properties = new HashMap<String, String>();
+        
         try {
-            Map<String, String> properties = iaaSMonitoringApi
+            Map<String, String> apiprops = iaaSMonitoringApi
                     .getVMProperties(vmId);
-            
+            properties.putAll(apiprops);
+        } catch (Exception e) {
+            logger.warn("Cannot retrieve IaaS API properties from VM: " + 
+                    vmId, e);
+        }
+        
+        try {
             if (credentials == null) {
                 return properties;
             }
@@ -271,39 +294,48 @@ public class IaaSMonitoringService implements
                 logger.info("No RMNode running on the VM '" + vmId + "'.");
             }
             
-            return properties;
         } catch (Exception e) {
-            logger.error("Cannot retrieve properties of the VM: " + vmId, e);
-            throw new IaaSMonitoringServiceException(e);
+            logger.error("Cannot retrieve Sigar properties from VM: " + vmId, e);
         }
+        
+        if (properties.isEmpty()){
+            throw new IaaSMonitoringServiceException("No property found for VM: " + vmId);
+        }
+        
+        return properties;
     }
 
     @Override
 	public Map<String, Object> getSummary() throws IaaSMonitoringServiceException {
-		try {
 		    
-        	Map<String, Object> summary = new HashMap<String, Object>();
-        	
-        	String[] hosts = this.getHosts();
-        	for (String host: hosts) {
-        		// Put host properties.
+    	Map<String, Object> summary = new HashMap<String, Object>();
+    	
+    	String[] hosts = this.getHosts();
+    	for (String host: hosts) {
+    		// Put host properties.
+    	    try {
         		Map<String, Object> hostinfo = Utils.convertToObjectMap(getHostProperties(host));
         		
         		// Put a list of VMs with their properties.
         		Map<String, Object> vmsinfo = new HashMap<String, Object>();
-        		String[] vms = this.getVMs();
+        		String[] vms = this.getVMs(host);
         		for (String vm: vms) {
-        			vmsinfo.put(vm, this.getVMProperties(vm));
+        		    try{
+            			vmsinfo.put(vm, this.getVMProperties(vm));
+        		    }catch(IaaSMonitoringServiceException e){
+        		        // Ignore it.
+        		    }
         		}
     			hostinfo.put(VMS_INFO_KEY, vmsinfo);	
     			
     			summary.put(host, hostinfo);
-        	}
-    	
-			return summary;
-		} catch (Exception e) {
-			throw new IaaSMonitoringServiceException(e);
-		}
+    			
+    	    } catch(IaaSMonitoringServiceException e){
+    	        // Ignore it.
+    	    }
+    	}
+	
+		return summary;
 	}
 	
     /**

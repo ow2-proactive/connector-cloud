@@ -37,19 +37,16 @@
 
 package org.ow2.proactive.iaas.utils;
 
+import java.util.Map;
+import java.util.HashMap;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-
+import javax.management.remote.JMXConnectorFactory;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
-
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 
 public class JmxUtils {
 
@@ -64,15 +61,15 @@ public class JmxUtils {
 
     public static Map<String, Object> getSigarProperties(
             String jmxurl, Map<String, Object> jmxenv) 
-                    throws IaaSMonitoringException {
+                    throws IaaSMonitoringServiceException {
         FormattedSigarMBeanClient a;
         Map<String, Object> map = new HashMap<String, Object>();
         try {
             a = new FormattedSigarMBeanClient(jmxurl, jmxenv);
         } catch (MalformedURLException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaaSMonitoringServiceException(e);
         } catch (IOException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaaSMonitoringServiceException(e);
         }
         
         map = a.getPropertyMap();

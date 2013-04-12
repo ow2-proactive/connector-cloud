@@ -118,9 +118,13 @@ public class IaaSMonitoringService implements
         String line;
         try {
             while ((line = br.readLine()) != null) {
-                String[] nameAndUrl = line.split("=");
+                if (line.trim().startsWith("#")) // comment
+                    continue;
+                
+                String[] nameAndUrl = line.trim().split("="); // host=jmxurl
                 if (nameAndUrl.length!=2)
                     continue;
+                
                 this.registerNode(nameAndUrl[0], nameAndUrl[1], NodeType.HOST);
             }
         } catch (IOException e) {

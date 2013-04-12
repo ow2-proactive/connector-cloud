@@ -35,6 +35,7 @@
 package org.ow2.proactive.iaas;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
@@ -68,7 +69,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
     protected static final int TEN_MINUTES_TIMEOUT = 60000 * 10;
     protected static final String NODE_NAME_FORMAT = "%s-node-%d";
-    protected static final Map<String, Object> USE_CONFIGURED_VALUES = Collections.emptyMap();
+    protected static final Map<String, Object> USE_CONFIGURED_VALUES = new HashMap<String, Object>();
 
     protected abstract IaasApi getAPI();
 
@@ -115,8 +116,9 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + " node ",
                 TEN_MINUTES_TIMEOUT);
         try {
-            IaasInstance instance = api.startInstance(getInstanceParams(nodeName, nodeSourceName,
-                    nodeConfiguration));
+            Map<String, String> instanceParams = getInstanceParams(nodeName, nodeSourceName,
+                    nodeConfiguration);
+			IaasInstance instance = api.startInstance(instanceParams);
             nodeNameToInstance.put(nodeName, instance);
             logger.info("New " + api.getName() + " instance started " + nodeUrl);
         } catch (Exception e) {
@@ -263,5 +265,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                     .getName());
         }
     }
+    
+     
     
 }

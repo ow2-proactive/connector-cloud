@@ -40,8 +40,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaaSParamUtil;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInfrastructure;
+import org.ow2.proactive.iaas.vcloud.VCloudAPI.VCloudAPIConstants;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 
 
@@ -65,7 +67,32 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         login = (String) parameters[2];
         password = (String) parameters[3];
         vdcName = (String) parameters[4];
-        credentials = new String((byte[]) parameters[6]);
+        credentials = (String) parameters[5];
+        
+		String templateName = IaaSParamUtil
+				.getParameterValue(
+						VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
+						parameters);
+		if (templateName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
+					templateName);
+		}
+		String instanceName = IaaSParamUtil
+				.getParameterValue(
+						VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
+						parameters);
+		if (instanceName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
+					instanceName);
+		}
+		String vdcName = IaaSParamUtil.getParameterValue(
+				VCloudAPIConstants.InstanceParameters.VDC_NAME, parameters);
+		if (vdcName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.VDC_NAME, vdcName);
+		}
     }
 
     @Override

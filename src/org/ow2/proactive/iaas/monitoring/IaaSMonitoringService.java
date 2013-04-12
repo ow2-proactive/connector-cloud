@@ -42,11 +42,16 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Properties;
+
 import org.apache.log4j.Logger;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 
 import org.ow2.proactive.iaas.utils.Utils;
@@ -100,6 +105,34 @@ public class IaaSMonitoringService implements
             logger.error("Cannot instantiate IasSClientApi:", e);
             throw new IaaSMonitoringServiceException(e);
         }
+    }
+    
+    public void setHosts(String filepath) throws IaaSMonitoringException{
+        BufferedReader br;
+        try {
+            br = new BufferedReader(new FileReader(filepath));
+        } catch (FileNotFoundException e) {
+            throw new IaaSMonitoringException("Could not load hosts monitoring file.", e);
+        }
+        
+        String line;
+        try {
+            while ((line = br.readLine()) != null) {
+                String[] nameAndUrl = line.split("=");
+                if (nameAndUrl.length!=2)
+                    continue;
+                this.registerNode(nameAndUrl[0], nameAndUrl[1], NodeType.HOST);
+            }
+        } catch (IOException e) {
+            throw new IaaSMonitoringException("Error reading hosts monitoring file.", e);
+        } finally {
+            try {
+                br.close();
+            } catch (IOException e) {
+                logger.warn("Could not close properly the hosts monitoring file.", e);
+            }
+        }
+        
     }
     
     public void setCredentials(File fcredentials) throws KeyException {

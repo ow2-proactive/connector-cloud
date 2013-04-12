@@ -62,10 +62,11 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     protected void configure(Object... parameters) {
         super.configure(parameters);
 
-        login = (String) parameters[2];
-        password = (String) parameters[3];
-        vdcName = (String) parameters[4];
-        credentials = new String((byte[]) parameters[6]);
+        int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
+        login = (String) parameters[offset + 0];
+        password = (String) parameters[offset + 1];
+        vdcName = (String) parameters[offset + 2];
+        credentials = new String((byte[]) parameters[offset + 3]);
     }
 
     @Override

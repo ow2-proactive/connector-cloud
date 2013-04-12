@@ -46,6 +46,7 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
@@ -65,6 +66,11 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     @Configurable(description = "The URL where Rest API is located.")
     protected String iaasApiUrl = "";
 
+    @Configurable(description = "Monitoring options.")
+    protected String monitoringOptions = "";
+    
+    protected static final int NB_OF_BASE_PARAMETERS = 3;
+    
     protected static final Logger logger = Logger.getLogger(IaasInfrastructure.class);
     protected Hashtable<String, IaasInstance> nodeNameToInstance = new Hashtable<String, IaasInstance>();
 
@@ -79,6 +85,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     
     protected IaaSMonitoringService iaaSMonitoringService;
     protected MBeanExposer mbeanExposer;
+    protected String[] monitoringHostUrls;
     
     public IaasInfrastructure() {
     }
@@ -86,7 +93,8 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     protected void configure(Object... parameters) {
         maxNbOfInstances = Integer.parseInt(parameters[0].toString());
         iaasApiUrl = parameters[1].toString();
-        startIaaSMonitoringService(parameters);
+        monitoringOptions = parameters[2].toString();
+        startIaaSMonitoringService(monitoringOptions);
     }
 
     @Override
@@ -188,31 +196,45 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         return defaultValue;
     }
     
-    private void startIaaSMonitoringService(Object... parameters) {
-        if (isIaaSMonitoringServiceEnabled(parameters)) {
-            String nodeSource = getValueFromParameters("-ns", parameters);
-            String credentialsPath = getValueFromParameters("-cred", parameters);
+    private void startIaaSMonitoringService(String options) {
+        if (isIaaSMonitoringServiceEnabled(options)) {
             
-            if (nodeSource == null) {
+            String nodeSourceName = getValueFromParameters("nodesource", options);
+            String credentialsPath = getValueFromParameters("cred", options);
+            String hostsFile = getValueFromParameters("hostsfile", options);
+            
+            logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
+            logger.debug(String.format("Params: ns='%s', cp='%s', hostsfile='%s'", 
+                    nodeSourceName, credentialsPath, hostsFile));
+            
+            if (nodeSourceName == null) {
                 throw new RuntimeException(
-                        "Required paramater NodeSource not specified for IaaSMonitoringService, expected -ns <node-source-name>");
+                        "Required paramater nodesource.");
             }
             
             try {
-                IaaSMonitoringService mbean = new IaaSMonitoringService(
+                IaaSMonitoringService monitService = new IaaSMonitoringService(
                         (IaaSMonitoringApi) getAPI());
                 
                 if (credentialsPath != null) {
-                    mbean.setCredentials(new File(credentialsPath));
+                    monitService.setCredentials(new File(credentialsPath));
                 } else {
                     logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
                 }
                 
-                MBeanExposer ep = new MBeanExposer();
-                ep.registerMBeanLocally(nodeSource, mbean);
+                if (hostsFile != null) {
+                    try {
+                        monitService.setHosts(hostsFile);
+                    } catch(IaaSMonitoringException e){
+                        logger.error("Error loading the hosts monitoring file '" + hostsFile + "'.", e);
+                    }
+                }
                 
-                iaaSMonitoringService = mbean;
-                mbeanExposer = ep;
+                MBeanExposer exp = new MBeanExposer();
+                exp.registerMBeanLocally(nodeSourceName, monitService);
+                
+                iaaSMonitoringService = monitService;
+                mbeanExposer = exp;
 
             } catch (MBeanRegistrationException e) {
                 logger.error("Could not register IaaS Monitoring MBean.", e);
@@ -222,33 +244,40 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 logger.error("Problem while processing credentials file: ", e);
             }
         } else {
-            logger.debug("Host monitoring: disabled (monitorHostDisabled).");
+            logger.info("Monitoring of insfrastructure '" + nodeSource + "': disabled.");
         }
     }
     
-    private boolean isIaaSMonitoringServiceEnabled(Object... parameters) {
-        for (Object param : parameters) {
-            if ("monitorHostEnabled".equals(param.toString())) {
-                return true;
-            }
+    private boolean isIaaSMonitoringServiceEnabled(String options) {
+        if (isPresentInParameters("monitoringEnabled", options)) {
+            return true;
+        } else if (isPresentInParameters("monitoringDisabled", options)){
+            return false; 
+        } else {
+            throw new RuntimeException("Wrong monitoring options. " +
+                "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
+        }
+    }
+    
+    private boolean isPresentInParameters(String flag, String options) {
+        if (options.contains(flag)) {
+            return true;
         }
         return false;
     }
     
-    protected String getValueFromParameters(String flag, Object... params) {
-        String value = null;
-        for (int index = 0; index < params.length; index++) {
-            logger.info(" --- '" + params[index] + "' against '" + flag + "'...");
-            if (flag.equals(params[index].toString())) {
-                if (params.length >= (index + 1 + 1)) { 
-                    value = params[index + 1].toString();
-                } else {
+    private String getValueFromParameters(String flag, String options) {
+        String[] allpairs = options.split(",");
+        for (String pair: allpairs) {
+            if (pair.startsWith(flag + "=")) {
+                String[] keyvalue = pair.split("=");
+                if (keyvalue.length != 2) {
                     throw new RuntimeException("Could not retrieve value for parameter '"+flag+"'.");
                 }
-                break;
+                return keyvalue[1];
             }
         }
-        return value;
+        throw new RuntimeException("Could not find parameter '"+flag+"'.");
     }
     
     /*
@@ -259,7 +288,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             try {
                 String jmxurlro = node.getProperty(RMNodeStarter.JMX_URL
                         + JMXTransportProtocol.RO);
-                String token = node
+                /*String token = node
                         .getProperty(RMNodeStarter.NODE_ACCESS_TOKEN);
                 NodeType type = ("IAASHOST".equals(token)) ? NodeType.HOST
                         : NodeType.VM;
@@ -268,8 +297,9 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                     node.getNodeInformation().getName() + 
                     "', TOKEN='" + token + "').");
                 
+                */
                 iaaSMonitoringService.registerNode(node.getNodeInformation()
-                        .getName(), jmxurlro, type);
+                        .getName(), jmxurlro, NodeType.VM);
 
             } catch (ProActiveException e) {
                 logger.error("Error while getting node properties.", e);
@@ -298,6 +328,4 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 			}
     	}
     }
-    
-    
 }

@@ -116,9 +116,9 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 						args.get(VCloudAPIConstants.ApiParameters.API_URL)),
 				args.get(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME));
 		vCloudAPI.initializeMonitoringService(
-				VCloudAPIConstants.MonitoringParameters.URL,
-				VCloudAPIConstants.MonitoringParameters.USERNAME,
-				VCloudAPIConstants.MonitoringParameters.PASSWORD);
+				args.get(VCloudAPIConstants.MonitoringParameters.URL),
+				args.get(VCloudAPIConstants.MonitoringParameters.USERNAME),
+				args.get(VCloudAPIConstants.MonitoringParameters.PASSWORD));
 		return vCloudAPI;
 	}
 
@@ -141,6 +141,42 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 			instances.put(hash, instance);
 		}
 		return instance;
+	}
+	
+	public static synchronized VCloudAPI getVCloudAPI(String login,
+			String password, URI endpoint, String orgName,
+			String vimServiceUrl, String vimServiceUsername,
+			String vimServicePassword) throws AuthenticationException {
+		if (instances == null) {
+			instances = new HashMap<Integer, VCloudAPI>();
+		}
+		int hash = (login + password).hashCode();
+		VCloudAPI instance = instances.get(hash);
+		if (instance == null) {
+			try {
+				instances.remove(hash);
+				instance = new VCloudAPI(login, password, endpoint, orgName,
+						vimServiceUrl, vimServiceUsername, vimServicePassword);
+			} catch (Throwable t) {
+				throw new AuthenticationException("Authentication failed to "
+						+ endpoint, t);
+			}
+			instances.put(hash, instance);
+		}
+		return instance;
+	}
+	
+	public VCloudAPI(String login, String password, URI endpoint,
+			String orgName, String vimServiceUrl, String vimServiceUsername,
+			String vimServicePassword) throws IOException,
+			KeyManagementException, UnrecoverableKeyException,
+			NoSuchAlgorithmException, KeyStoreException, VCloudException {
+		this.iaasInstances = new HashMap<String, IaasInstance>();
+		this.vapps = new HashMap<IaasInstance, Vapp>();
+		this.created = System.currentTimeMillis();
+		this.endpoint = endpoint;
+		authenticate(login, password, orgName);
+		initializeMonitoringService(vimServiceUrl, vimServiceUsername, vimServicePassword);
 	}
 
 	public VCloudAPI(String login, String password, URI endpoint, String orgName)

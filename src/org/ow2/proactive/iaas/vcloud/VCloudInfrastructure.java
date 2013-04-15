@@ -57,6 +57,11 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     @Configurable(description = "Virtual DataCenter (VDC) name.")
     protected String vdcName;
     @Configurable(credential = true, description = "Absolute path of the credential file")
+    
+    protected String vimServiceUrl;
+    protected String vimServiceUsername;
+    protected String vimServicePassword;
+    
     protected File rmCredentialsPath;
     protected String credentials = "";
 
@@ -93,13 +98,28 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 			USE_CONFIGURED_VALUES.put(
 					VCloudAPIConstants.InstanceParameters.VDC_NAME, vdcName);
 		}
+		
+		// VimService parameters
+		vimServiceUrl = IaaSParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.URL, parameters);
+		vimServiceUsername = IaaSParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.USERNAME, parameters);
+		vimServicePassword = IaaSParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.PASSWORD, parameters);
+				
     }
 
     @Override
     protected IaasApi getAPI() {
         IaasApi api;
         try {
+        	if (vimServiceUrl == null) {
             api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), vdcName);
+        	} else {
+				api = VCloudAPI.getVCloudAPI(login, password, new URI(
+						iaasApiUrl), vdcName, vimServiceUrl,
+						vimServiceUsername, vimServicePassword);
+        	}
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

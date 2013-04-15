@@ -35,64 +35,181 @@
 package org.ow2.proactive.iaas.nova;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.security.KeyException;
 import java.util.HashMap;
 import java.util.Map;
-
+import javax.management.MBeanRegistrationException;
 import org.apache.log4j.Logger;
+import org.objectweb.proactive.core.ProActiveException;
+import org.objectweb.proactive.core.node.Node;
+import org.objectweb.proactive.core.util.ProActiveCounter;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInfrastructure;
+import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasPolicy;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
+import org.ow2.proactive.iaas.monitoring.MBeanExposer;
+import org.ow2.proactive.iaas.monitoring.NodeType;
 import org.ow2.proactive.iaas.nova.NovaAPI.NovaAPIConstants;
+import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
+import org.ow2.proactive.resourcemanager.exception.RMException;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
+import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
+import org.ow2.proactive.resourcemanager.utils.RMNodeStarter.OperatingSystem;
 import org.ow2.proactive.utils.FileToBytesConverter;
 
 
 /**
  * An infrastructure that creates nodes in openstack using NOVA API.
+ * It also adds monitoring features.
  */
-public class NovaInfrastructure extends IaasInfrastructure {
+public class NovaInfrastructureMon extends IaasInfrastructure {
 
-    private static final Logger logger = Logger.getLogger(NovaInfrastructure.class);
+    private static final Logger logger = Logger.getLogger(NovaInfrastructureMon.class);
 
-    @Configurable(description = "User name for OpenStack.")
+    /**
+     * Configuration parameters.
+     */
+    @Configurable(description = "[VM] User name for OpenStack.")
     protected String userName;
-    @Configurable(description = "User password for OpenStack.")
+    
+    @Configurable(description = "[VM] User password for OpenStack.")
     protected String password;
-    @Configurable(description = "Tenant (project) name for OpenStack.")
+    
+    @Configurable(description = "[VM] Tenant (project) name for OpenStack.")
     protected String tenantName;
-    @Configurable(description = "An id of existing image.")
+    
+    @Configurable(description = "[VM] An id of existing image.")
     protected String imageRef;
-    @Configurable(description = "An id of existing flavor type (1 - m1.tiny, 2 - m1.small, etc).")
+    
+    @Configurable(description = "[VM] An id of existing flavor type (1 - m1.tiny, 2 - m1.small, etc).")
     protected String flavorRef;
-    @Configurable(credential = true, description = "Absolute path of the credential file")
-    protected File rmCredentialsPath;
-    protected String credentials = "";
-
+    
+    @Configurable(credential = true, description = "[VM] Path to local RM credential file.")
+    protected String credentialvm = "";
+    
+    
+    @Configurable(description = "")
+    protected String notUsed1;
+    
+    
+    @Configurable(description = "")
+    protected String notUsed2;
+    
+    
+    @Configurable(description = "")
+    protected String notUsed3;
+    
+    
+    @Configurable(description = "")
+    protected String notUsed4;
+    
+    @Configurable(description = "")
+    protected String notUsed5;
+    
+    
+    @Configurable(description = "")
+    protected String notUsed6;
+    
+    /**
+     * The type of the OS on the Hosts.
+     */
+    protected final OperatingSystem HOST_OS = OperatingSystem.getOperatingSystem("Linux");
+    
+    /** 
+     * After this timeout expired\nthe node is considered to be lost [ms]
+     */
+    protected final int DEFAULT_NODE_TIMEOUT = 60 * 1000;
+    
+    /**
+     * Shutdown flag
+     */
+    protected boolean shutdown = false;
+    
     @Override
     protected void configure(Object... parameters) {
         super.configure(parameters);
-
+        
         int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
         userName = (String) parameters[offset + 0];
         password = (String) parameters[offset + 1];
         tenantName = (String) parameters[offset + 2];
         imageRef = (String) parameters[offset + 3];
         flavorRef = (String) parameters[offset + 4];
-        credentials = new String((byte[]) parameters[offset + 5]);
+        credentialvm = new String((byte[]) parameters[offset + 5]);
     }
 
     @Override
     protected IaasApi getAPI() {
         IaasApi api;
         try {
-            api = NovaAPI.getNovaAPI(userName, password, tenantName, new URI(iaasApiUrl));
+            logger.error("MMM: put the right NOVA API, not this MOCKUP...");
+            // TODO To replace here.
+            api = NovaAPIMockup.getNovaAPI(userName, password, tenantName, new URI(iaasApiUrl));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return api;
     }
+    
+    @Override
+    /**
+     *  This method is overwritten to avoid setting the flag usingDeployingNodes=true 
+     *  that prevents the user to add manually RMNodes later.
+     */
+    public void acquireNode() {
+        acquireNode(USE_CONFIGURED_VALUES);
+    }
+    
+    @Override
+    /**
+     *  This method is overwritten to avoid setting the flag usingDeployingNodes=true 
+     *  that prevents the user to add manually RMNodes later.
+     */
+    public void acquireNodes(int n, Map<String, ?> nodeConfiguration) {
+        for (int i = 0; i < n; i++) {
+            acquireNode(nodeConfiguration);
+        }
+    }
 
+    private void acquireNode(Map<String, ?> nodeConfiguration) {
+        IaasApi api = getAPI();
+
+        logger.debug("Starting a '" + api.getName() + "' instance wih parameters: " + nodeConfiguration);
+
+        String nodeSourceName = this.nodeSource.getName();
+        String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
+
+        /* 
+         * This line below needs to be commented, so the usingDeployedNodes flag in 
+         * InfrastrucutreManager is not set and it is possible to register RMNodes 
+         * without having them going through the process of "node deploying". 
+         */
+        //String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + 
+        //      " node ", TEN_MINUTES_TIMEOUT);
+        try {
+            IaasInstance instance = api.startInstance(
+                    getInstanceParams(nodeName, nodeSourceName, nodeConfiguration));
+            
+            nodeNameToInstance.put(nodeName, instance);
+            
+            logger.info("Waiting for " + api.getName() + " instance to start...");
+            
+        } catch (Exception e) {
+            logger.error("Failed to start " + api.getName() + " instance.", e);
+        } finally {
+        	try {
+        		api.disconnect();
+        	} catch(Exception e) {
+        		logger.warn("Could not disconnect from the API.", e);
+        	}
+        }
+    }
+    
     @Override
     protected Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
             Map<String, ?> nodeConfiguration) {
@@ -100,14 +217,14 @@ public class NovaInfrastructure extends IaasInfrastructure {
         URI scriptPath;
         String script;
         try {
-            scriptPath = NovaInfrastructure.class.getResource("start-proactive-node").toURI();
+            scriptPath = NovaInfrastructureMon.class.getResource("start-proactive-node").toURI();
             script = new String(FileToBytesConverter.convertFileToByteArray(new File(scriptPath)));
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
         script = script.replace("$rm_url", rmUrl);
-        script = script.replace("$credentials", credentials);
+        script = script.replace("$credentials", credentialvm);
         script = script.replace("$node_source_name", nodeSourceName);
         script = script.replace("$node_name", nodeName);
         script = script
@@ -150,4 +267,5 @@ public class NovaInfrastructure extends IaasInfrastructure {
         logger.debug("Invalid instance type specified - using SMALL instances");
         return "2";
     }
+     
 }

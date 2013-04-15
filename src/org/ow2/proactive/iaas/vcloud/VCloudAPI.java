@@ -516,29 +516,6 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 
 	}
 
-	@Override
-	public Map<String, Object> getSummary() throws Exception {
-		Map<String, Object> summary = new HashMap<String, Object>();
-
-		String[] hosts = this.getHosts();
-		for (String host : hosts) {
-			// put host properties
-			Map<String, Object> hostinfo = convert(getHostProperties(host));
-
-			// put a list of vms with their properties
-			Map<String, Object> vmsinfo = new HashMap<String, Object>();
-			String[] vms = this.getVMs();
-			for (String vm : vms) {
-				vmsinfo.put(vm, this.getVMProperties(vm));
-			}
-			hostinfo.put("vmsinfo", vmsinfo);
-
-			summary.put(host, hostinfo);
-		}
-
-		return summary;
-	}
-
 	private Map<String, Object> convert(Map<String, String> a) {
 		Map<String, Object> r = new HashMap<String, Object>();
 		r.putAll(a);

@@ -37,9 +37,16 @@
 
 package org.ow2.proactive.iaas.utils;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.io.IOException;
 import java.net.MalformedURLException;
-
+import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXServiceURL;
+import javax.management.remote.JMXConnectorFactory;
+import org.ow2.proactive.authentication.crypto.Credentials;
+import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 
 public class JmxUtils {
 
@@ -50,6 +57,36 @@ public class JmxUtils {
             // TODO: Consider throwing a checked exception.
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static Map<String, Object> getSigarProperties(
+            String jmxurl, Map<String, Object> jmxenv) 
+                    throws IaaSMonitoringServiceException {
+        FormattedSigarMBeanClient a;
+        Map<String, Object> map = new HashMap<String, Object>();
+        try {
+            a = new FormattedSigarMBeanClient(jmxurl, jmxenv);
+        } catch (MalformedURLException e) {
+            throw new IaaSMonitoringServiceException(e);
+        } catch (IOException e) {
+            throw new IaaSMonitoringServiceException(e);
+        }
+        
+        map = a.getPropertyMap();
+        try {
+            a.disconnect();
+        } catch (IOException e) {
+            // Ignore it.
+        }
+        return map;
+    }
+
+    public static Map<String, Object> getROJmxEnv(Credentials credentials) {
+        Map<String, Object> env = new HashMap<String, Object> ();
+        env.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "org.ow2.proactive.jmx.provider");
+        Object[] obj = new Object[]{"", credentials};
+        env.put(JMXConnector.CREDENTIALS, obj);
+        return env;
     }
     
     // non-instantiable

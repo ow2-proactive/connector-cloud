@@ -37,21 +37,8 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
-public class IaaSMonitoringServiceException extends Exception {
+import java.util.Map;
 
-	public IaaSMonitoringServiceException() {
-	}
-
-	public IaaSMonitoringServiceException(String message) {
-		super(message);
-	}
-
-	public IaaSMonitoringServiceException(Throwable cause) {
-		super(cause);
-	}
-
-	public IaaSMonitoringServiceException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
+public interface NodeAgentMXBean {
+    public Map<String, String> getPropertyMap();
 }

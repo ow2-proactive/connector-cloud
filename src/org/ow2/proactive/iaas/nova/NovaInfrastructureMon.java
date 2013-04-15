@@ -35,33 +35,19 @@
 package org.ow2.proactive.iaas.nova;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.security.KeyException;
-import java.util.HashMap;
 import java.util.Map;
-import javax.management.MBeanRegistrationException;
+import java.util.HashMap;
 import org.apache.log4j.Logger;
-import org.objectweb.proactive.core.ProActiveException;
-import org.objectweb.proactive.core.node.Node;
-import org.objectweb.proactive.core.util.ProActiveCounter;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasInfrastructure;
-import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasPolicy;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
-import org.ow2.proactive.iaas.monitoring.MBeanExposer;
-import org.ow2.proactive.iaas.monitoring.NodeType;
-import org.ow2.proactive.iaas.nova.NovaAPI.NovaAPIConstants;
-import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
-import org.ow2.proactive.resourcemanager.exception.RMException;
-import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
-import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
-import org.ow2.proactive.resourcemanager.utils.RMNodeStarter.OperatingSystem;
+import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasInfrastructure;
 import org.ow2.proactive.utils.FileToBytesConverter;
-
+import org.objectweb.proactive.core.util.ProActiveCounter;
+import org.ow2.proactive.iaas.nova.NovaAPI.NovaAPIConstants;
+import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
+import org.ow2.proactive.resourcemanager.utils.RMNodeStarter.OperatingSystem;
 
 /**
  * An infrastructure that creates nodes in openstack using NOVA API.

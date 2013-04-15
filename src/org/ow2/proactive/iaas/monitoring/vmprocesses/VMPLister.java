@@ -21,6 +21,8 @@ import org.ow2.proactive.iaas.utils.Utils;
 
 public class VMPLister {
 
+    public static final String VMS_KEY = "vms";
+    public static final String VMS_SEPARATOR = ";";
     
 	public static List<VMProcess> getRemoteVMPs(
 			JMXConnector connector) throws IaaSMonitoringException{ 
@@ -41,10 +43,10 @@ public class VMPLister {
 	    		
 				String args = Utils.argsToString(vargs);
 				VMPPattern pat = VMPPattern.whatVMPPatternMatches(args);
-				if (pat != null){
+				if (pat != null) { // Valid VM process.
 					VMProcess proc = pat.getVMP(pid, args);
 					
-					proc.setProperty("cpu.usage.perc", cpu);
+					proc.setProperty("cpu.usage", cpu);
 					proc.setProperty("memory.virtualmemorybytes", mem);
 					
 					vmps.add(proc);
@@ -89,7 +91,7 @@ public class VMPLister {
 					VMProcess proc = pat.getVMP(pid, args);
 					
 					// http://www.hyperic.com/support/docs/sigar/
-					proc.setProperty("cpu.usage.perc", new Double(sigar.getProcCpu(pid).getPercent()));
+					proc.setProperty("cpu.usage", new Double(sigar.getProcCpu(pid).getPercent()));
 					proc.setProperty("memory.virtualmemorybytes", new Double(sigar.getProcMem(pid).getSize()));
 					proc.setProperty("host", sigar.getNetInfo().getHostName());
 					
@@ -113,10 +115,10 @@ public class VMPLister {
 		} else if (connector instanceof JMXConnector){
 			vmps = getRemoteVMPs((JMXConnector)connector);
 		} else {
-			throw new IaaSMonitoringException();
+			throw new IaaSMonitoringException("Invalid type of connector for monitoring.");
 		}
 		
-		for (VMProcess vmp: vmps){
+		for (VMProcess vmp: vmps) {
 			String vmid = vmp.getProperty("id").toString();
 			if (vmid != null){
 				vmslist.add(vmid);
@@ -128,7 +130,7 @@ public class VMPLister {
 		}
 		
 		if (!vmslist.isEmpty()) {
-    		output.put("vms", Utils.argsToString(vmslist, ";"));
+    		output.put(VMS_KEY, Utils.argsToString(vmslist, VMS_SEPARATOR));
 		}
 		
 		return output;

@@ -3,7 +3,6 @@ package org.ow2.proactive.iaas.monitoring;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
 import javax.management.AttributeNotFoundException;

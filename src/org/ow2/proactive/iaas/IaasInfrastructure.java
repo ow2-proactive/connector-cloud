@@ -281,7 +281,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 return keyvalue[1];
             }
         }
-        throw new RuntimeException("Could not find parameter '"+flag+"'.");
+        return null;
     }
     
     /*

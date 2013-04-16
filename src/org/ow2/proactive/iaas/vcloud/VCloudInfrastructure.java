@@ -73,7 +73,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         login = (String) parameters[offset + 0];
         password = (String) parameters[offset + 1];
         vdcName = (String) parameters[offset + 2];
-        credentials = new String((byte[]) parameters[offset + 3]);
+        credentials = (String) parameters[offset + 3];
         
 		String templateName = IaaSParamUtil
 				.getParameterValue(

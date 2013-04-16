@@ -53,6 +53,7 @@ import java.security.KeyException;
 import java.io.FileNotFoundException;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
+import org.ow2.proactive.iaas.utils.VMsMerger;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
@@ -107,6 +108,12 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     private Boolean useVMProcesses = false;
 
     /**
+     * Resolve JMX Sigar to properties when possible.
+     */
+    private Boolean resolveSigar = false;
+    
+
+    /**
      * Constructor.
      * @param iaaSMonitoringApi
      * @throws IaaSMonitoringServiceException
@@ -120,6 +127,50 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
         }
     }
 
+    /**
+     * Configure the monitoring module.
+     * @param options 
+     */
+    public void configure(String options) {
+        Boolean useApi = isPresentInParameters("useApi", options);
+        Boolean useVMProcesses = isPresentInParameters("useVMProcesses", options);
+        Boolean resolveSigar = isPresentInParameters("resolveSigar", options);
+        String credentialsPath = getValueFromParameters("cred", options);
+        String hostsFile = getValueFromParameters("hostsfile", options);
+
+        logger.debug(String
+                .format("Monitoring params: sigarCred='%s', hostsfile='%s', useApi='%b', useVMProcesses='%b', resolveSigar='%b'",
+                        credentialsPath, hostsFile, useApi, useVMProcesses, resolveSigar));
+
+        // Use Sigar monitoring? 
+        // Set up credentials file path.
+        if (credentialsPath != null) {
+            try {
+                setCredentials(new File(credentialsPath));
+            } catch (KeyException e) {
+                logger.warn("Credentials file did not load successfully. No JMX Sigar monitoring will take place.");
+            }
+        } else {
+            logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
+        }
+
+        // Use API monitoring?
+        this.useApi = useApi;
+
+        // Use VMProcesses monitoring?
+        this.useVMProcesses = useVMProcesses;
+
+        // Resolve Sigar JMX URLs into properties.
+        this.resolveSigar = resolveSigar;
+
+        // Set up hosts file path.
+        if (hostsFile != null) {
+            setHosts(hostsFile);
+        } else {
+            logger.warn("Hosts monitoring file not provided.");
+        }
+    }
+    
     private void setHosts(String filepath) {
         Properties prop = new Properties();
         try {
@@ -182,14 +233,19 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     }
 
     @Override
-    public void unregisterNode(String nodeId) {
+    public void unregisterNode(String nodeId, NodeType type) {
         if (credentialsSigar == null)
             return;
 
-        // Since they are both RMNodes, they can't have the same name.
-        jmxSupportedHosts.remove(nodeId);
-        jmxSupportedVMs.remove(nodeId);
-        logger.info("Unregistered node '" + nodeId + "'.");
+        if (type.equals(NodeType.HOST)) {
+            jmxSupportedHosts.remove(nodeId);
+        } else if (type.equals(NodeType.VM)) { 
+            jmxSupportedVMs.remove(nodeId);
+        } else {
+            throw new RuntimeException("Invalid node type.");
+        }
+        
+        logger.info("Unregistered node '" + nodeId + "' type '" + type + "'.");
     }
 
     @Override
@@ -308,19 +364,17 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
                 if (jmxSupportedHosts.containsKey(hostId)) {
                     String jmxurl = jmxSupportedHosts.get(hostId);
                     properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
-                    Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                    Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
-                    properties.putAll(sigarProps);
+                    if (resolveSigar) {
+                        Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
+                        Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
+                        properties.putAll(sigarProps);
+                    }
                 } else {
                     logger.debug("No RMNode running on the host '" + hostId + "'.");
                 }
             } catch (Exception e) {
                 logger.warn("Cannot retrieve Sigar properties from host: " + hostId, e);
             }
-
-        //if (properties.isEmpty()) {
-        //    throw new IaaSMonitoringServiceException("No property found for host: " + hostId);
-        //}
 
         return properties;
     }
@@ -344,9 +398,11 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
                 if (jmxSupportedVMs.containsKey(vmId)) {
                     String jmxurl = jmxSupportedVMs.get(vmId);
                     properties.put(PROP_PA_SIGAR_JMX_URL, jmxurl);
-                    Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                    Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
-                    properties.putAll(sigarProps);
+                    if (resolveSigar) {
+                        Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
+                        Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
+                        properties.putAll(sigarProps);
+                    }
                 } else {
                     logger.info("No RMNode running on the VM '" + vmId + "'.");
                 }
@@ -355,9 +411,14 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
                 logger.warn("Cannot retrieve Sigar properties from VM: " + vmId, e);
             }
 
-        //if (properties.isEmpty()) {
-        //    throw new IaaSMonitoringServiceException("No property found for VM: " + vmId);
-        //}
+        if (useVMProcesses) {
+            try {
+                Map<String, String> newProps = VMsMerger.enrichVMProperties(properties, getHostsSummary());
+                properties.putAll(newProps);
+            } catch (Exception e) {
+                logger.warn("Cannot retrieve VMProcesses info for VM: " + vmId, e);
+            }
+        }
 
         return properties;
     }
@@ -437,53 +498,13 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     private Map<String, String> queryProps(String jmxurl, Map<String, Object> env) {
         Map<String, Object> outp = new HashMap<String, Object>();
         try {
-            outp = JmxUtils.getSigarProperties(jmxurl, env);
+            outp = JmxUtils.getSigarProperties(jmxurl, env, useVMProcesses);
         } catch (Exception e) {
             logger.warn("Could not get sigar properties from '" + jmxurl + "'.", e);
         }
         return Utils.convertToStringMap(outp);
     }
 
-    
-    /**
-     * Configure the monitoring module.
-     * @param options 
-     */
-    public void configure(String options) {
-        Boolean useApi = isPresentInParameters("useApi", options);
-        Boolean useVMProcesses = isPresentInParameters("useVMProcesses", options);
-        String credentialsPath = getValueFromParameters("cred", options);
-        String hostsFile = getValueFromParameters("hostsfile", options);
-
-        logger.debug(String.format(
-                "Monitoring params: sigarCred='%s', hostsfile='%s', useApi='%b', useVMProcesses='%b'",
-                credentialsPath, hostsFile, useApi, useVMProcesses));
-
-        // Use Sigar monitoring? 
-        // Set up credentials file path.
-        if (credentialsPath != null) {
-            try {
-                setCredentials(new File(credentialsPath));
-            } catch (KeyException e) {
-                logger.warn("Credentials file did not load successfully. No JMX Sigar monitoring will take place.");
-            }
-        } else {
-            logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
-        }
-
-        // Use API monitoring?
-        this.useApi = useApi;
-
-        // Use VMProcesses monitoring?
-        this.useVMProcesses = useVMProcesses;
-
-        // Set up hosts file path.
-        if (hostsFile != null) {
-            setHosts(hostsFile);
-        } else {
-            logger.warn("Hosts monitoring file not provided.");
-        }
-    }
 
     private String getValueFromParameters(String flag, String options) {
         String[] allpairs = options.split(",");

@@ -34,20 +34,13 @@
  */
 package org.ow2.proactive.iaas;
 
-import java.io.File;
-import java.security.KeyException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-
-import javax.management.MBeanRegistrationException;
-
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
@@ -58,6 +51,7 @@ import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
+import javax.management.MBeanRegistrationException;
 
 
 public abstract class IaasInfrastructure extends InfrastructureManager {
@@ -179,7 +173,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 logger.warn("Could not disconnect from the API.", e);
             }
         }
-        unregisterWithIaaSMonitoringService(node);
+        unregisterWithIaaSMonitoringService(node, NodeType.VM);
     }
 
     @Override
@@ -270,9 +264,9 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
      * Unregister the specified PANode from Infrastructure Monitoring Service, if the service is
      * enabled.
      */
-    private void unregisterWithIaaSMonitoringService(Node node) {
+    private void unregisterWithIaaSMonitoringService(Node node, NodeType type) {
         if (iaaSMonitoringService != null) {
-            iaaSMonitoringService.unregisterNode(node.getNodeInformation().getName());
+            iaaSMonitoringService.unregisterNode(node.getNodeInformation().getName(), type);
         }
     }
 

@@ -54,16 +54,25 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     protected String login;
     @Configurable(description = "Password")
     protected String password;
-    @Configurable(description = "Virtual DataCenter (VDC) name.")
-    protected String vdcName;
+    @Configurable(description = "Virtual Organization name.")
+    protected String orgName;
     @Configurable(credential = true, description = "Absolute path of the credential file")
-    
-    protected String vimServiceUrl;
-    protected String vimServiceUsername;
-    protected String vimServicePassword;
-    
     protected File rmCredentialsPath;
-    protected String credentials = "";
+    protected String credentials;
+    
+    @Configurable(description = "Virtual Application template name.")
+    protected String templateName;
+    @Configurable(description = "Virtual Machine instance name.")
+    String instanceName;
+    @Configurable(description = "Virtual Data Center name.")
+    protected String vdcName;
+    
+    @Configurable(description = "Vitural Center Metadata Service URL.")
+    protected String vimServiceUrl;
+    @Configurable(description = "Vitural Center Metadata Service username.")
+    protected String vimServiceUsername;
+    @Configurable(description = "Vitural Center Metadata Service password.")
+    protected String vimServicePassword;
 
     @Override
     protected void configure(Object... parameters) {
@@ -72,10 +81,16 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
         login = (String) parameters[offset + 0];
         password = (String) parameters[offset + 1];
-        vdcName = (String) parameters[offset + 2];
-        credentials = (String) parameters[offset + 3];
+        orgName = (String) parameters[offset + 2];
         
-		String templateName = IaaSParamUtil
+        Object credentialsObj = parameters[offset + 3];
+        if (credentialsObj instanceof byte[]) {
+        	credentials = new String((byte[]) credentialsObj);
+        } else {
+        	credentials = (String) credentialsObj;
+        }
+		
+		templateName = IaaSParamUtil
 				.getParameterValue(
 						VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
 						parameters);
@@ -84,7 +99,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 					VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
 					templateName);
 		}
-		String instanceName = IaaSParamUtil
+		instanceName = IaaSParamUtil
 				.getParameterValue(
 						VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
 						parameters);
@@ -93,9 +108,9 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 					VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
 					instanceName);
 		}
-		String vdcName = IaaSParamUtil.getParameterValue(
+		vdcName = IaaSParamUtil.getParameterValue(
 				VCloudAPIConstants.InstanceParameters.VDC_NAME, parameters);
-		if (vdcName != null) {
+		if (orgName != null) {
 			USE_CONFIGURED_VALUES.put(
 					VCloudAPIConstants.InstanceParameters.VDC_NAME, vdcName);
 		}
@@ -115,10 +130,10 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         IaasApi api;
         try {
         	if (vimServiceUrl == null) {
-            api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), vdcName);
+            api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), orgName);
         	} else {
 				api = VCloudAPI.getVCloudAPI(login, password, new URI(
-						iaasApiUrl), vdcName, vimServiceUrl,
+						iaasApiUrl), orgName, vimServiceUrl,
 						vimServiceUsername, vimServicePassword);
         	}
         } catch (Exception e) {

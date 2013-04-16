@@ -42,6 +42,6 @@ public interface IaaSNodesListener {
     
     public void registerNode(String nodeid, String jmxurl, NodeType type);
     
-    public void unregisterNode(String nodeid);
+    public void unregisterNode(String nodeid, NodeType type);
     
 }

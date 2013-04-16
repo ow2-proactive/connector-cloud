@@ -34,20 +34,13 @@
  */
 package org.ow2.proactive.iaas;
 
-import java.io.File;
-import java.security.KeyException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-
-import javax.management.MBeanRegistrationException;
-
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringException;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
@@ -58,6 +51,7 @@ import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
+import javax.management.MBeanRegistrationException;
 
 
 public abstract class IaasInfrastructure extends InfrastructureManager {
@@ -70,9 +64,9 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
     @Configurable(description = "Monitoring options.")
     protected String monitoringOptions = "";
-    
+
     protected static final int NB_OF_BASE_PARAMETERS = 3;
-    
+
     protected static final Logger logger = Logger.getLogger(IaasInfrastructure.class);
     protected Hashtable<String, IaasInstance> nodeNameToInstance = new Hashtable<String, IaasInstance>();
 
@@ -84,11 +78,11 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
     protected abstract Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
             Map<String, ?> nodeConfiguration);
-    
+
     protected IaaSMonitoringService iaaSMonitoringService;
     protected MBeanExposer mbeanExposer;
     protected String[] monitoringHostUrls;
-    
+
     public IaasInfrastructure() {
     }
 
@@ -98,11 +92,11 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         monitoringOptions = parameters[2].toString();
     }
 
-    public void setNodeSource (NodeSource ns){
+    public void setNodeSource(NodeSource ns) {
         super.setNodeSource(ns);
         startIaaSMonitoringService(monitoringOptions);
     }
-    
+
     @Override
     public void acquireNode() {
         acquireNode(USE_CONFIGURED_VALUES);
@@ -134,7 +128,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         try {
             Map<String, String> instanceParams = getInstanceParams(nodeName, nodeSourceName,
                     nodeConfiguration);
-			IaasInstance instance = api.startInstance(instanceParams);
+            IaasInstance instance = api.startInstance(instanceParams);
             nodeNameToInstance.put(nodeName, instance);
             logger.info("New " + api.getName() + " instance started " + nodeUrl);
         } catch (Exception e) {
@@ -142,11 +136,11 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                     "Failed to start " + api.getName() + " instance: " + e.getMessage());
             logger.error("Failed to start " + api.getName() + " instance", e);
         } finally {
-        	try {
-        		api.disconnect();
-        	} catch(Exception e) {
-        		logger.warn("Could not disconnect from the API.", e);
-        	}
+            try {
+                api.disconnect();
+            } catch (Exception e) {
+                logger.warn("Could not disconnect from the API.", e);
+            }
         }
     }
 
@@ -173,13 +167,13 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         } catch (Exception e) {
             throw new RMException("Failed to remove " + api.getName() + " node", e);
         } finally {
-        	try {
-        		api.disconnect();
-        	} catch(Exception e) {
-        		logger.warn("Could not disconnect from the API.", e);
-        	}
+            try {
+                api.disconnect();
+            } catch (Exception e) {
+                logger.warn("Could not disconnect from the API.", e);
+            }
         }
-        unregisterWithIaaSMonitoringService(node);
+        unregisterWithIaaSMonitoringService(node, NodeType.VM);
     }
 
     @Override
@@ -187,7 +181,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         logger.info("Node has been acquired " + node.getNodeInformation().getName());
         registerWithIaaSMonitoringService(node);
     }
-    
+
     // required by PluginDescriptor#PluginDescriptor()
     @SuppressWarnings("unused")
     public String getDescription() {
@@ -202,41 +196,23 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         }
         return defaultValue;
     }
-    
+
     private void startIaaSMonitoringService(String options) {
-        
+
         String nodeSourceName = nodeSource.getName();
-        
+
         if (isIaaSMonitoringServiceEnabled(options)) {
-            
-            String credentialsPath = getValueFromParameters("cred", options);
-            String hostsFile = getValueFromParameters("hostsfile", options);
-            
+
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
-            logger.debug(String.format("Params: ns='%s', cp='%s', hostsfile='%s'", 
-                    nodeSourceName, credentialsPath, hostsFile));
-            
+
             try {
-                IaaSMonitoringService monitService = new IaaSMonitoringService(
-                        (IaaSMonitoringApi) getAPI());
-                
-                if (credentialsPath != null) {
-                    monitService.setCredentials(new File(credentialsPath));
-                } else {
-                    logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
-                }
-                
-                if (hostsFile != null) {
-                    try {
-                        monitService.setHosts(hostsFile);
-                    } catch(IaaSMonitoringServiceException e){
-                        logger.error("Error loading the hosts monitoring file '" + hostsFile + "'.", e);
-                    }
-                }
-                
+                IaaSMonitoringService monitService = new IaaSMonitoringService((IaaSMonitoringApi) getAPI());
+
+                monitService.configure(options);
+
                 MBeanExposer exp = new MBeanExposer();
                 exp.registerMBeanLocally(nodeSourceName, monitService);
-                
+
                 iaaSMonitoringService = monitService;
                 mbeanExposer = exp;
 
@@ -244,31 +220,30 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 logger.error("Could not register IaaS Monitoring MBean.", e);
             } catch (IaaSMonitoringServiceException e) {
                 logger.error("Cannot initialize IaaSMonitoringService MBean:", e);
-            } catch (KeyException e) {
-                logger.error("Problem while processing credentials file: ", e);
             }
         } else {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': disabled.");
         }
     }
-    
+
     private boolean isIaaSMonitoringServiceEnabled(String options) {
         if (isPresentInParameters("monitoringEnabled", options)) {
             return true;
-        } else if (isPresentInParameters("monitoringDisabled", options)){
-            return false; 
+        } else if (isPresentInParameters("monitoringDisabled", options)) {
+            return false;
         } else {
-            throw new RuntimeException("Wrong monitoring options. " +
-                "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
+            throw new RuntimeException("Wrong monitoring options. "
+                + "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
         }
     }
-    
+
     private boolean isPresentInParameters(String flag, String options) {
         if (options.contains(flag)) {
             return true;
         }
         return false;
     }
+
     
     private String getValueFromParameters(String flag, String options) {
         String[] allpairs = options.split(",");
@@ -290,46 +265,34 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     private void registerWithIaaSMonitoringService(Node node) {
         if (iaaSMonitoringService != null) {
             try {
-                String jmxurlro = node.getProperty(RMNodeStarter.JMX_URL
-                        + JMXTransportProtocol.RO);
-                /*String token = node
-                        .getProperty(RMNodeStarter.NODE_ACCESS_TOKEN);
-                NodeType type = ("IAASHOST".equals(token)) ? NodeType.HOST
-                        : NodeType.VM;
-                
-                logger.info("New node registered (NAME='" + 
-                    node.getNodeInformation().getName() + 
-                    "', TOKEN='" + token + "').");
-                
-                */
-                iaaSMonitoringService.registerNode(node.getNodeInformation()
-                        .getName(), jmxurlro, NodeType.VM);
+                String jmxurlro = node.getProperty(RMNodeStarter.JMX_URL + JMXTransportProtocol.RO);
+                iaaSMonitoringService
+                        .registerNode(node.getNodeInformation().getName(), jmxurlro, NodeType.VM);
 
             } catch (ProActiveException e) {
                 logger.error("Error while getting node properties.", e);
             }
         }
     }
-    
+
     /*
-     * Unregister the specified PANode from Infrastructure Monitoring Service,
-     * if the service is enabled.
+     * Unregister the specified PANode from Infrastructure Monitoring Service, if the service is
+     * enabled.
      */
-    private void unregisterWithIaaSMonitoringService(Node node) {
+    private void unregisterWithIaaSMonitoringService(Node node, NodeType type) {
         if (iaaSMonitoringService != null) {
-            iaaSMonitoringService.unregisterNode(node.getNodeInformation()
-                    .getName());
+            iaaSMonitoringService.unregisterNode(node.getNodeInformation().getName(), type);
         }
     }
-    
+
     @Override
-    public void shutDown(){
-    	if (mbeanExposer!=null) { 
-    		try {
-				mbeanExposer.stop();
-			} catch (Exception e) {
-				logger.warn("Error while stopping mbeanExposer.", e);
-			}
-    	}
+    public void shutDown() {
+        if (mbeanExposer != null) {
+            try {
+                mbeanExposer.stop();
+            } catch (Exception e) {
+                logger.warn("Error while stopping mbeanExposer.", e);
+            }
+        }
     }
 }

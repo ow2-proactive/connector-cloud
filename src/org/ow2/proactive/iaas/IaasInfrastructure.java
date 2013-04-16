@@ -244,6 +244,21 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         return false;
     }
 
+    
+    private String getValueFromParameters(String flag, String options) {
+        String[] allpairs = options.split(",");
+        for (String pair: allpairs) {
+            if (pair.startsWith(flag + "=")) {
+                String[] keyvalue = pair.split("=");
+                if (keyvalue.length != 2) {
+                    throw new RuntimeException("Could not retrieve value for parameter '"+flag+"'.");
+                }
+                return keyvalue[1];
+            }
+        }
+        return null;
+    }
+    
     /*
      * Register a PANode with Infrastructure Monitoring Service, if enabled.
      */

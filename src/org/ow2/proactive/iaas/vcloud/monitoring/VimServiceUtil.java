@@ -429,6 +429,12 @@ public class VimServiceUtil {
 				"network.0.tx", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_NETWORK_COUNT,
 				"network.count", propertyMap);
+		
+		//VM
+		replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES, "cpu.cores",
+				propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,
+				"memory.total", propertyMap);
 	}
 
 	private static void replaceKeyIfPresent(String oldKey, String newKey,

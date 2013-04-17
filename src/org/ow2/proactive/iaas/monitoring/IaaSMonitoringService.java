@@ -111,7 +111,6 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * Resolve JMX Sigar to properties when possible.
      */
     private Boolean resolveSigar = false;
-    
 
     /**
      * Constructor.
@@ -170,7 +169,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
             logger.warn("Hosts monitoring file not provided.");
         }
     }
-    
+
     private void setHosts(String filepath) {
         Properties prop = new Properties();
         try {
@@ -239,12 +238,12 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
         if (type.equals(NodeType.HOST)) {
             jmxSupportedHosts.remove(nodeId);
-        } else if (type.equals(NodeType.VM)) { 
+        } else if (type.equals(NodeType.VM)) {
             jmxSupportedVMs.remove(nodeId);
         } else {
             throw new RuntimeException("Invalid node type.");
         }
-        
+
         logger.info("Unregistered node '" + nodeId + "' type '" + type + "'.");
     }
 
@@ -256,6 +255,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * @return the list of host Ids in the infrastructure.
      */
     public String[] getHosts() throws IaaSMonitoringServiceException {
+        logger.debug("Retrieving list of hosts.");
         HashSet<String> hosts = new HashSet<String>();
         if (useApi)
             try {
@@ -283,6 +283,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * @return the list of VM Ids in the infrastructure.
      */
     public String[] getVMs() throws IaaSMonitoringServiceException {
+        logger.debug("Retrieving list of VMs.");
         HashSet<String> vms = new HashSet<String>();
 
         String[] hosts = getHosts();
@@ -313,6 +314,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * VMProcesses list.
      */
     public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
+        logger.debug("Retrieving list of VMs in host: " + hostId);
 
         Set<String> vms = new HashSet<String>();
 
@@ -347,7 +349,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
     @Override
     public Map<String, String> getHostProperties(String hostId) throws IaaSMonitoringServiceException {
-
+        logger.debug("Retrieving properties from host: " + hostId);
         Map<String, String> properties = new HashMap<String, String>();
 
         if (useApi)
@@ -381,7 +383,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
     @Override
     public Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException {
-
+        logger.debug("Retrieving properties from VM: " + vmId);
         Map<String, String> properties = new HashMap<String, String>();
 
         if (useApi)
@@ -504,7 +506,6 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
         }
         return Utils.convertToStringMap(outp);
     }
-
 
     private String getValueFromParameters(String flag, String options) {
         String[] allpairs = options.split(",");

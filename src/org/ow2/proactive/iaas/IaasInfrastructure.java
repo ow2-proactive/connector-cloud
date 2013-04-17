@@ -43,6 +43,7 @@ import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceLoader;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
 import org.ow2.proactive.iaas.monitoring.NodeType;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
@@ -206,7 +207,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
 
             try {
-                IaaSMonitoringService monitService = new IaaSMonitoringService((IaaSMonitoringApi) getAPI());
+                IaaSMonitoringService monitService = new IaaSMonitoringServiceLoader((IaaSMonitoringApi) getAPI());
 
                 monitService.configure(nodeSourceName, options);
 

@@ -61,7 +61,7 @@ public class IaaSMonitoringServiceLoader extends IaaSMonitoringService {
             throws IaaSMonitoringServiceException {
         super(iaaSMonitoringApi);
     }
-    
+
     @Override
     /**
      * Get the list of host IDs from:

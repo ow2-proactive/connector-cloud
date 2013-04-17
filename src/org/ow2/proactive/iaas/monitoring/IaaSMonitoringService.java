@@ -39,24 +39,16 @@ package org.ow2.proactive.iaas.monitoring;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.List;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Properties;
 import org.apache.log4j.Logger;
 import java.io.FileInputStream;
 import java.security.KeyException;
 import java.io.FileNotFoundException;
 import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.utils.JmxUtils;
-import org.ow2.proactive.iaas.utils.VMsMerger;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 
 public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNodesListener {
@@ -116,7 +108,7 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
      * Name of the Node Source being monitored.
      */
     protected String nsname;
-    
+
     /**
      * Constructor.
      * @param iaaSMonitoringApi
@@ -137,11 +129,11 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
      * @param options 
      */
     public void configure(String nsName, String options) {
-        Boolean useApi = isPresentInParameters("useApi", options);
-        Boolean useVMProcesses = isPresentInParameters("useVMProcesses", options);
-        Boolean resolveSigar = isPresentInParameters("resolveSigar", options);
-        String credentialsPath = getValueFromParameters("cred", options);
-        String hostsFile = getValueFromParameters("hostsfile", options);
+        Boolean useApi = Utils.isPresentInParameters("useApi", options);
+        Boolean useVMProcesses = Utils.isPresentInParameters("useVMProcesses", options);
+        Boolean resolveSigar = Utils.isPresentInParameters("resolveSigar", options);
+        String credentialsPath = Utils.getValueFromParameters("cred", options);
+        String hostsFile = Utils.getValueFromParameters("hostsfile", options);
 
         logger.debug(String
                 .format("Monitoring params: sigarCred='%s', hostsfile='%s', useApi='%b', useVMProcesses='%b', resolveSigar='%b'",
@@ -160,7 +152,7 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
         }
 
         this.nsname = nsName;
-        
+
         // Use API monitoring?
         this.useApi = useApi;
 
@@ -218,13 +210,6 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
     }
 
     @Override
-    /**
-     * Register a node in either the host or the VM JMX table. 
-     * This allows to keep track of the monitorable entities (either host or vm).
-     * @param nodeId id of the node, must be the same as the VM-id provided by the IaaS API.
-     * @param jmxUrl jmx url of the RMNode running in the entity (host or vm).
-     * @param type of the entity, either host or vm.
-     */
     public void registerNode(String nodeId, String jmxUrl, NodeType type) {
         if (credentialsSigar == null)
             return;
@@ -256,39 +241,17 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
     }
 
     @Override
-    /**
-     * Get the list of host IDs from:
-     * - Infrastructure API.
-     * - JMX table of registered hosts.
-     * @return the list of host Ids in the infrastructure.
-     */
     public abstract String[] getHosts() throws IaaSMonitoringServiceException;
 
     @Override
-    /**
-     * Get the list of Ids of each VM in the infrastructure.
-     * It collects the VMs as listed by these sources:
-     * - The method getVM(host) for each host listed by getHosts(), 
-     * - All the VMs registered in the JMX table for VMs.
-     * @return the list of VM Ids in the infrastructure.
-     */
     public abstract String[] getVMs() throws IaaSMonitoringServiceException;
 
     @Override
-    /**
-     * Get the list of VMs in the host provided.
-     * The list of VMs is obtained from the following sources:
-     * - Infrastructure API.
-     * - Parsing of processes running in the host.
-     * NOTE: we assume that the RMNode running in each VM has the same name as the ID of the VM
-     * as shown by the infrastructure API and the id identified by means of the VM process running
-     * in the host. This way, every VM listed in jmxSupportedVMs will be already included in the 
-     * VMProcesses list.
-     */
     public abstract String[] getVMs(String hostId) throws IaaSMonitoringServiceException;
 
     @Override
-    public abstract Map<String, String> getHostProperties(String hostId) throws IaaSMonitoringServiceException;
+    public abstract Map<String, String> getHostProperties(String hostId)
+            throws IaaSMonitoringServiceException;
 
     @Override
     public abstract Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException;
@@ -358,24 +321,6 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
         return summary;
     }
 
-    private String getValueFromParameters(String flag, String options) {
-        String[] allpairs = options.split(",");
-        for (String pair : allpairs) {
-            if (pair.startsWith(flag + "=")) {
-                String[] keyvalue = pair.split("=");
-                if (keyvalue.length != 2) {
-                    throw new RuntimeException("Could not retrieve value for parameter '" + flag + "'.");
-                }
-                return keyvalue[1];
-            }
-        }
-        return null;
-    }
-
-    private boolean isPresentInParameters(String flag, String options) {
-        if (options.contains(flag)) {
-            return true;
-        }
-        return false;
+    public void shutDown() {
     }
 }

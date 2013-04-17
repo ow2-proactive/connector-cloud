@@ -42,6 +42,7 @@ import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
+import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceCacher;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
 import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceLoader;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
@@ -207,7 +208,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
 
             try {
-                IaaSMonitoringService monitService = new IaaSMonitoringServiceLoader((IaaSMonitoringApi) getAPI());
+                IaaSMonitoringService monitService = new IaaSMonitoringServiceCacher((IaaSMonitoringApi) getAPI());
 
                 monitService.configure(nodeSourceName, options);
 
@@ -245,21 +246,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         return false;
     }
 
-    
-    private String getValueFromParameters(String flag, String options) {
-        String[] allpairs = options.split(",");
-        for (String pair: allpairs) {
-            if (pair.startsWith(flag + "=")) {
-                String[] keyvalue = pair.split("=");
-                if (keyvalue.length != 2) {
-                    throw new RuntimeException("Could not retrieve value for parameter '"+flag+"'.");
-                }
-                return keyvalue[1];
-            }
-        }
-        return null;
-    }
-    
     /*
      * Register a PANode with Infrastructure Monitoring Service, if enabled.
      */
@@ -293,6 +279,14 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 mbeanExposer.stop();
             } catch (Exception e) {
                 logger.warn("Error while stopping mbeanExposer.", e);
+            }
+        }
+        
+        if (iaaSMonitoringService != null) {
+            try {
+                iaaSMonitoringService.shutDown();
+            } catch (Exception e) {
+                logger.warn("Error while shutting down the monitoring service.", e);
             }
         }
     }

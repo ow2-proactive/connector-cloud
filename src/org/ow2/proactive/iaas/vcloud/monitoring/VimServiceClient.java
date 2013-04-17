@@ -57,119 +57,122 @@ import com.vmware.vim25.VimService;
 
 public class VimServiceClient {
 
-    private static final Logger logger = Logger
-            .getLogger(VimServiceClient.class);
+	private static final Logger logger = Logger
+			.getLogger(VimServiceClient.class);
 
-    private final ManagedObjectReference mobjRef = new ManagedObjectReference();
-    private final String mobjName = "ServiceInstance";
-    private VimService vimService;
-    private VimPortType vimPort;
-    private ServiceContent serviceContent;
+	private ManagedObjectReference mobjRef;
+	private final String mobjName = "ServiceInstance";
+	private VimService vimService;
+	private VimPortType vimPort;
+	private ServiceContent serviceContent;
 
-    private boolean isConnected = false;
+	private boolean isConnected = false;
 
-    public void initialize(String url, String username, String password)
-            throws ViServiceClientException {
-        try {
-            VimServiceUtil.disableHttpsCertificateVerification();
-            VimServiceUtil.disableHostNameVarifier();
+	public void initialize(String url, String username, String password)
+			throws ViServiceClientException {
+		try {
+			mobjRef = new ManagedObjectReference();
+			VimServiceUtil.disableHttpsCertificateVerification();
+			VimServiceUtil.disableHostNameVarifier();
 
-            mobjRef.setType(mobjName);
-            mobjRef.setValue(mobjName);
+			mobjRef.setType(mobjName);
+			mobjRef.setValue(mobjName);
 
-            vimService = new VimService();
-            vimPort = vimService.getVimPort();
+			vimService = new VimService();
+			vimPort = vimService.getVimPort();
 
-            Map<String, Object> reqCtx = ((BindingProvider) vimPort)
-                    .getRequestContext();
-            reqCtx.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, url);
-            reqCtx.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
+			Map<String, Object> reqCtx = ((BindingProvider) vimPort)
+					.getRequestContext();
+			reqCtx.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, url);
+			reqCtx.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
 
-            serviceContent = vimPort.retrieveServiceContent(mobjRef);
-            vimPort.login(serviceContent.getSessionManager(), username,
-                    password, null);
+			serviceContent = vimPort.retrieveServiceContent(mobjRef);
+			vimPort.login(serviceContent.getSessionManager(), username,
+					password, null);
 
-            isConnected = true;
-        } catch (Exception error) {
-            logger.error("Cannot initialize VCenterServiceClient instance:",
-                    error);
-            throw new ViServiceClientException(error);
-        }
-    }
+			isConnected = true;
+		} catch (Exception error) {
+			logger.error("Cannot initialize VCenterServiceClient instance:",
+					error);
+			throw new ViServiceClientException(error);
+		}
+	}
 
-    public String[] getHosts() throws ViServiceClientException {
-        return getmObjIds("HostSystem", getRootFolder());
-    }
+	public String[] getHosts() throws ViServiceClientException {
+		return getmObjIds("HostSystem", getRootFolder());
+	}
 
-    public String[] getVMs() throws ViServiceClientException {
-        return getmObjIds("VirtualMachine", getRootFolder());
-    }
+	public String[] getVMs() throws ViServiceClientException {
+		return getmObjIds("VirtualMachine", getRootFolder());
+	}
 
-    public String[] getVMs(String hostId) throws ViServiceClientException {
-        return getmObjIds("VirtualMachine",
-                VimServiceUtil.getmObjRefByHostId(hostId));
-    }
+	public String[] getVMs(String hostId) throws ViServiceClientException {
+		return getmObjIds("VirtualMachine",
+				VimServiceUtil.getmObjRefByHostId(hostId));
+	}
 
-    public Map<String, String> getHostProperties(String hostId)
-            throws ViServiceClientException {
-        try {
-            Map<String, String> propMap = new HashMap<String, String>();
-            propMap.putAll(VimServiceUtil.getHostStaticProperties(hostId,
-                    HOST_STATIC_PROPERTIES, serviceContent, vimPort));
-            propMap.putAll(VimServiceUtil.getHostDynamicProperties(hostId,
-                    DYNAMIC_PROPERTIES, serviceContent, vimPort));
-            return propMap;
-        } catch (Exception error) {
-            logger.error("Cannot retrieve host properties: " + hostId, error);
-            throw new ViServiceClientException(error);
-        }
-    }
+	public Map<String, String> getHostProperties(String hostId)
+			throws ViServiceClientException {
+		try {
+			Map<String, String> propMap = new HashMap<String, String>();
+			propMap.putAll(VimServiceUtil.getHostStaticProperties(hostId,
+					HOST_STATIC_PROPERTIES, serviceContent, vimPort));
+			propMap.putAll(VimServiceUtil.getHostDynamicProperties(hostId,
+					DYNAMIC_PROPERTIES, serviceContent, vimPort));
+			VimServiceUtil.updateKeys(propMap);
+			return propMap;
+		} catch (Exception error) {
+			logger.error("Cannot retrieve host properties: " + hostId, error);
+			throw new ViServiceClientException(error);
+		}
+	}
 
-    public Map<String, String> getVMProperties(String vmId)
-            throws ViServiceClientException {
-        try {
-            Map<String, String> propMap = new HashMap<String, String>();
-            propMap.putAll(VimServiceUtil.getVMStaticProperties(vmId,
-                    VM_STATIC_PROPERTIES, serviceContent, vimPort));
-            propMap.putAll(VimServiceUtil.getVmDynamicProperties(vmId,
-                    DYNAMIC_PROPERTIES, serviceContent, vimPort));
-            return propMap;
-        } catch (Exception error) {
-            logger.error("Cannot retrieve vm properties: " + vmId, error);
-            throw new ViServiceClientException(error);
-        }
-    }
+	public Map<String, String> getVMProperties(String vmId)
+			throws ViServiceClientException {
+		try {
+			Map<String, String> propMap = new HashMap<String, String>();
+			propMap.putAll(VimServiceUtil.getVMStaticProperties(vmId,
+					VM_STATIC_PROPERTIES, serviceContent, vimPort));
+			propMap.putAll(VimServiceUtil.getVmDynamicProperties(vmId,
+					DYNAMIC_PROPERTIES, serviceContent, vimPort));
+			VimServiceUtil.updateKeys(propMap);
+			return propMap;
+		} catch (Exception error) {
+			logger.error("Cannot retrieve vm properties: " + vmId, error);
+			throw new ViServiceClientException(error);
+		}
+	}
 
-    private ManagedObjectReference getRootFolder() {
-        return serviceContent.getRootFolder();
-    }
+	private ManagedObjectReference getRootFolder() {
+		return serviceContent.getRootFolder();
+	}
 
-    private String[] getmObjIds(String nodeType, ManagedObjectReference container)
-            throws ViServiceClientException {
-        try {
-            List<ManagedObjectReference> nodes = VimServiceUtil
-                    .getmObjRefsInContainerByType(nodeType, container,
-                            serviceContent, vimPort);
-            String[] nodeIds = new String[nodes.size()];
-            for (int i = 0; i < nodeIds.length; i++) {
-                nodeIds[i] = nodes.get(i).getValue();
-            }
-            return nodeIds;
-        } catch (Exception error) {
-            logger.error("Cannot get the list of " + nodeType, error);
-            throw new ViServiceClientException(error);
-        }
-    }
+	private String[] getmObjIds(String nodeType,
+			ManagedObjectReference container) throws ViServiceClientException {
+		try {
+			List<ManagedObjectReference> nodes = VimServiceUtil
+					.getmObjRefsInContainerByType(nodeType, container,
+							serviceContent, vimPort);
+			String[] nodeIds = new String[nodes.size()];
+			for (int i = 0; i < nodeIds.length; i++) {
+				nodeIds[i] = nodes.get(i).getValue();
+			}
+			return nodeIds;
+		} catch (Exception error) {
+			logger.error("Cannot get the list of " + nodeType, error);
+			throw new ViServiceClientException(error);
+		}
+	}
 
-    public void close() throws ViServiceClientException {
-        if (isConnected) {
-            try {
-                vimPort.logout(serviceContent.getSessionManager());
-            } catch (RuntimeFaultFaultMsg e) {
-                logger.error("Cannot logout:", e);
-                throw new ViServiceClientException(e);
-            }
-            isConnected = false;
-        }
-    }
+	public void close() throws ViServiceClientException {
+		if (isConnected) {
+			try {
+				vimPort.logout(serviceContent.getSessionManager());
+			} catch (RuntimeFaultFaultMsg e) {
+				logger.error("Cannot logout:", e);
+				throw new ViServiceClientException(e);
+			}
+			isConnected = false;
+		}
+	}
 }

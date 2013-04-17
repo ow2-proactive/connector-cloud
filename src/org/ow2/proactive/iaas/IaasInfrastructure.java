@@ -208,7 +208,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             try {
                 IaaSMonitoringService monitService = new IaaSMonitoringService((IaaSMonitoringApi) getAPI());
 
-                monitService.configure(options);
+                monitService.configure(nodeSourceName, options);
 
                 MBeanExposer exp = new MBeanExposer();
                 exp.registerMBeanLocally(nodeSourceName, monitService);

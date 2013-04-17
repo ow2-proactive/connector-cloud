@@ -113,6 +113,11 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     private Boolean resolveSigar = false;
 
     /**
+     * Name of the Node Source being monitored.
+     */
+    private String nsname;
+    
+    /**
      * Constructor.
      * @param iaaSMonitoringApi
      * @throws IaaSMonitoringServiceException
@@ -128,9 +133,10 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
     /**
      * Configure the monitoring module.
+     * @param nsName Node Source name. 
      * @param options 
      */
-    public void configure(String options) {
+    public void configure(String nsName, String options) {
         Boolean useApi = isPresentInParameters("useApi", options);
         Boolean useVMProcesses = isPresentInParameters("useVMProcesses", options);
         Boolean resolveSigar = isPresentInParameters("resolveSigar", options);
@@ -153,6 +159,8 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
             logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
         }
 
+        this.nsname = nsName;
+        
         // Use API monitoring?
         this.useApi = useApi;
 
@@ -255,7 +263,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * @return the list of host Ids in the infrastructure.
      */
     public String[] getHosts() throws IaaSMonitoringServiceException {
-        logger.debug("Retrieving list of hosts.");
+        logger.debug("Retrieving list of hosts from IaaS node source: " + nsname);
         HashSet<String> hosts = new HashSet<String>();
         if (useApi)
             try {
@@ -283,7 +291,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * @return the list of VM Ids in the infrastructure.
      */
     public String[] getVMs() throws IaaSMonitoringServiceException {
-        logger.debug("Retrieving list of VMs.");
+        logger.debug("Retrieving list of VMs from IaaS node source: " + nsname);
         HashSet<String> vms = new HashSet<String>();
 
         String[] hosts = getHosts();
@@ -314,7 +322,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
      * VMProcesses list.
      */
     public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
-        logger.debug("Retrieving list of VMs in host: " + hostId);
+        logger.debug("Retrieving list of VMs in host " + hostId + " from IaaS node source " + nsname);
 
         Set<String> vms = new HashSet<String>();
 
@@ -349,7 +357,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
     @Override
     public Map<String, String> getHostProperties(String hostId) throws IaaSMonitoringServiceException {
-        logger.debug("Retrieving properties from host: " + hostId);
+        logger.debug("Retrieving properties from host " + hostId + " from IaaS node source " + nsname);
         Map<String, String> properties = new HashMap<String, String>();
 
         if (useApi)
@@ -383,7 +391,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
     @Override
     public Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException {
-        logger.debug("Retrieving properties from VM: " + vmId);
+        logger.debug("Retrieving properties from VM " + vmId + " in IaaS node source " + nsname);
         Map<String, String> properties = new HashMap<String, String>();
 
         if (useApi)

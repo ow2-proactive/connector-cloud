@@ -100,7 +100,6 @@ public class VimServiceClient {
 	}
 
 	private void connect() throws ViServiceClientException {
-		System.out.println("connect()");
 		if (!isConnected) {
 			try {
 				vimService = new VimService();
@@ -127,7 +126,6 @@ public class VimServiceClient {
 	}
 
 	private void disconnet() throws ViServiceClientException {
-		System.out.println("disconnect");
 		if (isConnected) {
 			try {
 				vimPort.logout(serviceContent.getSessionManager());

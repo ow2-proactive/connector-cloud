@@ -44,6 +44,7 @@ import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.VM_ST
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.ws.BindingProvider;
 
@@ -60,41 +61,97 @@ public class VimServiceClient {
 	private static final Logger logger = Logger
 			.getLogger(VimServiceClient.class);
 
-	private ManagedObjectReference mobjRef;
+	/** 20 minutes session renewal interval. */
+	private static final long LOGIN_INTERVAL = TimeUnit.MINUTES.toMillis(20);
+
+	private final ManagedObjectReference mobjRef = new ManagedObjectReference();
 	private final String mobjName = "ServiceInstance";
 	private VimService vimService;
 	private VimPortType vimPort;
 	private ServiceContent serviceContent;
 
+	private String vimServiceUrl;
+	private String username;
+	private String password;
+
+	private volatile long nextLoginTime = -1;
+
 	private boolean isConnected = false;
 
 	public void initialize(String url, String username, String password)
 			throws ViServiceClientException {
+		this.vimServiceUrl = url;
+		this.username = username;
+		this.password = password;
 		try {
-			mobjRef = new ManagedObjectReference();
+
 			VimServiceUtil.disableHttpsCertificateVerification();
 			VimServiceUtil.disableHostNameVarifier();
 
 			mobjRef.setType(mobjName);
 			mobjRef.setValue(mobjName);
 
-			vimService = new VimService();
-			vimPort = vimService.getVimPort();
-
-			Map<String, Object> reqCtx = ((BindingProvider) vimPort)
-					.getRequestContext();
-			reqCtx.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY, url);
-			reqCtx.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
-
-			serviceContent = vimPort.retrieveServiceContent(mobjRef);
-			vimPort.login(serviceContent.getSessionManager(), username,
-					password, null);
-
-			isConnected = true;
+			ensureConnected();
 		} catch (Exception error) {
 			logger.error("Cannot initialize VCenterServiceClient instance:",
 					error);
 			throw new ViServiceClientException(error);
+		}
+	}
+
+	private void connect() throws ViServiceClientException {
+		System.out.println("connect()");
+		if (!isConnected) {
+			try {
+				vimService = new VimService();
+				vimPort = vimService.getVimPort();
+
+				Map<String, Object> reqCtx = ((BindingProvider) vimPort)
+						.getRequestContext();
+				reqCtx.put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
+						vimServiceUrl);
+				reqCtx.put(BindingProvider.SESSION_MAINTAIN_PROPERTY, true);
+
+				serviceContent = vimPort.retrieveServiceContent(mobjRef);
+				vimPort.login(serviceContent.getSessionManager(), username,
+						password, null);
+				setNextLoginTime();
+			} catch (Exception error) {
+				logger.error(
+						"Cannot initialize VCenterServiceClient instance:",
+						error);
+				throw new ViServiceClientException(error);
+			}
+		}
+		isConnected = true;
+	}
+
+	private void disconnet() throws ViServiceClientException {
+		System.out.println("disconnect");
+		if (isConnected) {
+			try {
+				vimPort.logout(serviceContent.getSessionManager());
+			} catch (RuntimeFaultFaultMsg e) {
+				logger.error("Cannot logout:", e);
+				throw new ViServiceClientException(e);
+			}
+		}
+		isConnected = false;
+	}
+
+	/*
+	 * At the first attempt after 'LOGIN_INTERVAL' period, we explicitly
+	 * disconnect and the reconnect to ensure that we have a valid VimService
+	 * session.
+	 */
+	private void ensureConnected() throws ViServiceClientException {
+		if (System.currentTimeMillis() > nextLoginTime) {
+			synchronized (this) {
+				if (System.currentTimeMillis() > nextLoginTime) {
+					disconnet();
+					connect();
+				}
+			}
 		}
 	}
 
@@ -113,6 +170,7 @@ public class VimServiceClient {
 
 	public Map<String, String> getHostProperties(String hostId)
 			throws ViServiceClientException {
+		ensureConnected();
 		try {
 			Map<String, String> propMap = new HashMap<String, String>();
 			propMap.putAll(VimServiceUtil.getHostStaticProperties(hostId,
@@ -129,6 +187,7 @@ public class VimServiceClient {
 
 	public Map<String, String> getVMProperties(String vmId)
 			throws ViServiceClientException {
+		ensureConnected();
 		try {
 			Map<String, String> propMap = new HashMap<String, String>();
 			propMap.putAll(VimServiceUtil.getVMStaticProperties(vmId,
@@ -149,6 +208,7 @@ public class VimServiceClient {
 
 	private String[] getmObjIds(String nodeType,
 			ManagedObjectReference container) throws ViServiceClientException {
+		ensureConnected();
 		try {
 			List<ManagedObjectReference> nodes = VimServiceUtil
 					.getmObjRefsInContainerByType(nodeType, container,
@@ -174,5 +234,9 @@ public class VimServiceClient {
 			}
 			isConnected = false;
 		}
+	}
+
+	private void setNextLoginTime() {
+		nextLoginTime = System.currentTimeMillis() + LOGIN_INTERVAL;
 	}
 }

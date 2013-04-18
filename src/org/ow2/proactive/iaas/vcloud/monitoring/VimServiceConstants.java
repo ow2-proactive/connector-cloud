@@ -40,10 +40,10 @@ package org.ow2.proactive.iaas.vcloud.monitoring;
 public class VimServiceConstants {
 
     // Static properties of host systems.
-    public static final String PROP_CPU_FREQUENCY = "summary.hardware.cpuMhz";
-    public static final String PROP_CPU_CORES = "summary.hardware.numCpuCores";
-    public static final String PROP_MEMORY_TOTAL = "summary.hardware.memorySize";
-    public static final String PROP_NETWORK_COUNT = "summary.hardware.numNics";
+    public static final String PROP_HOST_CPU_FREQUENCY = "summary.hardware.cpuMhz";
+    public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
+    public static final String PROP_HOST_MEMORY_TOTAL = "summary.hardware.memorySize";
+    public static final String PROP_HOST_NETWORK_COUNT = "summary.hardware.numNics";
 
     // Static properties for VMs.
     public static final String PROP_VM_CPU_CORES = "config.hardware.numCPU";
@@ -57,8 +57,8 @@ public class VimServiceConstants {
     
     
     public static final String[] HOST_STATIC_PROPERTIES = new String[] {
-            PROP_CPU_CORES, PROP_CPU_FREQUENCY, PROP_MEMORY_TOTAL,
-            PROP_NETWORK_COUNT };
+            PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY, PROP_HOST_MEMORY_TOTAL,
+            PROP_HOST_NETWORK_COUNT };
 
     public static final String[] VM_STATIC_PROPERTIES = new String[] {
             PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL };

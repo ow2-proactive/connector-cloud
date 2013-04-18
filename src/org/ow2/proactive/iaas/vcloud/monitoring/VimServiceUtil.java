@@ -411,14 +411,14 @@ public class VimServiceUtil {
 	}
 
 	public static void updateKeys(Map<String, String> propertyMap) {
-		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_CORES, "cpu.cores",
+		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES, "cpu.cores",
 				propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_FREQUENCY,
+		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_FREQUENCY,
 				"cpu.frequency", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_USAGE, "cpu.usage",
 				propertyMap);
 
-		replaceKeyIfPresent(VimServiceConstants.PROP_MEMORY_TOTAL,
+		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_MEMORY_TOTAL,
 				"memory.total", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_MEM_USAGE, "memory.usage",
 				propertyMap);
@@ -427,7 +427,7 @@ public class VimServiceUtil {
 				"network.0.rx", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
 				"network.0.tx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_NETWORK_COUNT,
+		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
 				"network.count", propertyMap);
 		
 		//VM

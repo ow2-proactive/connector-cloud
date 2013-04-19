@@ -1,16 +1,26 @@
 package org.ow2.proactive.iaas.vcloud.monitoring;
 
+import java.text.NumberFormat;
 import java.util.Map;
 
 public class VimServicePropertyUtil {
 
-	private static class VM {
+	public static class VM {
 		public static void standardize(Map<String, String> propertyMap) {
-
+			standardizeCommonProperties(propertyMap);
+			replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES,
+					"cpu.cores", propertyMap);
+			replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,
+					"mem.total", propertyMap);
+			replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_COMMITTED,
+					"storage.used", propertyMap);
+			replaceStorageUnCommitted(
+					VimServiceConstants.PROP_VM_STORAGE_UNCOMMITTED,
+					"storage.total", propertyMap);
 		}
 	}
 
-	private static class HOST {
+	public static class HOST {
 		public static void standardize(Map<String, String> propertyMap) {
 			standardizeCommonProperties(propertyMap);
 			replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES,
@@ -23,7 +33,6 @@ public class VimServicePropertyUtil {
 					"memory.total", propertyMap);
 			replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
 					"network.count", propertyMap);
-
 		}
 	}
 
@@ -32,13 +41,21 @@ public class VimServicePropertyUtil {
 		// adjust value
 		replaceUsagePropertyIfPresent(VimServiceConstants.PROP_CPU_USAGE,
 				"cpu.usage", propertyMap);
+		replaceUsagePropertyIfPresent(VimServiceConstants.PROP_MEM_USAGE,
+				"mem.usage", propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE,
+				"network.0.rx", propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
+				"network.0.tx", propertyMap);
+		replaceStatus(VimServiceConstants.PROP_STATE, "status", propertyMap);
 	}
 
 	private static void replaceFrequencyPropertyIfPresent(String oldKey,
 			String newKey, Map<String, String> propertyMap) {
 		String frequency = propertyMap.remove(oldKey);
 		if (frequency != null) {
-			frequency = Long.toString(Long.parseLong(frequency) / (long) 1000);
+			frequency = Float
+					.toString((float) Long.parseLong(frequency) / 1000);
 			propertyMap.put(newKey, frequency);
 		}
 	}
@@ -47,44 +64,34 @@ public class VimServicePropertyUtil {
 			String newKey, Map<String, String> propertyMap) {
 		String usage = propertyMap.remove(oldKey);
 		if (usage != null) {
-			usage = Float.toString(Float.parseFloat(usage) / (float) 10000);
+			NumberFormat nf = NumberFormat.getInstance();
+			nf.setMaximumFractionDigits(4);
+			nf.setGroupingUsed(false);
+			usage = nf.format(Float.parseFloat(usage) / 10000);
 			propertyMap.put(newKey, usage);
 		}
 	}
 
-	private static void replaceMemoryTotalIfPresent(String oldKey,
-			String newKey, Map<String, String> propertyMap) {
-		String totalMemory = propertyMap.remove(oldKey);
-		if (totalMemory != null) {
-
+	private static void replaceStorageUnCommitted(String oldKey, String newKey,
+			Map<String, String> propertyMap) {
+		String storageUncommitted = propertyMap.remove(oldKey);
+		if (storageUncommitted != null) {
+			String storageCommitted = propertyMap.get("storage.used");
+			if (storageCommitted != null) {
+				String total = Long.toString(Long.parseLong(storageUncommitted)
+						+ Long.parseLong(storageCommitted));
+				propertyMap.put(newKey, total);
+			}
 		}
-
 	}
 
-	public static void updateKeys(Map<String, String> propertyMap) {
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES,
-				"cpu.cores", propertyMap);
-
-		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_USAGE, "cpu.usage",
-				propertyMap);
-
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_MEMORY_TOTAL,
-				"memory.total", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_MEM_USAGE, "memory.usage",
-				propertyMap);
-
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE,
-				"network.0.rx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
-				"network.0.tx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
-				"network.count", propertyMap);
-
-		// VM
-		replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES, "cpu.cores",
-				propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,
-				"memory.total", propertyMap);
+	private static void replaceStatus(String oldKey, String newKey,
+			Map<String, String> propertyMap) {
+		String status = propertyMap.remove(oldKey);
+		if (status != null) {
+			status = ("POWERED_ON".equalsIgnoreCase(status)) ? "up" : "down";
+			propertyMap.put(newKey, status);
+		}
 	}
 
 	private static void replaceKeyIfPresent(String oldKey, String newKey,

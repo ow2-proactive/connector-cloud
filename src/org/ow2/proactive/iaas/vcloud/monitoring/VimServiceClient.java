@@ -175,7 +175,7 @@ public class VimServiceClient {
 					HOST_STATIC_PROPERTIES, serviceContent, vimPort));
 			propMap.putAll(VimServiceUtil.getHostDynamicProperties(hostId,
 					DYNAMIC_PROPERTIES, serviceContent, vimPort));
-			VimServiceUtil.updateKeys(propMap);
+			VimServicePropertyUtil.HOST.standardize(propMap);
 			return propMap;
 		} catch (Exception error) {
 			logger.error("Cannot retrieve host properties: " + hostId, error);
@@ -192,7 +192,7 @@ public class VimServiceClient {
 					VM_STATIC_PROPERTIES, serviceContent, vimPort));
 			propMap.putAll(VimServiceUtil.getVmDynamicProperties(vmId,
 					DYNAMIC_PROPERTIES, serviceContent, vimPort));
-			VimServiceUtil.updateKeys(propMap);
+			VimServicePropertyUtil.VM.standardize(propMap);
 			return propMap;
 		} catch (Exception error) {
 			logger.error("Cannot retrieve vm properties: " + vmId, error);

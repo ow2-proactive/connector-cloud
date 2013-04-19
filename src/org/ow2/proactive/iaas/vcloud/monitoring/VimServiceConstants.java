@@ -39,34 +39,38 @@ package org.ow2.proactive.iaas.vcloud.monitoring;
 
 public class VimServiceConstants {
 
-    // Static properties of host systems.
-    public static final String PROP_HOST_CPU_FREQUENCY = "summary.hardware.cpuMhz";
-    public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
-    public static final String PROP_HOST_MEMORY_TOTAL = "summary.hardware.memorySize";
-    public static final String PROP_HOST_NETWORK_COUNT = "summary.hardware.numNics";
+	// Static properties of host systems.
+	public static final String PROP_HOST_CPU_FREQUENCY = "summary.hardware.cpuMhz";
+	public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
+	public static final String PROP_HOST_MEMORY_TOTAL = "summary.hardware.memorySize";
+	public static final String PROP_HOST_NETWORK_COUNT = "summary.hardware.numNics";
 
-    // Static properties for VMs.
-    public static final String PROP_VM_CPU_CORES = "config.hardware.numCPU";
-    public static final String PROP_VM_MEMEORY_TOTAL = "config.hardware.memoryMB";
+	// Static properties for VMs.
+	public static final String PROP_VM_CPU_CORES = "config.hardware.numCPU";
+	public static final String PROP_VM_MEMEORY_TOTAL = "config.hardware.memoryMB";
+	public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
+	public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
 
-    // Dynamic properties for both host systems and virtual machines.
-    public static final String PROP_CPU_USAGE = "cpu.usage.AVERAGE";
-    public static final String PROP_MEM_USAGE = "mem.usage.AVERAGE";
-    public static final String PROP_NET_RX_RATE = "net.bytesRx.AVERAGE";
-    public static final String PROP_NET_TX_RATE = "net.bytesTx.AVERAGE";
-    
-    
-    public static final String[] HOST_STATIC_PROPERTIES = new String[] {
-            PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY, PROP_HOST_MEMORY_TOTAL,
-            PROP_HOST_NETWORK_COUNT };
+	// Dynamic properties for both host systems and virtual machines.
+	public static final String PROP_CPU_USAGE = "cpu.usage.AVERAGE";
+	public static final String PROP_MEM_USAGE = "mem.usage.AVERAGE";
+	public static final String PROP_NET_RX_RATE = "net.bytesRx.AVERAGE";
+	public static final String PROP_NET_TX_RATE = "net.bytesTx.AVERAGE";
+	public static final String PROP_STATE = "runtime.powerState";
 
-    public static final String[] VM_STATIC_PROPERTIES = new String[] {
-            PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL };
+	public static final String[] HOST_STATIC_PROPERTIES = new String[] {
+			PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY,
+			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT };
 
-    public static final String[] DYNAMIC_PROPERTIES = new String[] {
-            PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE };
+	public static final String[] VM_STATIC_PROPERTIES = new String[] {
+			PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL, PROP_VM_STORAGE_COMMITTED,
+			PROP_VM_STORAGE_UNCOMMITTED };
 
-    // non-instantiable
-    private VimServiceConstants() {
-    }
+	public static final String[] DYNAMIC_PROPERTIES = new String[] {
+			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE,
+			PROP_STATE };
+
+	// non-instantiable
+	private VimServiceConstants() {
+	}
 }

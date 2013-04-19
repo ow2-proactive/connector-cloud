@@ -37,11 +37,22 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
-
 public interface IaaSNodesListener {
-    
+
+    /**
+     * Register a node in either the host or the VM JMX table. 
+     * This allows to keep track of the monitorable entities (either host or vm).
+     * @param nodeId id of the node.
+     * @param jmxUrl jmx url of the RMNode running in the entity (host or vm).
+     * @param type of the entity, either host or vm.
+     */
     public void registerNode(String nodeid, String jmxurl, NodeType type);
-    
+
+    /**
+     * Un-registers the node from the host or the VM JMX table. 
+     * @param nodeId id of the node.
+     * @param type of the entity, either host or vm.
+     */
     public void unregisterNode(String nodeid, NodeType type);
-    
+
 }

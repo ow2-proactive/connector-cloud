@@ -79,28 +79,6 @@ public class NovaInfrastructureMon extends IaasInfrastructure {
     protected String credentialvm = "";
     
     
-    @Configurable(description = "")
-    protected String notUsed1;
-    
-    
-    @Configurable(description = "")
-    protected String notUsed2;
-    
-    
-    @Configurable(description = "")
-    protected String notUsed3;
-    
-    
-    @Configurable(description = "")
-    protected String notUsed4;
-    
-    @Configurable(description = "")
-    protected String notUsed5;
-    
-    
-    @Configurable(description = "")
-    protected String notUsed6;
-    
     /**
      * The type of the OS on the Hosts.
      */

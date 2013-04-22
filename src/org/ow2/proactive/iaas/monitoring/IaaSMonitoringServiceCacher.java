@@ -38,16 +38,17 @@
 package org.ow2.proactive.iaas.monitoring;
 
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import java.util.concurrent.TimeUnit;
 import org.ow2.proactive.iaas.utils.Utils;
-
-import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+import java.util.concurrent.ExecutionException;
+import org.ow2.proactive.iaas.IaaSMonitoringApi;
 
 
 public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
@@ -68,13 +69,19 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
     /**
      * Refresh period for caches [seconds]. 
      */
-    private int refreshPeriod = 60;
+    private int refreshPeriod = 60 * 2;
 
     /**
-     * Expiration time for caches [seconds]. After this time the stale 
-     * entry will expire and refresh will no longer take place.
+     * Maximum amount of cache entries. 
      */
-    private int expirationTime = 60 * 5;
+    private int maximumCacheEntries = 200;
+
+    /**
+     * Expiration time for caches [seconds]. If a property of a VM or a host 
+     * cannot be obtained, after this time the entry in the cache will be
+     * removed.
+     */
+    private int expirationTime = 60 * 10;
 
     /**
      * Flag to refresh cache periodically. 
@@ -82,9 +89,9 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
     private boolean autoUpdate = false;
 
     /**
-     * Flag that indicates that this monitoring system should shutdown.
+     * Timer to execute regularly the refresh task. 
      */
-    private boolean stop = false;
+    private Timer timer;
 
     public IaaSMonitoringServiceCacher(IaaSMonitoringApi iaaSMonitoringApi)
             throws IaaSMonitoringServiceException {
@@ -104,6 +111,15 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
             }
         }
 
+        String maximumCacheEntriesStr = Utils.getValueFromParameters("maximumCacheEntries", options);
+        if (maximumCacheEntriesStr != null) {
+            try {
+                maximumCacheEntries = Integer.parseInt(maximumCacheEntriesStr);
+            } catch (NumberFormatException e) {
+                // Ignore it, let the default value be. 
+            }
+        }
+
         String expirationTimeStr = Utils.getValueFromParameters("expirationTimeSeconds", options);
         if (expirationTimeStr != null) {
             try {
@@ -115,25 +131,27 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
 
         autoUpdate = Utils.isPresentInParameters("autoUpdateCache", options);
 
-        logger.debug(String.format(
-                "Monitoring params: refreshPeriod='%s' expirationTime='%s' autoUpdateCache='%b'",
-                refreshPeriod, expirationTime, autoUpdate));
+        logger.debug(String
+                .format("[" + nsname + "] " +
+                    "Monitoring params: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
+                        refreshPeriod, maximumCacheEntries, expirationTime, autoUpdate));
 
         createCaches();
 
     }
 
     private void createCaches() {
-        hostPropertiesCache = CacheBuilder.newBuilder().maximumSize(1000)
-                .expireAfterAccess(expirationTime, TimeUnit.SECONDS)
+        hostPropertiesCache = CacheBuilder.newBuilder().maximumSize(maximumCacheEntries)
+                .expireAfterWrite(expirationTime, TimeUnit.SECONDS)
                 .build(new CacheLoader<String, Map<String, String>>() {
                     public Map<String, String> load(String key) throws Exception {
                         return getHostPropertiesLoad(key);
                     }
+
                 });
 
-        vmPropertiesCache = CacheBuilder.newBuilder().maximumSize(1000)
-                .expireAfterAccess(expirationTime, TimeUnit.SECONDS)
+        vmPropertiesCache = CacheBuilder.newBuilder().maximumSize(maximumCacheEntries)
+                .expireAfterWrite(expirationTime, TimeUnit.SECONDS)
                 .build(new CacheLoader<String, Map<String, String>>() {
                     public Map<String, String> load(String key) throws Exception {
                         return getVMPropertiesLoad(key);
@@ -141,53 +159,67 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
                 });
 
         if (autoUpdate) {
-            Runnable updater = new Runnable() {
+            TimerTask timertask = new TimerTask() {
+
+                @Override
                 public void run() {
-                    while (stop == false) {
-                        for (String key : hostPropertiesCache.asMap().keySet()) {
+                    logger.debug("[" + nsname + "] Monitoring info refresh started.");
+
+                    try {
+                        String[] hosts = getHosts();
+                        for (String key : hosts) {
                             hostPropertiesCache.refresh(key);
                         }
-                        for (String key : vmPropertiesCache.asMap().keySet()) {
+                    } catch (Exception e) {
+                        logger.warn("[" + nsname + "] Could not reload cache of host properties.", e);
+                    }
+                    logger.debug("[" + nsname + "] Entries in host cache: " + hostPropertiesCache.size());
+
+                    try {
+                        String[] vms = getVMs();
+                        for (String key : vms) {
                             vmPropertiesCache.refresh(key);
                         }
-                        try {
-                            Thread.sleep(1000 * refreshPeriod);
-                        } catch (InterruptedException e) {
-                            return;
-                        }
+                    } catch (Exception e) {
+                        logger.warn("[" + nsname + "] Could not reload cache of VM properties.", e);
                     }
+                    logger.debug("[" + nsname + "] Entries in VM cache: " + vmPropertiesCache.size());
                 }
             };
 
-            Thread updaterThread = new Thread(updater, "IaaSMonitoringUpdater-" + nsname);
-            updaterThread.start();
+            timer = new Timer();
+            timer.scheduleAtFixedRate(timertask, 0, 1000 * refreshPeriod);
+
         }
 
     }
 
     @Override
     public String[] getHosts() throws IaaSMonitoringServiceException {
+        // Not cached.
         return super.getHosts();
     }
 
     @Override
     public String[] getVMs() throws IaaSMonitoringServiceException {
+        // Not cached.
         return super.getVMs();
     }
 
     @Override
     public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
+        // Not cached.
         return super.getVMs(hostId);
     }
 
     public Map<String, String> getHostPropertiesLoad(final String hostId)
             throws IaaSMonitoringServiceException {
-        logger.debug("API: getting host properties: " + hostId);
+        logger.debug("[" + nsname + "] " + "API, loading host properties: " + hostId);
         return super.getHostProperties(hostId);
     }
 
     public Map<String, String> getVMPropertiesLoad(final String vmId) throws IaaSMonitoringServiceException {
-        logger.debug("API: getting VM properties: " + vmId);
+        logger.debug("[" + nsname + "] " + "API, loading VM properties: " + vmId);
         return super.getVMProperties(vmId);
     }
 
@@ -211,6 +243,7 @@ public class IaaSMonitoringServiceCacher extends IaaSMonitoringServiceLoader {
 
     public void shutDown() {
         super.shutDown();
-        stop = true;
+        if (timer != null)
+            timer.cancel();
     }
 }

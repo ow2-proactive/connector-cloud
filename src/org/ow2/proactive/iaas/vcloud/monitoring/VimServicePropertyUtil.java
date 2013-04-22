@@ -17,6 +17,8 @@ public class VimServicePropertyUtil {
 			replaceStorageUnCommitted(
 					VimServiceConstants.PROP_VM_STORAGE_UNCOMMITTED,
 					"storage.total", propertyMap);
+			replaceKeyIfPresent(VimServiceConstants.PROP_VM_NETWORK,
+					"network.count", propertyMap);
 		}
 	}
 
@@ -43,10 +45,10 @@ public class VimServicePropertyUtil {
 				"cpu.usage", propertyMap);
 		replaceUsagePropertyIfPresent(VimServiceConstants.PROP_MEM_USAGE,
 				"mem.usage", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE,
-				"network.rx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
-				"network.tx", propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE, "network.rx",
+				propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE, "network.tx",
+				propertyMap);
 		replaceStatus(VimServiceConstants.PROP_STATE, "status", propertyMap);
 	}
 

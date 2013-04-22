@@ -35,14 +35,18 @@
 
 package org.ow2.proactive.iaas;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 import java.util.Map;
+import java.util.List;
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
+import java.util.ArrayList;
 import java.io.InputStream;
 import java.util.Properties;
+import java.io.FileInputStream;
+
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
 
@@ -66,99 +70,158 @@ public class VimServiceClientTest {
     private static final String[] VM_EXPECTED_KEYS_STATUS = { "host", "status" };
     private static final String[] HOST_EXPECTED_KEYS_STATUS = { "site", "status" };
 
-    private VimServiceClient v;
+    private static final String TEST_CONFIG_FILENAME = "tests/test.properties";
+
     private static final String URL_KEY = "vmware.url";
     private static final String USER_KEY = "vmware.user";
     private static final String PASS_KEY = "vmware.pass";
 
+    private VimServiceClient v;
+    private boolean testCorrectlyConfigured = false;
+
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws ViServiceClientException {
         Properties prop = new Properties();
-        InputStream in = getClass().getResourceAsStream("test.properties");
-        prop.load(in);
-        in.close();
+        try {
+            InputStream in = new FileInputStream(new File(TEST_CONFIG_FILENAME));
+            //InputStream in = getClass().getResourceAsStream("test.properties");
+            prop.load(in);
+            in.close();
+        } catch (Exception e) {
+            System.out
+                    .println("Error loading the file '" + TEST_CONFIG_FILENAME + "'. Test will be skipped.");
+            return;
+        }
 
         v = new VimServiceClient();
-        v.initialize(prop.getProperty(URL_KEY), prop.getProperty(USER_KEY), prop.getProperty(PASS_KEY));
+        if (prop.isEmpty() == false) {
+            String url = prop.getProperty(URL_KEY);
+            String user = prop.getProperty(USER_KEY);
+            String pass = prop.getProperty(PASS_KEY);
+            if (url == null || user == null || pass == null) {
+                System.out.println("Error of the content of the file '" + TEST_CONFIG_FILENAME +
+                    "'. Test will be skipped.");
+                return; 
+            }
+
+            v.initialize(url, user, pass);
+            testCorrectlyConfigured = true;
+        }
     }
 
     @Test
     public void getHosts() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         v.getHosts();
     }
 
     @Test
     public void getVMs() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         v.getVMs();
     }
 
     @Test
     public void getVMsPerHost() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             v.getVMs(hostid);
-
     }
 
     @Test
     public void getHostProperties_cpuProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_CPU);
     }
 
     @Test
     public void getVMProperties_cpuProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_CPU);
     }
 
     @Test
     public void getHostProperties_memoryProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_MEMORY);
     }
 
     @Test
     public void getVMProperties_memoryProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_MEMORY);
     }
 
     @Test
     public void getHostProperties_storageProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_STORAGE);
     }
 
     @Test
     public void getVMProperties_storageProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_STORAGE);
     }
 
     @Test
     public void getHostProperties_networkProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_NETWORK);
     }
 
     @Test
     public void getVMProperties_networkProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_NETWORK);
     }
 
     @Test
     public void getHostProperties_statusProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_STATUS);
-
     }
 
     @Test
     public void getVMProperties_statusProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+        
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_STATUS);
-
     }
 
     private void checkMapProperties(String entityType, Map<String, String> map, String[] expectedKeys)
@@ -176,12 +239,13 @@ public class VimServiceClientTest {
             }
             System.out.println("TEST FAILED" + str.toString());
             throw new Exception(str.toString());
-        } 
+        }
     }
 
     @After
     public void disconnect() throws Exception {
-        v.close();
+        if (v != null)
+            v.close();
     }
 
 }

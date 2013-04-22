@@ -44,9 +44,9 @@ public class VimServicePropertyUtil {
 		replaceUsagePropertyIfPresent(VimServiceConstants.PROP_MEM_USAGE,
 				"mem.usage", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE,
-				"network.0.rx", propertyMap);
+				"network.rx", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
-				"network.0.tx", propertyMap);
+				"network.tx", propertyMap);
 		replaceStatus(VimServiceConstants.PROP_STATE, "status", propertyMap);
 	}
 

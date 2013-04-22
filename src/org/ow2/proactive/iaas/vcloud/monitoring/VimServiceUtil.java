@@ -50,6 +50,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
 
+import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.DynamicProperty;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
@@ -284,12 +285,27 @@ public class VimServiceUtil {
 				List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
 				if (dynamicPropertyList != null) {
 					for (DynamicProperty dp : dynamicPropertyList) {
-						propMap.put(dp.getName(), dp.getVal().toString());
+						propMap.put(dp.getName(), dpToString(dp));
 					}
 				}
 			}
 		}
 		return propMap;
+	}
+
+	private static String dpToString(DynamicProperty dp) {
+		Object propertyValue = dp.getVal();
+		if (propertyValue instanceof ArrayOfManagedObjectReference) {
+			List<ManagedObjectReference> listOfMObjRefs = ((ArrayOfManagedObjectReference) propertyValue)
+					.getManagedObjectReference();
+			if (listOfMObjRefs == null || listOfMObjRefs.isEmpty()) {
+				return "0";
+			} else {
+				return Integer.toString(listOfMObjRefs.size());
+			}
+		} else {
+			return propertyValue.toString();
+		}
 	}
 
 	public static Map<String, String> getHostDynamicProperties(String hostId,
@@ -411,8 +427,8 @@ public class VimServiceUtil {
 	}
 
 	public static void updateKeys(Map<String, String> propertyMap) {
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES, "cpu.cores",
-				propertyMap);
+		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES,
+				"cpu.cores", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_FREQUENCY,
 				"cpu.frequency", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_USAGE, "cpu.usage",
@@ -429,8 +445,8 @@ public class VimServiceUtil {
 				"network.0.tx", propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
 				"network.count", propertyMap);
-		
-		//VM
+
+		// VM
 		replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES, "cpu.cores",
 				propertyMap);
 		replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,

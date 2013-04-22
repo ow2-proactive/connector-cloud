@@ -54,6 +54,7 @@ public class VimServiceConstants {
 	public static final String PROP_VM_MEMEORY_TOTAL = "config.hardware.memoryMB";
 	public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
 	public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
+	public static final String PROP_VM_NETWORK = "network";
 
 	// Dynamic properties for both host systems and virtual machines.
 	public static final String PROP_CPU_USAGE = "cpu.usage.AVERAGE";
@@ -67,7 +68,7 @@ public class VimServiceConstants {
 
 	public static final String[] VM_STATIC_PROPERTIES = new String[] {
 			PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL,
-			PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED, PROP_STATE };
+			PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED, PROP_VM_NETWORK, PROP_STATE };
 
 	public static final String[] DYNAMIC_PROPERTIES = new String[] {
 			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE, };

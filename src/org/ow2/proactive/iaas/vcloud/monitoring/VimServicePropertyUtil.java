@@ -8,6 +8,8 @@ public class VimServicePropertyUtil {
 	public static class VM {
 		public static void standardize(Map<String, String> propertyMap) {
 			standardizeCommonProperties(propertyMap);
+			replaceKeyIfPresent(VimServiceConstants.PROP_VM_PARENT, "host",
+					propertyMap);
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES,
 					"cpu.cores", propertyMap);
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,

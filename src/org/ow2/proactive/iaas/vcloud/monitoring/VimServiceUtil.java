@@ -303,6 +303,8 @@ public class VimServiceUtil {
 			} else {
 				return Integer.toString(listOfMObjRefs.size());
 			}
+		} else if (propertyValue instanceof ManagedObjectReference) {
+			return ((ManagedObjectReference) propertyValue).getValue();
 		} else {
 			return propertyValue.toString();
 		}

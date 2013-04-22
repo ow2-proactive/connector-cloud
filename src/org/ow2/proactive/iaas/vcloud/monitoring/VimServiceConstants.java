@@ -39,6 +39,10 @@ package org.ow2.proactive.iaas.vcloud.monitoring;
 
 public class VimServiceConstants {
 
+	// Static properties which are common to both host systems and virtual
+	// machines.
+	public static final String PROP_STATE = "summary.runtime.powerState";
+
 	// Static properties of host systems.
 	public static final String PROP_HOST_CPU_FREQUENCY = "summary.hardware.cpuMhz";
 	public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
@@ -50,25 +54,24 @@ public class VimServiceConstants {
 	public static final String PROP_VM_MEMEORY_TOTAL = "config.hardware.memoryMB";
 	public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
 	public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
+	public static final String PROP_VM_NETWORK = "network";
 
 	// Dynamic properties for both host systems and virtual machines.
 	public static final String PROP_CPU_USAGE = "cpu.usage.AVERAGE";
 	public static final String PROP_MEM_USAGE = "mem.usage.AVERAGE";
 	public static final String PROP_NET_RX_RATE = "net.bytesRx.AVERAGE";
 	public static final String PROP_NET_TX_RATE = "net.bytesTx.AVERAGE";
-	public static final String PROP_STATE = "runtime.powerState";
 
 	public static final String[] HOST_STATIC_PROPERTIES = new String[] {
 			PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY,
-			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT };
+			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT, PROP_STATE };
 
 	public static final String[] VM_STATIC_PROPERTIES = new String[] {
-			PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL, PROP_VM_STORAGE_COMMITTED,
-			PROP_VM_STORAGE_UNCOMMITTED };
+			PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL,
+			PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED, PROP_VM_NETWORK, PROP_STATE };
 
 	public static final String[] DYNAMIC_PROPERTIES = new String[] {
-			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE,
-			PROP_STATE };
+			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE, };
 
 	// non-instantiable
 	private VimServiceConstants() {

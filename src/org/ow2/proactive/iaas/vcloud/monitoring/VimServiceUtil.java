@@ -317,8 +317,9 @@ public class VimServiceUtil {
 		return propMap;
 	}
 
-	private static void addPropertyToMap(DynamicProperty dp,
-			Map<String, String> propertyMap) {
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void addPropertyToMap(DynamicProperty dp,
+			Map propertyMap) {
 		Object propertyValue = dp.getVal();
 		if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
 			List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)

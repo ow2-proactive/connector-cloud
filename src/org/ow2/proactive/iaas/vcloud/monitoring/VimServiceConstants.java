@@ -48,24 +48,35 @@ public class VimServiceConstants {
 	public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
 	public static final String PROP_HOST_MEMORY_TOTAL = "summary.hardware.memorySize";
 	public static final String PROP_HOST_NETWORK_COUNT = "summary.hardware.numNics";
+	public static final String PROP_HOST_SITE = "parent";
 
 	// Static properties for VMs.
-	public static final String PROP_VM_CPU_CORES = "config.hardware.numCPU";
-	public static final String PROP_VM_MEMEORY_TOTAL = "config.hardware.memoryMB";
+	public static final String PROP_VM_CPU_CORES = "summary.config.numCpu";
+	public static final String PROP_VM_MEMEORY_TOTAL = "summary.config.memorySizeMB";
 	public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
 	public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
-	public static final String PROP_VM_NETWORK = "network";
+	public static final String PROP_VM_NETWORK = "summary.config.numEthernetCards";
 	public static final String PROP_VM_PARENT = "summary.runtime.host";
 
-	// Dynamic properties for both host systems and virtual machines.
+	/** Dynamic properties for both host systems and virtual machines. */
+
+	// CPU usage as a percentage during the interval
 	public static final String PROP_CPU_USAGE = "cpu.usage.AVERAGE";
-	public static final String PROP_MEM_USAGE = "mem.usage.AVERAGE";
+	// Amount of memory that is actively used, as estimated by VMkernel based on
+	// recently touched memory pages
+	public static final String PROP_MEM_USAGE = "mem.active.AVERAGE";
+	// Average amount of data received per second
 	public static final String PROP_NET_RX_RATE = "net.bytesRx.AVERAGE";
+	// Average amount of data transmitted per second
 	public static final String PROP_NET_TX_RATE = "net.bytesTx.AVERAGE";
+	// Network utilization (combined transmit-rates and receive-rates) during
+	// the interval
+	public static final String PROP_NET_USAGE = "net.usage.AVERAGE";
 
 	public static final String[] HOST_STATIC_PROPERTIES = new String[] {
 			PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY,
-			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT, PROP_STATE };
+			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT, PROP_HOST_SITE,
+			PROP_STATE };
 
 	public static final String[] VM_STATIC_PROPERTIES = new String[] {
 			PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL,
@@ -73,9 +84,11 @@ public class VimServiceConstants {
 			PROP_VM_NETWORK, PROP_STATE };
 
 	public static final String[] DYNAMIC_PROPERTIES = new String[] {
-			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE, };
+			PROP_CPU_USAGE, PROP_MEM_USAGE, PROP_NET_RX_RATE, PROP_NET_TX_RATE,
+			PROP_NET_USAGE };
 
 	// non-instantiable
 	private VimServiceConstants() {
 	}
+
 }

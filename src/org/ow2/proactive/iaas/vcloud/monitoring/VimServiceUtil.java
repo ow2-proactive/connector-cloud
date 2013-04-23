@@ -74,7 +74,7 @@ import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VimPortType;
 
 public class VimServiceUtil {
-
+	
 	public static void disableHttpsCertificateVerification()
 			throws NoSuchAlgorithmException, KeyManagementException {
 		TrustManager[] tms = new TrustManager[] { new RelaxedTrustManager() };

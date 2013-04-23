@@ -48,6 +48,7 @@ public class VimServiceConstants {
 	public static final String PROP_HOST_CPU_CORES = "summary.hardware.numCpuCores";
 	public static final String PROP_HOST_MEMORY_TOTAL = "summary.hardware.memorySize";
 	public static final String PROP_HOST_NETWORK_COUNT = "summary.hardware.numNics";
+	public static final String PROP_HOST_SYSTEM_IDENTIFICATION = "hardware.systemInfo.otherIdentifyingInfo";
 	public static final String PROP_HOST_SITE = "parent";
 
 	// Static properties for VMs.
@@ -76,7 +77,7 @@ public class VimServiceConstants {
 	public static final String[] HOST_STATIC_PROPERTIES = new String[] {
 			PROP_HOST_CPU_CORES, PROP_HOST_CPU_FREQUENCY,
 			PROP_HOST_MEMORY_TOTAL, PROP_HOST_NETWORK_COUNT, PROP_HOST_SITE,
-			PROP_STATE };
+			PROP_STATE, PROP_HOST_SYSTEM_IDENTIFICATION };
 
 	public static final String[] VM_STATIC_PROPERTIES = new String[] {
 			PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL,

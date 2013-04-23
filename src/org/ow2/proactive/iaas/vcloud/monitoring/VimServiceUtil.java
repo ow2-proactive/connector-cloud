@@ -50,9 +50,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
 
+import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
 import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.DynamicProperty;
+import com.vmware.vim25.ElementDescription;
+import com.vmware.vim25.HostSystemIdentificationInfo;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ObjectContent;
@@ -306,7 +309,7 @@ public class VimServiceUtil {
 				List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
 				if (dynamicPropertyList != null) {
 					for (DynamicProperty dp : dynamicPropertyList) {
-						propMap.put(dp.getName(), dpToString(dp));
+						addPropertyToMap(dp, propMap);
 					}
 				}
 			}
@@ -314,20 +317,26 @@ public class VimServiceUtil {
 		return propMap;
 	}
 
-	private static String dpToString(DynamicProperty dp) {
+	private static void addPropertyToMap(DynamicProperty dp,
+			Map<String, String> propertyMap) {
 		Object propertyValue = dp.getVal();
-		if (propertyValue instanceof ArrayOfManagedObjectReference) {
-			List<ManagedObjectReference> listOfMObjRefs = ((ArrayOfManagedObjectReference) propertyValue)
-					.getManagedObjectReference();
-			if (listOfMObjRefs == null || listOfMObjRefs.isEmpty()) {
-				return "0";
-			} else {
-				return Integer.toString(listOfMObjRefs.size());
+		if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
+			List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
+					.getHostSystemIdentificationInfo();
+			for (int index = 0; index < hostSystemIdInfoList.size(); index++) {
+				HostSystemIdentificationInfo info = hostSystemIdInfoList
+						.get(index);
+				if (info.getIdentifierValue() != null) {
+					String key = String.format("host.identification.%s.%s",
+							index, info.getIdentifierType().getKey());
+					propertyMap.put(key, info.getIdentifierValue());
+				}
 			}
 		} else if (propertyValue instanceof ManagedObjectReference) {
-			return ((ManagedObjectReference) propertyValue).getValue();
+			propertyMap.put(dp.getName(),
+					((ManagedObjectReference) propertyValue).getValue());
 		} else {
-			return propertyValue.toString();
+			propertyMap.put(dp.getName(), propertyValue.toString());
 		}
 	}
 

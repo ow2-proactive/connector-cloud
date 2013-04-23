@@ -257,4 +257,20 @@ public class IaaSMonitoringServiceLoader extends IaaSMonitoringService {
         return Utils.convertToStringMap(outp);
     }
 
+    @Override
+    public Map<String, Object> getVendorDetails() throws Exception {
+        logger.debug("[" + nsname + "] Retrieving provider details.");
+        Map<String, Object> properties = new HashMap<String, Object>();
+
+        if (useApi)
+            try {
+                Map<String, Object> apiprops = iaaSMonitoringApi.getVendorDetails();
+                properties.putAll(apiprops);
+            } catch (Exception e) {
+                logger.warn("Cannot retrieve IaaS API properties. ", e);
+            }
+        
+        return properties;
+    }
+
 }

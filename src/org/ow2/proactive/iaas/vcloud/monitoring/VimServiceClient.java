@@ -41,20 +41,20 @@ import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.DYNAM
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.HOST_STATIC_PROPERTIES;
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.VM_STATIC_PROPERTIES;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.xml.ws.BindingProvider;
-
+import java.util.List;
+import java.util.HashMap;
 import org.apache.log4j.Logger;
-
-import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.ServiceContent;
-import com.vmware.vim25.VimPortType;
 import com.vmware.vim25.VimService;
+import com.vmware.vim25.VimPortType;
+import javax.xml.ws.BindingProvider;
+import java.util.concurrent.TimeUnit;
+import com.vmware.vim25.ServiceContent;
+import com.vmware.vim25.DynamicProperty;
+import com.vmware.vim25.RuntimeFaultFaultMsg;
+import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.ArrayOfManagedObjectReference;
+
 
 public class VimServiceClient {
 
@@ -85,13 +85,13 @@ public class VimServiceClient {
 		this.password = password;
 		try {
 
-			VimServiceUtil.disableHttpsCertificateVerification();
-			VimServiceUtil.disableHostNameVarifier();
+            VimServiceUtil.disableHttpsCertificateVerification();
+            VimServiceUtil.disableHostNameVarifier();
 
-			mobjRef.setType(mobjName);
-			mobjRef.setValue(mobjName);
+            mobjRef.setType(mobjName);
+            mobjRef.setValue(mobjName);
 
-			ensureConnected();
+            ensureConnected();
 		} catch (Exception error) {
 			logger.error("Cannot initialize VCenterServiceClient instance:",
 					error);
@@ -134,8 +134,8 @@ public class VimServiceClient {
 				throw new ViServiceClientException(e);
 			}
 		}
-		isConnected = false;
-	}
+        isConnected = false;
+    }
 
 	/*
 	 * At the first attempt after 'LOGIN_INTERVAL' period, we explicitly
@@ -144,22 +144,74 @@ public class VimServiceClient {
 	 */
 	private void ensureConnected() throws ViServiceClientException {
 		if (System.currentTimeMillis() > nextLoginTime) {
-			synchronized (this) {
-				if (System.currentTimeMillis() > nextLoginTime) {
-					disconnet();
-					connect();
-				}
-			}
-		}
-	}
+            synchronized (this) {
+                if (System.currentTimeMillis() > nextLoginTime) {
+                    disconnet();
+                    connect();
+                }
+            }
+        }
+    }
 
-	public String[] getHosts() throws ViServiceClientException {
-		return getmObjIds("HostSystem", getRootFolder());
-	}
+    public Map<String, Object> getVendorDetails() throws ViServiceClientException {
+        Map<String, Object> output = new HashMap<String, Object>();
 
-	public String[] getVMs() throws ViServiceClientException {
-		return getmObjIds("VirtualMachine", getRootFolder());
-	}
+        Map<String, Object> hierarchy = getClusterComputeResources();
+        output.put("ClusterComputeResource", hierarchy);
+
+        return output;
+    }
+
+    public Map<String, Object> getClusterComputeResources() throws ViServiceClientException {
+        Map<String, Object> output = new HashMap<String, Object>();
+
+        String[] domains = getmObjIds("ClusterComputeResource", getRootFolder());
+
+        for (String domain : domains) {
+            ManagedObjectReference domainMor = VimServiceUtil.getEntityByTypeAndId("ClusterComputeResource",
+                    domain);
+
+            try {
+                Map<String, Object> propsOfDomain = VimServiceUtil.getRawStaticProperties(domainMor,
+                        new String[] { "name", "host" }, serviceContent, vimPort);
+
+                Map<String, Object> domainMap = new HashMap<String, Object>();
+
+                DynamicProperty hostProps = (DynamicProperty) propsOfDomain.get("host");
+                DynamicProperty domainName = (DynamicProperty) propsOfDomain.get("name");
+
+                ArrayOfManagedObjectReference hosts = (ArrayOfManagedObjectReference) hostProps.getVal();
+                List<ManagedObjectReference> hostsListMor = hosts.getManagedObjectReference();
+
+                domainMap.put("name", domainName.getVal());
+
+                for (ManagedObjectReference hostMor : hostsListMor) {
+                    Map<String, Object> hostMap = new HashMap<String, Object>();
+
+                    Map<String, Object> propsOfHost = VimServiceUtil.getRawStaticProperties(hostMor,
+                            new String[] { "name" }, serviceContent, vimPort);
+                    DynamicProperty hostName = (DynamicProperty) propsOfHost.get("name");
+
+                    hostMap.put("name", hostName.getVal());
+                    hostMap.put("id", hostMor.getValue());
+
+                    domainMap.put(hostMor.getValue(), hostMap);
+                }
+                output.put(domain, domainMap);
+            } catch (Exception e) {
+                logger.warn("Could not get list of hosts for domain: " + domain);
+            }
+        }
+        return output;
+    }
+
+    public String[] getHosts() throws ViServiceClientException {
+        return getmObjIds("HostSystem", getRootFolder());
+    }
+
+    public String[] getVMs() throws ViServiceClientException {
+        return getmObjIds("VirtualMachine", getRootFolder());
+    }
 
 	public String[] getVMs(String hostId) throws ViServiceClientException {
 		return getmObjIds("VirtualMachine",
@@ -178,10 +230,10 @@ public class VimServiceClient {
 			VimServicePropertyUtil.HOST.standardize(propMap);
 			return propMap;
 		} catch (Exception error) {
-			logger.error("Cannot retrieve host properties: " + hostId, error);
-			throw new ViServiceClientException(error);
-		}
-	}
+            logger.error("Cannot retrieve host properties: " + hostId, error);
+            throw new ViServiceClientException(error);
+        }
+    }
 
 	public Map<String, String> getVMProperties(String vmId)
 			throws ViServiceClientException {
@@ -194,15 +246,15 @@ public class VimServiceClient {
 					DYNAMIC_PROPERTIES, serviceContent, vimPort));
 			VimServicePropertyUtil.VM.standardize(propMap);
 			return propMap;
-		} catch (Exception error) {
-			logger.error("Cannot retrieve vm properties: " + vmId, error);
-			throw new ViServiceClientException(error);
-		}
-	}
+        } catch (Exception error) {
+            logger.error("Cannot retrieve vm properties: " + vmId, error);
+            throw new ViServiceClientException(error);
+        }
+    }
 
-	private ManagedObjectReference getRootFolder() {
-		return serviceContent.getRootFolder();
-	}
+    private ManagedObjectReference getRootFolder() {
+        return serviceContent.getRootFolder();
+    }
 
 	private String[] getmObjIds(String nodeType,
 			ManagedObjectReference container) throws ViServiceClientException {
@@ -213,28 +265,28 @@ public class VimServiceClient {
 							serviceContent, vimPort);
 			String[] nodeIds = new String[nodes.size()];
 			for (int i = 0; i < nodeIds.length; i++) {
-				nodeIds[i] = nodes.get(i).getValue();
-			}
-			return nodeIds;
-		} catch (Exception error) {
-			logger.error("Cannot get the list of " + nodeType, error);
-			throw new ViServiceClientException(error);
-		}
-	}
+                nodeIds[i] = nodes.get(i).getValue();
+            }
+            return nodeIds;
+        } catch (Exception error) {
+            logger.error("Cannot get the list of " + nodeType, error);
+            throw new ViServiceClientException(error);
+        }
+    }
 
-	public void close() throws ViServiceClientException {
-		if (isConnected) {
-			try {
-				vimPort.logout(serviceContent.getSessionManager());
-			} catch (RuntimeFaultFaultMsg e) {
-				logger.error("Cannot logout:", e);
-				throw new ViServiceClientException(e);
-			}
-			isConnected = false;
-		}
-	}
+    public void close() throws ViServiceClientException {
+        if (isConnected) {
+            try {
+                vimPort.logout(serviceContent.getSessionManager());
+            } catch (RuntimeFaultFaultMsg e) {
+                logger.error("Cannot logout:", e);
+                throw new ViServiceClientException(e);
+            }
+            isConnected = false;
+        }
+    }
 
-	private void setNextLoginTime() {
-		nextLoginTime = System.currentTimeMillis() + LOGIN_INTERVAL;
-	}
+    private void setNextLoginTime() {
+        nextLoginTime = System.currentTimeMillis() + LOGIN_INTERVAL;
+    }
 }

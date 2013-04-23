@@ -78,5 +78,13 @@ public interface IaaSMonitoringApi {
      * @throws Exception
      */
     public Map<String, String> getVMProperties(String vmId) throws Exception;
+    
+    /**
+     * Get a map with information regarding the specific cloud services provider.
+     * This method returns information provider-dependent. 
+     * @return the map.
+     * @throws Exception
+     */
+    public Map<String, Object> getVendorDetails() throws Exception; 
 
 }

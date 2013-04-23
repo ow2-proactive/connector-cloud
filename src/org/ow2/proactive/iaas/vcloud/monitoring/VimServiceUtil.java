@@ -248,7 +248,7 @@ public class VimServiceUtil {
 		return getEntityByTypeAndId("VirtualMachine", vmId);
 	}
 
-	private static ManagedObjectReference getEntityByTypeAndId(String type,
+	public static ManagedObjectReference getEntityByTypeAndId(String type,
 			String id) {
 		ManagedObjectReference ref = new ManagedObjectReference();
 		ref.setType(type);
@@ -265,7 +265,7 @@ public class VimServiceUtil {
 				serviceContent, vimPort);
 	}
 
-	public static Map<String, String> getVMStaticProperties(String vmId,
+    public static Map<String, String> getVMStaticProperties(String vmId,
 			String[] properties, ServiceContent serviceContent,
 			VimPortType vimPort) throws InvalidPropertyFaultMsg,
 			RuntimeFaultFaultMsg {
@@ -273,6 +273,27 @@ public class VimServiceUtil {
 				vimPort);
 	}
 
+	
+	public static Map<String, Object> getRawStaticProperties(
+			ManagedObjectReference mObjRef, String[] properties,
+			ServiceContent serviceContent, VimPortType vimPort)
+			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+		ObjectContent[] oContents = VimServiceUtil.getObjectProperties(mObjRef,
+				properties, serviceContent, vimPort);
+		Map<String, Object> propMap = new HashMap<String, Object>();
+		if (oContents != null) {
+			for (ObjectContent oc : oContents) {
+				List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
+				if (dynamicPropertyList != null) {
+					for (DynamicProperty dp : dynamicPropertyList) {
+						propMap.put(dp.getName(), dp);
+					}
+				}
+			}
+		}
+		return propMap;
+	}
+	
 	public static Map<String, String> getStaticProperties(
 			ManagedObjectReference mObjRef, String[] properties,
 			ServiceContent serviceContent, VimPortType vimPort)

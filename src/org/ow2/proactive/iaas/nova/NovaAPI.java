@@ -199,7 +199,7 @@ public class NovaAPI implements IaasApi, IaaSMonitoringApi {
 
         HttpResponse response = post("/servers", jReq);
         if (response.getStatusLine().getStatusCode() != 200) {
-        	// TODO throw an error 
+            // TODO throw an error 
         }
         String entity = EntityUtils.toString(response.getEntity());
         logger.debug(entity);
@@ -392,6 +392,11 @@ public class NovaAPI implements IaasApi, IaaSMonitoringApi {
         properties.put("storage." + filterToken, "" + resource.get("disk_gb"));
     }
 
-
+    @Override
+    public Map<String, Object> getVendorDetails() throws Exception {
+        Map<String, Object> output = new HashMap<String, Object>();
+        // TODO provide some details about the service provider.
+        return output;
+    }
 
 }

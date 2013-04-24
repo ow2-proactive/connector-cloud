@@ -1,10 +1,10 @@
 package org.ow2.proactive.iaas.vcloud.monitoring;
 
-import java.text.NumberFormat;
+import java.text.DecimalFormat;
 import java.util.Map;
 
 public class VimServicePropertyUtil {
-
+	
 	public static class VM {
 		public static void standardize(Map<String, String> propertyMap) {
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_PARENT, "host",
@@ -85,10 +85,10 @@ public class VimServicePropertyUtil {
 			String newKey, Map<String, String> propertyMap) {
 		String usage = propertyMap.remove(oldKey);
 		if (usage != null) {
-			NumberFormat nf = NumberFormat.getInstance();
-			nf.setMaximumFractionDigits(4);
-			nf.setGroupingUsed(false);
-			usage = nf.format(Float.parseFloat(usage) / 10000);
+			DecimalFormat df = new DecimalFormat("#.#");
+			df.setMaximumFractionDigits(4);
+			df.setGroupingUsed(false);
+			usage = df.format(Float.parseFloat(usage) / 10000);
 			propertyMap.put(newKey, usage);
 		}
 	}

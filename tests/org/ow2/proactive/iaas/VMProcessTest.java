@@ -78,7 +78,7 @@ public class VMProcessTest {
         } else {
             System.out.println("### ### No VMP found...");
         }
-        assertTrue(vmps.size() == 1);
+        assertTrue(vmps.size() >= 1);
 
         VMProcess vmp = vmps.get(0);
 

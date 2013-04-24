@@ -208,7 +208,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
 
             try {
-                IaaSMonitoringService monitService = new IaaSMonitoringServiceCacher((IaaSMonitoringApi) getAPI());
+                IaaSMonitoringService monitService = new IaaSMonitoringService((IaaSMonitoringApi) getAPI());
 
                 monitService.configure(nodeSourceName, options);
 

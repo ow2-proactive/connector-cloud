@@ -41,12 +41,14 @@ public class VMPPattern {
 	private String name;
 	private String executablePattern;
 	private Map<String, String> regexs;
+	private Map<String, String> convers;
 	
 	public VMPPattern(String name, String argsprefix, 
-			Map<String, String> regexs) {
+			Map<String, String> regexs, Map<String, String> convers) {
 		this.name = name;
 		this.executablePattern = argsprefix;
 		this.regexs = regexs;
+		this.convers = convers;
 	}
 	
 	public String getExecutablePattern(){
@@ -63,6 +65,8 @@ public class VMPPattern {
 	
 	public static VMPPattern extractVMPPatern(Properties p, int index){
 		Map<String, String> regexes = new HashMap<String, String>();
+		Map<String, String> convers = new HashMap<String, String>();
+		
 		String namep = p.getProperty(ConfKeys.VMPATTERNX + index + ".name");
 		String argsp = p.getProperty(ConfKeys.VMPATTERNX + index + ".expattern");
 		
@@ -73,13 +77,14 @@ public class VMPPattern {
 			}
 			String[] split = regexi.split(ConfKeys.NAME_REGEX_SEP);
 			
-			if (split.length == 2){
+			if (split.length == 3){
 				regexes.put(split[0], split[1]);
+				convers.put(split[0], split[2]);
 			}
 		}
 		
 		if (argsp != null){
-			return new VMPPattern(namep, argsp, regexes);
+			return new VMPPattern(namep, argsp, regexes, convers);
 		}else{
 			return null;
 		}
@@ -126,7 +131,17 @@ public class VMPPattern {
 		VMProcess vmp = new VMProcess();
 		logger.debug("Arguments: '" + args + "'");
 		for (String propname: regexs.keySet()){
-			Object value = getValue(args, regexs.get(propname));
+			String value = getValue(args, regexs.get(propname));
+			String factorStr = convers.get(propname);
+			try{
+			    if (!factorStr.equals("=")){
+			        Float f = Float.parseFloat(factorStr);
+			        Float v = Float.parseFloat(value);
+			        value = String.format("%.1f", f*v);
+			    }
+			}catch(Exception e){
+			    logger.debug(String.format("Error parsing: '%s' '%s'. Leaving original value.", factorStr, value), e);
+			}
 			vmp.setProperty(propname, value);
 			
 		}

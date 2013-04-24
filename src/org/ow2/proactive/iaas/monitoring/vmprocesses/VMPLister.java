@@ -129,6 +129,7 @@ public class VMPLister {
             }
         }
 
+        logger.debug("VM processes found: " + vmslist );
         if (!vmslist.isEmpty()) {
             output.put(VMS_KEY, Utils.argsToString(vmslist, VMS_SEPARATOR));
         }

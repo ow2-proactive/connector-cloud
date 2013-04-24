@@ -32,36 +32,20 @@
  *
  *  * $$PROACTIVE_INITIAL_DEV$$
  */
-package org.ow2.proactive.iaas.monitoring.vmprocesses;
+package org.ow2.proactive.iaas;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.Test;
 
-public class VMProcess {
-    
-	public static final String PROP_ID="id";
 
-	private Map<String, Object> props;
-	
-	public VMProcess() {
-		props = new HashMap<String, Object>();
-	}
-	
-	public void setProperty(String key, Object value){
-		props.put(key, value);
-	}
-	
-	public Object getProperty(String key){
-		return props.get(key);
-	}
-	
-	public Map<String, Object> getProperties(){
-		return props;
-	}
-	
-	public String toString(){
-		return props.toString();
-	}
-	
-	
+public class VMProcessHelperTest {
+
+    @Test
+    public void nop() {
+    }
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("Started...");
+        Thread.sleep(1000);
+    }
+
 }

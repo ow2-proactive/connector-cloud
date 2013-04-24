@@ -39,18 +39,18 @@ public class VMPPattern {
 	}
 	
 	private String name;
-	private String argsprefix;
+	private String executablePattern;
 	private Map<String, String> regexs;
 	
 	public VMPPattern(String name, String argsprefix, 
 			Map<String, String> regexs) {
 		this.name = name;
-		this.argsprefix = argsprefix;
+		this.executablePattern = argsprefix;
 		this.regexs = regexs;
 	}
 	
-	public String getArgsPrefix(){
-		return argsprefix;
+	public String getExecutablePattern(){
+		return executablePattern;
 	}
 
 	public String getName(){
@@ -64,7 +64,7 @@ public class VMPPattern {
 	public static VMPPattern extractVMPPatern(Properties p, int index){
 		Map<String, String> regexes = new HashMap<String, String>();
 		String namep = p.getProperty(ConfKeys.VMPATTERNX + index + ".name");
-		String argsp = p.getProperty(ConfKeys.VMPATTERNX + index + ".argsprefix");
+		String argsp = p.getProperty(ConfKeys.VMPATTERNX + index + ".expattern");
 		
 		for (int i=0 ; i< ConfKeys.MAXREGEXS; i++){
 			String regexi = p.getProperty(ConfKeys.VMPATTERNX + index + ".regex." + i);
@@ -88,8 +88,8 @@ public class VMPPattern {
 	
 	public boolean isVMP(String processargs) {
 		// process arguments prefix checking
-		if (getArgsPrefix() != null){ // If attribute present check it.
-			if (processargs.startsWith(getArgsPrefix())){
+		if (getExecutablePattern() != null){ // If attribute present check it.
+			if (processargs.matches(getExecutablePattern())){
 				return true;
 			}
 		}
@@ -109,7 +109,7 @@ public class VMPPattern {
 			return null;
 		}
 		
-		if (args.startsWith(getArgsPrefix())){
+		if (args.matches(getExecutablePattern())){
 			process = getVMProcessFromArgs(args);
 		}
 		
@@ -156,6 +156,6 @@ public class VMPPattern {
 	}
 
 	public String toString(){
-		return "name='" + name + "' argsprefix='" + this.argsprefix + "' regexs='" + this.regexs.size() + "'";
+		return "name='" + name + "' executablePattern='" + getExecutablePattern() + "' regexs='" + this.regexs.size() + "'";
 	}
 }

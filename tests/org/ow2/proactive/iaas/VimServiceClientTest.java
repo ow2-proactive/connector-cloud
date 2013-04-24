@@ -38,16 +38,17 @@ package org.ow2.proactive.iaas;
 import java.io.File;
 import java.util.Map;
 import java.util.List;
+
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.io.InputStream;
 import java.util.Properties;
 import java.io.FileInputStream;
-
-import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 
 
 public class VimServiceClientTest {
@@ -67,14 +68,15 @@ public class VimServiceClientTest {
     private static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
             "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
 
-    private static final String[] VM_EXPECTED_KEYS_STATUS = { "host", "status" };
-    private static final String[] HOST_EXPECTED_KEYS_STATUS = { "site", "status" };
+    private static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
+    private static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status", "ids" };
 
     private static final String TEST_CONFIG_FILENAME = "tests/test.properties";
 
     private static final String URL_KEY = "vmware.url";
     private static final String USER_KEY = "vmware.user";
     private static final String PASS_KEY = "vmware.pass";
+    private static final String RUN_SERVICE_CLINET_TEST_KEY = "vmware.runtest";
 
     private VimServiceClient v;
     private boolean testCorrectlyConfigured = false;
@@ -84,7 +86,6 @@ public class VimServiceClientTest {
         Properties prop = new Properties();
         try {
             InputStream in = new FileInputStream(new File(TEST_CONFIG_FILENAME));
-            //InputStream in = getClass().getResourceAsStream("test.properties");
             prop.load(in);
             in.close();
         } catch (Exception e) {
@@ -98,10 +99,17 @@ public class VimServiceClientTest {
             String url = prop.getProperty(URL_KEY);
             String user = prop.getProperty(USER_KEY);
             String pass = prop.getProperty(PASS_KEY);
+            String runtest = prop.getProperty(RUN_SERVICE_CLINET_TEST_KEY);
+            if (runtest == null || runtest.equals("false")) {
+                System.out.println("Skipping test (to run tests, set propertly the key '" +
+                    RUN_SERVICE_CLINET_TEST_KEY + "' in file '"+ TEST_CONFIG_FILENAME +"').");
+                return;
+            }
+
             if (url == null || user == null || pass == null) {
                 System.out.println("Error of the content of the file '" + TEST_CONFIG_FILENAME +
                     "'. Test will be skipped.");
-                return; 
+                return;
             }
 
             v.initialize(url, user, pass);
@@ -110,35 +118,43 @@ public class VimServiceClientTest {
     }
 
     @Test
+    public void getProviderDetails() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
+        System.out.println("Vendor details: " + v.getVendorDetails());
+    }
+
+    @Test
     public void getHosts() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
-        v.getHosts();
+
+        System.out.println("Hosts: " + Arrays.asList(v.getHosts()));
     }
 
     @Test
     public void getVMs() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
-        v.getVMs();
+
+        System.out.println("VMs: " + Arrays.asList(v.getVMs()));
     }
 
     @Test
     public void getVMsPerHost() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
-            v.getVMs(hostid);
+            System.out.println("VMs at " + hostid + ": " + Arrays.asList(v.getVMs(hostid)));
     }
 
     @Test
     public void getHostProperties_cpuProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_CPU);
     }
@@ -147,7 +163,7 @@ public class VimServiceClientTest {
     public void getVMProperties_cpuProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_CPU);
     }
@@ -156,7 +172,7 @@ public class VimServiceClientTest {
     public void getHostProperties_memoryProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_MEMORY);
     }
@@ -165,7 +181,7 @@ public class VimServiceClientTest {
     public void getVMProperties_memoryProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_MEMORY);
     }
@@ -174,7 +190,7 @@ public class VimServiceClientTest {
     public void getHostProperties_storageProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_STORAGE);
     }
@@ -183,7 +199,7 @@ public class VimServiceClientTest {
     public void getVMProperties_storageProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_STORAGE);
     }
@@ -192,7 +208,7 @@ public class VimServiceClientTest {
     public void getHostProperties_networkProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
             checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_NETWORK);
     }
@@ -201,27 +217,27 @@ public class VimServiceClientTest {
     public void getVMProperties_networkProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String vmid : v.getVMs())
             checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_NETWORK);
     }
 
     @Test
-    public void getHostProperties_statusProperties() throws Exception {
+    public void getHostProperties_miscProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_STATUS);
+            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_MISC);
     }
 
     @Test
-    public void getVMProperties_statusProperties() throws Exception {
+    public void getVMProperties_miscProperties() throws Exception {
         if (testCorrectlyConfigured == false)
             return;
-        
+
         for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_STATUS);
+            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_MISC);
     }
 
     private void checkMapProperties(String entityType, Map<String, String> map, String[] expectedKeys)

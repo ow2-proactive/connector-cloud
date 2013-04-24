@@ -38,7 +38,7 @@ public class FormattedSigarMBeanClient {
         }
     }
 
-    public Map<String, Object> getPropertyMap(Boolean useVMProcesses) {
+    public Map<String, Object> getPropertyMap(Boolean showVMProcesses) {
         Map<String, Object> propertyMap = new HashMap<String, Object>();
         try {
             addCpuCoresProperty(propertyMap);
@@ -49,7 +49,7 @@ public class FormattedSigarMBeanClient {
             addProcessProperties(propertyMap);
             addStorageProperties(propertyMap);
             
-            if (useVMProcesses)
+            if (showVMProcesses)
                 addVMProcessesProperties(propertyMap);
             
         } catch (Exception se) {

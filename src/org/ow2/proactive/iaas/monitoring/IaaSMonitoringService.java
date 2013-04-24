@@ -95,14 +95,19 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
     protected Boolean useApi = false;
 
     /**
-     * Use the VMProcesses information to get monitoring information.
+     * Show VM Processes information when getting host properties.
      */
-    protected Boolean useVMProcesses = false;
+    protected Boolean showVMProcessesOnHost = false;
 
     /**
-     * Resolve JMX Sigar to properties when possible.
+     *  Assume RMNodes are running on hosts.
      */
-    protected Boolean resolveSigar = false;
+    protected Boolean useRMNodeOnHost = false;
+
+    /**
+     * Assume RMNodes are running on VMs.
+     */
+    protected Boolean useRMNodeOnVM = false;
 
     /**
      * Name of the Node Source being monitored.
@@ -130,14 +135,16 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
      */
     public void configure(String nsName, String options) {
         Boolean useApi = Utils.isPresentInParameters("useApi", options);
-        Boolean useVMProcesses = Utils.isPresentInParameters("useVMProcesses", options);
-        Boolean resolveSigar = Utils.isPresentInParameters("resolveSigar", options);
+        Boolean showVMProcessesOnHost = Utils.isPresentInParameters("showVMProcessesOnHost", options);
         String credentialsPath = Utils.getValueFromParameters("cred", options);
         String hostsFile = Utils.getValueFromParameters("hostsfile", options);
+        Boolean useRMNodeOnHost = Utils.isPresentInParameters("useRMNodeOnHost", options);
+        Boolean useRMNodeOnVM = Utils.isPresentInParameters("useRMNodeOnVM", options);
 
-        logger.debug(String
-                .format("Monitoring params: sigarCred='%s', hostsfile='%s', useApi='%b', useVMProcesses='%b', resolveSigar='%b'",
-                        credentialsPath, hostsFile, useApi, useVMProcesses, resolveSigar));
+        logger.debug(String.format(
+                "Monitoring params: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
+                    + " hostsfile='%s', useApi='%b', showVMProcessesOnHost='%b'", useRMNodeOnHost,
+                useRMNodeOnVM, credentialsPath, hostsFile, useApi, showVMProcessesOnHost));
 
         // Use Sigar monitoring? 
         // Set up credentials file path.
@@ -156,11 +163,14 @@ public abstract class IaaSMonitoringService implements IaaSMonitoringServiceMBea
         // Use API monitoring?
         this.useApi = useApi;
 
-        // Use VMProcesses monitoring?
-        this.useVMProcesses = useVMProcesses;
+        // Show VM Processes information when getting host properties?
+        this.showVMProcessesOnHost = showVMProcessesOnHost;
 
-        // Resolve Sigar JMX URLs into properties.
-        this.resolveSigar = resolveSigar;
+        // Assume RMNodes are running on hosts.
+        this.useRMNodeOnHost = useRMNodeOnHost;
+
+        // Assume RMNodes are running on VMs.
+        this.useRMNodeOnVM = useRMNodeOnVM;
 
         // Set up hosts file path.
         if (hostsFile != null) {

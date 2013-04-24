@@ -1,20 +1,22 @@
 package org.ow2.proactive.iaas.vcloud.monitoring;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Map;
 
 public class VimServicePropertyUtil {
-	
+
 	public static class VM {
 		public static void standardize(Map<String, String> propertyMap) {
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_PARENT, "host",
 					propertyMap);
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES,
 					"cpu.cores", propertyMap);
-			
-			replaceVmMemoryTotalPropertyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,
-					"memory.total", propertyMap);
-			
+
+			replaceVmMemoryTotalPropertyIfPresent(
+					VimServiceConstants.PROP_VM_MEMEORY_TOTAL, "memory.total",
+					propertyMap);
+
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_COMMITTED,
 					"storage.used", propertyMap);
 			replaceStorageUnCommitted(
@@ -85,10 +87,13 @@ public class VimServicePropertyUtil {
 			String newKey, Map<String, String> propertyMap) {
 		String usage = propertyMap.remove(oldKey);
 		if (usage != null) {
-			DecimalFormat df = new DecimalFormat("#.#");
-			df.setMaximumFractionDigits(4);
-			df.setGroupingUsed(false);
-			usage = df.format(Float.parseFloat(usage) / 10000);
+			DecimalFormat format = new DecimalFormat();
+			format.setMaximumFractionDigits(4);
+			format.setGroupingUsed(false);
+			DecimalFormatSymbols custom = new DecimalFormatSymbols();
+			custom.setDecimalSeparator('.');
+			format.setDecimalFormatSymbols(custom);
+			usage = format.format(Float.parseFloat(usage) / 10000);
 			propertyMap.put(newKey, usage);
 		}
 	}

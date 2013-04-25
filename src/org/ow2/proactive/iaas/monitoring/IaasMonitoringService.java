@@ -41,10 +41,10 @@ import java.util.Map;
 import java.util.HashMap;
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 
 
-public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNodesListener {
+public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNodesListener {
 
     /** 
      * Key used for referencing the URL of the Sigar MBean of the entity (host/vm). 
@@ -58,12 +58,12 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     protected static final String VMS_INFO_KEY = "vmsinfo";
 
     /** Logger. */
-    private static final Logger logger = Logger.getLogger(IaaSMonitoringService.class);
+    private static final Logger logger = Logger.getLogger(IaasMonitoringService.class);
 
     /**
      * Loader for monitoring information.
      */
-    protected IaaSMonitoringServiceCacher loader;
+    protected IaasMonitoringServiceCacher loader;
     
     /**
      * Name of the Node Source being monitored.
@@ -73,14 +73,14 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     /**
      * Constructor.
      * @param iaaSMonitoringApi
-     * @throws IaaSMonitoringServiceException
+     * @throws IaasMonitoringException
      */
-    public IaaSMonitoringService(IaaSMonitoringApi iaaSMonitoringApi) throws IaaSMonitoringServiceException {
+    public IaasMonitoringService(IaasMonitoringApi iaaSMonitoringApi) throws IaasMonitoringException {
         try {
-            loader = new IaaSMonitoringServiceCacher(new IaaSMonitoringServiceLoader(iaaSMonitoringApi));
+            loader = new IaasMonitoringServiceCacher(new IaasMonitoringServiceLoader(iaaSMonitoringApi));
         } catch (Exception e) {
             logger.error("Cannot instantiate IasSClientApi:", e);
-            throw new IaaSMonitoringServiceException(e);
+            throw new IaasMonitoringException(e);
         }
     }
 
@@ -95,32 +95,32 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     }
 
     @Override
-    public String[] getHosts() throws IaaSMonitoringServiceException {
+    public String[] getHosts() throws IaasMonitoringException {
         return loader.getHosts();
     }
 
     @Override
-    public String[] getVMs() throws IaaSMonitoringServiceException {
+    public String[] getVMs() throws IaasMonitoringException {
         return loader.getVMs();
     }
 
     @Override
-    public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
+    public String[] getVMs(String hostId) throws IaasMonitoringException {
         return loader.getVMs(hostId);
     }
 
     @Override
-    public Map<String, String> getHostProperties(String hostId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
         return loader.getHostProperties(hostId);
     }
 
     @Override
-    public Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
         return loader.getVMProperties(vmId);
     }
 
     @Override
-    public Map<String, Object> getSummary() throws IaaSMonitoringServiceException {
+    public Map<String, Object> getSummary() throws IaasMonitoringException {
 
         Map<String, Object> summary = new HashMap<String, Object>();
 
@@ -136,7 +136,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
                 for (String vm : vms) {
                     try {
                         vmsinfo.put(vm, this.getVMProperties(vm));
-                    } catch (IaaSMonitoringServiceException e) {
+                    } catch (IaasMonitoringException e) {
                         // Ignore it.
                     }
                 }
@@ -144,7 +144,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
 
                 summary.put(host, hostinfo);
 
-            } catch (IaaSMonitoringServiceException e) {
+            } catch (IaasMonitoringException e) {
                 // Ignore it.
             }
         }
@@ -153,7 +153,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     }
 
     @Override
-    public Map<String, Object> getHostsSummary() throws IaaSMonitoringServiceException {
+    public Map<String, Object> getHostsSummary() throws IaasMonitoringException {
         Map<String, Object> summary = new HashMap<String, Object>();
         String[] hosts = this.getHosts();
         for (String host : hosts) {
@@ -161,7 +161,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
             try {
                 Map<String, Object> hostinfo = Utils.convertToObjectMap(getHostProperties(host));
                 summary.put(host, hostinfo);
-            } catch (IaaSMonitoringServiceException e) {
+            } catch (IaasMonitoringException e) {
                 // Ignore it.
             }
         }
@@ -169,7 +169,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
     }
 
     @Override
-    public Map<String, Object> getVMsSummary() throws IaaSMonitoringServiceException {
+    public Map<String, Object> getVMsSummary() throws IaasMonitoringException {
         Map<String, Object> summary = new HashMap<String, Object>();
         String[] vms = this.getVMs();
         for (String vm : vms) {
@@ -177,7 +177,7 @@ public class IaaSMonitoringService implements IaaSMonitoringServiceMBean, IaaSNo
             try {
                 Map<String, String> vminfo = getVMProperties(vm);
                 summary.put(vm, vminfo);
-            } catch (IaaSMonitoringServiceException e) {
+            } catch (IaasMonitoringException e) {
                 // Ignore it.
             }
         }

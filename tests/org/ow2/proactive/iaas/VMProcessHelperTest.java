@@ -45,7 +45,8 @@ public class VMProcessHelperTest {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Started...");
-        Thread.sleep(1000);
+        Thread.sleep(10000000);
+        //Thread.sleep(500);
     }
 
 }

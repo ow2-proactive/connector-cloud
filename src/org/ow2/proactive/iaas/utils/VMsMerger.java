@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceLoader;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceLoader;
 
 
 public class VMsMerger {

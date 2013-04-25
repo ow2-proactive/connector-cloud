@@ -48,12 +48,12 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import java.util.concurrent.ExecutionException;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 
 
-public class IaaSMonitoringServiceCacher implements IaaSMonitoringApi, IaaSNodesListener  {
+public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodesListener  {
     /** Logger. */
-    private static final Logger logger = Logger.getLogger(IaaSMonitoringServiceCacher.class);
+    private static final Logger logger = Logger.getLogger(IaasMonitoringServiceCacher.class);
 
     /**
      * Cache for properties of hosts.
@@ -87,7 +87,7 @@ public class IaaSMonitoringServiceCacher implements IaaSMonitoringApi, IaaSNodes
      */
     private boolean autoUpdate = false;
 
-    private IaaSMonitoringServiceLoader loader;
+    private IaasMonitoringServiceLoader loader;
     
     /**
      * Timer to execute regularly the refresh task. 
@@ -99,8 +99,8 @@ public class IaaSMonitoringServiceCacher implements IaaSMonitoringApi, IaaSNodes
      */
     protected String nsname;
 
-    public IaaSMonitoringServiceCacher(IaaSMonitoringServiceLoader loader)
-            throws IaaSMonitoringServiceException {
+    public IaasMonitoringServiceCacher(IaasMonitoringServiceLoader loader)
+            throws IaasMonitoringException {
         
         this.loader = loader;
 
@@ -206,49 +206,49 @@ public class IaaSMonitoringServiceCacher implements IaaSMonitoringApi, IaaSNodes
     }
 
     @Override
-    public String[] getHosts() throws IaaSMonitoringServiceException {
+    public String[] getHosts() throws IaasMonitoringException {
         // Not cached.
         return loader.getHosts();
     }
 
     @Override
-    public String[] getVMs() throws IaaSMonitoringServiceException {
+    public String[] getVMs() throws IaasMonitoringException {
         // Not cached.
         return loader.getVMs();
     }
 
     @Override
-    public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
+    public String[] getVMs(String hostId) throws IaasMonitoringException {
         // Not cached.
         return loader.getVMs(hostId);
     }
 
     public Map<String, String> getHostPropertiesLoad(final String hostId)
-            throws IaaSMonitoringServiceException {
+            throws IaasMonitoringException {
         logger.debug("[" + nsname + "] " + "API, loading host properties: " + hostId);
         return loader.getHostProperties(hostId);
     }
 
-    public Map<String, String> getVMPropertiesLoad(final String vmId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getVMPropertiesLoad(final String vmId) throws IaasMonitoringException {
         logger.debug("[" + nsname + "] " + "API, loading VM properties: " + vmId);
         return loader.getVMProperties(vmId);
     }
 
     @Override
-    public Map<String, String> getHostProperties(final String hostId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getHostProperties(final String hostId) throws IaasMonitoringException {
         try {
             return hostPropertiesCache.get(hostId);
         } catch (ExecutionException e) {
-            throw new IaaSMonitoringServiceException(e);
+            throw new IaasMonitoringException(e);
         }
     }
 
     @Override
-    public Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
         try {
             return vmPropertiesCache.get(vmId);
         } catch (ExecutionException e) {
-            throw new IaaSMonitoringServiceException(e);
+            throw new IaasMonitoringException(e);
         }
     }
 

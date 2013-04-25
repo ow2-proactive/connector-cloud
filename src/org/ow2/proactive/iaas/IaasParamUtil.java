@@ -1,8 +1,8 @@
 package org.ow2.proactive.iaas;
 
-public class IaaSParamUtil {
+public class IaasParamUtil {
 
-	private IaaSParamUtil() {
+	private IaasParamUtil() {
 	}
 
 	public static String getParameterValue(String paramName, Object... params) {

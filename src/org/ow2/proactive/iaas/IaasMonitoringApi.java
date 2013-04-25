@@ -35,23 +35,56 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas.monitoring;
+package org.ow2.proactive.iaas;
 
-public class IaaSMonitoringServiceException extends Exception {
+import java.util.Map;
 
-	public IaaSMonitoringServiceException() {
-	}
+public interface IaasMonitoringApi {
+	
+    /**
+     * Get a list of all the hosts/hypervisors of this Infrastructure.
+     * @return list of host ids.
+     * @throws Exception
+     */
+    public String[] getHosts() throws Exception;
 
-	public IaaSMonitoringServiceException(String message) {
-		super(message);
-	}
+    /**
+     * Get a list of all the VMs of this Infrastructure.
+     * @return list of VM ids.
+     * @throws Exception
+     */
+    public String[] getVMs() throws Exception;
 
-	public IaaSMonitoringServiceException(Throwable cause) {
-		super(cause);
-	}
+    /**
+     * Get a list of all the VMs of this host.
+     * @param hostId
+     * @return list of VM ids.
+     * @throws Exception
+     */
+    public String[] getVMs(String hostId) throws Exception;
 
-	public IaaSMonitoringServiceException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    /**
+     * Get a map of all the properties of the host.
+     * @param hostId
+     * @return the list of properties.
+     * @throws Exception
+     */
+    public Map<String, String> getHostProperties(String hostId) throws Exception;
+
+    /**
+     * Get a map of all the properties of the VM.
+     * @param vmId
+     * @return the list of properties.
+     * @throws Exception
+     */
+    public Map<String, String> getVMProperties(String vmId) throws Exception;
+    
+    /**
+     * Get a map with information regarding the specific cloud services provider.
+     * This method returns information provider-dependent. 
+     * @return the map.
+     * @throws Exception
+     */
+    public Map<String, Object> getVendorDetails() throws Exception; 
 
 }

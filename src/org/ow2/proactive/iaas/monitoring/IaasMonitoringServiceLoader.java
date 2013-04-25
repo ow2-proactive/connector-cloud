@@ -55,21 +55,21 @@ import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.VMsMerger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 
-public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodesListener  {
+public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodesListener  {
 
     /** 
      * Logger. 
      */
-    private static final Logger logger = Logger.getLogger(IaaSMonitoringServiceLoader.class);
+    private static final Logger logger = Logger.getLogger(IaasMonitoringServiceLoader.class);
 
     /**
      * Monitoring API.
      */
-    private IaaSMonitoringApi iaaSMonitoringApi;
+    private IaasMonitoringApi iaaSMonitoringApi;
 
     /** 
      * Map to save JMX urls per host.
@@ -119,8 +119,8 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
      */
     private Map<String, String> vmId2SigarJmxUrl = new HashMap<String, String>();
 
-    public IaaSMonitoringServiceLoader(IaaSMonitoringApi iaaSMonitoringApi)
-            throws IaaSMonitoringServiceException {
+    public IaasMonitoringServiceLoader(IaasMonitoringApi iaaSMonitoringApi)
+            throws IaasMonitoringException {
         this.iaaSMonitoringApi = iaaSMonitoringApi;
     }
 
@@ -255,7 +255,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
      * - JMX table of registered hosts.
      * @return the list of host Ids in the infrastructure.
      */
-    public String[] getHosts() throws IaaSMonitoringServiceException {
+    public String[] getHosts() throws IaasMonitoringException {
         logger.debug("[" + nsname + "]" + "Retrieving list of hosts from IaaS node source: " + nsname);
         HashSet<String> hosts = new HashSet<String>();
         if (useApi)
@@ -283,7 +283,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
      * - All the VMs registered in the JMX table for VMs.
      * @return the list of VM Ids in the infrastructure.
      */
-    public String[] getVMs() throws IaaSMonitoringServiceException {
+    public String[] getVMs() throws IaasMonitoringException {
         logger.debug("[" + nsname + "]" + "Retrieving list of VMs from IaaS node source: " + nsname);
         HashSet<String> vms = new HashSet<String>();
 
@@ -314,7 +314,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
      * in the host. This way, every VM listed in jmxSupportedVMs will be already included in the 
      * VMProcesses list.
      */
-    public String[] getVMs(String hostId) throws IaaSMonitoringServiceException {
+    public String[] getVMs(String hostId) throws IaasMonitoringException {
         logger.debug("[" + nsname + "]" + "Retrieving list of VMs in host " + hostId +
             " from IaaS node source " + nsname);
 
@@ -340,7 +340,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
         return (new ArrayList<String>(vms)).toArray(new String[] {});
     }
 
-    private String[] getVMsFromHostProcesses(String hostId) throws IaaSMonitoringServiceException {
+    private String[] getVMsFromHostProcesses(String hostId) throws IaasMonitoringException {
         Map<String, String> props = getHostProperties(hostId);
         String vms = props.get(VMPLister.VMS_KEY);
         if (vms != null) {
@@ -351,7 +351,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
     }
 
     @Override
-    public Map<String, String> getHostProperties(String hostId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
         logger.debug("[" + nsname + "]" + "Retrieving properties from host " + hostId +
             " from IaaS node source " + nsname);
         Map<String, String> properties = new HashMap<String, String>();
@@ -370,7 +370,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
 
                 if (jmxSupportedHosts.containsKey(hostId)) {
                     String jmxurl = jmxSupportedHosts.get(hostId);
-                    properties.put(IaaSMonitoringService.PROP_PA_SIGAR_JMX_URL, jmxurl);
+                    properties.put(IaasMonitoringService.PROP_PA_SIGAR_JMX_URL, jmxurl);
                     Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
                     Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                     properties.putAll(sigarProps);
@@ -385,7 +385,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
     }
 
     @Override
-    public Map<String, String> getVMProperties(String vmId) throws IaaSMonitoringServiceException {
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
         logger.debug("[" + nsname + "]" + "Retrieving properties from VM " + vmId);
         Map<String, String> properties = new HashMap<String, String>();
 
@@ -419,8 +419,8 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
                     newProps = VMsMerger.getExtraVMPropertiesUsingMac(vmId, properties, hostSummary,
                             sigarsMap);
 
-                    if (newProps.containsKey(IaaSMonitoringService.PROP_PA_SIGAR_JMX_URL)) {
-                        String jmxurl = newProps.get(IaaSMonitoringService.PROP_PA_SIGAR_JMX_URL);
+                    if (newProps.containsKey(IaasMonitoringService.PROP_PA_SIGAR_JMX_URL)) {
+                        String jmxurl = newProps.get(IaasMonitoringService.PROP_PA_SIGAR_JMX_URL);
                         vmId2SigarJmxUrl.put(vmId, jmxurl);
                     }
                 }
@@ -435,7 +435,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
     }
 
     
-    private Map<String, Object> getHostsInfo() throws IaaSMonitoringServiceException {
+    private Map<String, Object> getHostsInfo() throws IaasMonitoringException {
         Map<String, Object> hinfo = new HashMap<String, Object>();
         String[] hosts = this.getHosts();
         for (String host : hosts) {
@@ -443,7 +443,7 @@ public class IaaSMonitoringServiceLoader implements IaaSMonitoringApi, IaaSNodes
             try {
                 Map<String, Object> hostinfo = Utils.convertToObjectMap(getHostProperties(host));
                 hinfo.put(host, hostinfo);
-            } catch (IaaSMonitoringServiceException e) {
+            } catch (IaasMonitoringException e) {
                 // Ignore it.
             }
         }

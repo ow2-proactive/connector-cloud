@@ -35,56 +35,36 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-package org.ow2.proactive.iaas;
+package org.ow2.proactive.iaas.monitoring;
 
 import java.util.Map;
 
-public interface IaaSMonitoringApi {
-	
-    /**
-     * Get a list of all the hosts/hypervisors of this Infrastructure.
-     * @return list of host ids.
-     * @throws Exception
-     */
-    public String[] getHosts() throws Exception;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
+
+
+public interface IaasMonitoringServiceMBean extends IaasMonitoringApi {
 
     /**
-     * Get a list of all the VMs of this Infrastructure.
-     * @return list of VM ids.
+     * Exposes a summary of all the information of the Infrastructure.
+     * It includes all the details of each host, with details of their VMs.
+     * @return a map with a summary of all Infrastructure's information.
      * @throws Exception
      */
-    public String[] getVMs() throws Exception;
+    public Map<String, Object> getSummary() throws Exception;
 
     /**
-     * Get a list of all the VMs of this host.
-     * @param hostId
-     * @return list of VM ids.
+     * Exposes a summary of information about all the hosts of the Infrastructure.
+     * It includes all the details of each host.
+     * @return a map with a summary of all hosts' information.
      * @throws Exception
      */
-    public String[] getVMs(String hostId) throws Exception;
+    public Map<String, Object> getHostsSummary() throws Exception;
 
     /**
-     * Get a map of all the properties of the host.
-     * @param hostId
-     * @return the list of properties.
+     * Exposes a summary of information about all the VMs of the Infrastructure.
+     * It includes all the details of each VM.
+     * @return a map with a summary of all VMs' information.
      * @throws Exception
      */
-    public Map<String, String> getHostProperties(String hostId) throws Exception;
-
-    /**
-     * Get a map of all the properties of the VM.
-     * @param vmId
-     * @return the list of properties.
-     * @throws Exception
-     */
-    public Map<String, String> getVMProperties(String vmId) throws Exception;
-    
-    /**
-     * Get a map with information regarding the specific cloud services provider.
-     * This method returns information provider-dependent. 
-     * @return the map.
-     * @throws Exception
-     */
-    public Map<String, Object> getVendorDetails() throws Exception; 
-
+    public Map<String, Object> getVMsSummary() throws Exception;
 }

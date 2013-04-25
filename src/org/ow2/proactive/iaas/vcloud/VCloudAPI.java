@@ -52,7 +52,7 @@ import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
@@ -90,7 +90,7 @@ import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.Version;
 
 
-public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
+public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     private static final Logger logger = Logger.getLogger(VCloudAPI.class);
 

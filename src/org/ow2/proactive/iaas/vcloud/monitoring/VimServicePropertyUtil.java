@@ -13,6 +13,11 @@ public class VimServicePropertyUtil {
 			replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES,
 					"cpu.cores", propertyMap);
 
+			// adjust value, MHz -> GHz
+			replaceFrequencyPropertyIfPresent(
+					VimServiceConstants.PROP_VM_CPU_FREQUENCY,
+					"cpu.frequency", propertyMap);
+			
 			replaceVmMemoryTotalPropertyIfPresent(
 					VimServiceConstants.PROP_VM_MEMEORY_TOTAL, "memory.total",
 					propertyMap);
@@ -95,6 +100,8 @@ public class VimServicePropertyUtil {
 			format.setDecimalFormatSymbols(custom);
 			usage = format.format(Float.parseFloat(usage) / 10000);
 			propertyMap.put(newKey, usage);
+		} else {
+			propertyMap.put(newKey, "0");
 		}
 	}
 
@@ -134,6 +141,7 @@ public class VimServicePropertyUtil {
 			float free = Long.parseLong(total)
 					* (1 - Float.parseFloat(usage) / 100);
 			propertyMap.put("memory.free", Long.toString((long) free));
+			propertyMap.put("memory.actualfree", Long.toString((long) free));
 		}
 	}
 

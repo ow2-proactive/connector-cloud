@@ -39,7 +39,7 @@ package org.ow2.proactive.iaas;
 
 import java.util.Map;
 
-public interface IaaSMonitoringApi {
+public interface IaasMonitoringApi {
 	
     /**
      * Get a list of all the hosts/hypervisors of this Infrastructure.

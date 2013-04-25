@@ -173,12 +173,12 @@ public class VimServiceClient {
 
             try {
                 Map<String, Object> propsOfDomain = VimServiceUtil.getRawStaticProperties(domainMor,
-                        new String[] { "name", "host" }, serviceContent, vimPort);
+                        new String[] { VimServiceConstants.PROP_NAME, VimServiceConstants.PROP_CCR_HOST }, serviceContent, vimPort);
 
                 Map<String, Object> domainMap = new HashMap<String, Object>();
 
-                DynamicProperty hostProps = (DynamicProperty) propsOfDomain.get("host");
-                DynamicProperty domainName = (DynamicProperty) propsOfDomain.get("name");
+                DynamicProperty hostProps = (DynamicProperty) propsOfDomain.get(VimServiceConstants.PROP_CCR_HOST);
+                DynamicProperty domainName = (DynamicProperty) propsOfDomain.get(VimServiceConstants.PROP_NAME);
 
                 ArrayOfManagedObjectReference hosts = (ArrayOfManagedObjectReference) hostProps.getVal();
                 List<ManagedObjectReference> hostsListMor = hosts.getManagedObjectReference();
@@ -189,10 +189,13 @@ public class VimServiceClient {
                     Map<String, Object> hostMap = new HashMap<String, Object>();
 
                     Map<String, Object> propsOfHost = VimServiceUtil.getRawStaticProperties(hostMor,
-                            new String[] { "name" }, serviceContent, vimPort);
-                    DynamicProperty hostName = (DynamicProperty) propsOfHost.get("name");
+                            new String[] { VimServiceConstants.PROP_NAME,  VimServiceConstants.PROP_HOST_SYSTEM_IDENTIFICATION }, serviceContent, vimPort);
+                    DynamicProperty hostName = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_NAME);
+                    DynamicProperty hostIds = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_HOST_SYSTEM_IDENTIFICATION);
 
-                    hostMap.put("name", hostName.getVal());
+                    VimServiceUtil.addPropertyToMap(hostName, hostMap);
+                    VimServiceUtil.addPropertyToMap(hostIds, hostMap);
+                    
                     hostMap.put("id", hostMor.getValue());
 
                     domainMap.put(hostMor.getValue(), hostMap);

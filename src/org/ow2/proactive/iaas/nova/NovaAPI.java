@@ -25,14 +25,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 
 import com.jayway.jsonpath.JsonPath;
 
-public class NovaAPI implements IaasApi, IaaSMonitoringApi {
+public class NovaAPI implements IaasApi, IaasMonitoringApi {
 
     private static final Logger logger = Logger.getLogger(NovaAPI.class);
 

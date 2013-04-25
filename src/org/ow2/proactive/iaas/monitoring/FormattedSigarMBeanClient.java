@@ -38,7 +38,7 @@ public class FormattedSigarMBeanClient {
         }
     }
 
-    public Map<String, Object> getPropertyMap(Boolean useVMProcesses) {
+    public Map<String, Object> getPropertyMap(Boolean showVMProcesses) {
         Map<String, Object> propertyMap = new HashMap<String, Object>();
         try {
             addCpuCoresProperty(propertyMap);
@@ -49,7 +49,7 @@ public class FormattedSigarMBeanClient {
             addProcessProperties(propertyMap);
             addStorageProperties(propertyMap);
             
-            if (useVMProcesses)
+            if (showVMProcesses)
                 addVMProcessesProperties(propertyMap);
             
         } catch (Exception se) {
@@ -58,30 +58,30 @@ public class FormattedSigarMBeanClient {
         return propertyMap;
     }
 
-    private void addVMProcessesProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addVMProcessesProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Map<String, Object> props = VMPLister.getVMPsAsMap((Object) connector);
         properties.putAll(props);
     }
 
-    private void addCpuCoresProperty(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addCpuCoresProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
         properties.put("cpu.cores", (Integer) a);
     }
 
-    private void addCpuFrequencyProperty(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addCpuFrequencyProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
         int fmhz = (Integer) a;
         float fghz = (float) fmhz / 1000;
         properties.put("cpu.frequency", fghz);
     }
 
-    private void addCpuUsageProperty(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addCpuUsageProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
         float usage = (float) (1.0 - a);
         properties.put("cpu.usage", usage);
     }
 
-    private void addMemoryProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addMemoryProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Long total = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Total");
         Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
         Long actualFree = (Long) getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
@@ -91,13 +91,13 @@ public class FormattedSigarMBeanClient {
         properties.put("memory.actualfree", actualFree);
     }
 
-    private void addNetworkProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addNetworkProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         }
 
         int counter = 0;
@@ -120,15 +120,15 @@ public class FormattedSigarMBeanClient {
                     trx += rx;
                     counter++;
                 } catch (AttributeNotFoundException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (InstanceNotFoundException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (MBeanException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (ReflectionException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (IOException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 }
             }
         }
@@ -137,13 +137,13 @@ public class FormattedSigarMBeanClient {
         properties.put("network.rx", trx);
     }
 
-    private void addStorageProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addStorageProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         }
 
         int counter = 0;
@@ -163,15 +163,15 @@ public class FormattedSigarMBeanClient {
                     tused += used;
                     counter++;
                 } catch (AttributeNotFoundException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (InstanceNotFoundException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (MBeanException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (ReflectionException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 } catch (IOException e) {
-                    throw new IaaSMonitoringException(e);
+                    throw new IaasMonitoringException(e);
                 }
             }
         }
@@ -180,7 +180,7 @@ public class FormattedSigarMBeanClient {
         properties.put("storage.used", tused);
     }
 
-    private void addProcessProperties(Map<String, Object> properties) throws IaaSMonitoringException {
+    private void addProcessProperties(Map<String, Object> properties) throws IaasMonitoringException {
         StringBuilder process = new StringBuilder();
         StringBuilder process3 = new StringBuilder();
 
@@ -204,21 +204,21 @@ public class FormattedSigarMBeanClient {
             String ps3 = process3.toString();
             properties.put("system.process.3", ps3.substring(0, ps3.length() - 1));
         } catch (AttributeNotFoundException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         } catch (InstanceNotFoundException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         } catch (MBeanException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         } catch (ReflectionException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         } catch (IOException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         } catch (MalformedObjectNameException e) {
-            throw new IaaSMonitoringException(e);
+            throw new IaasMonitoringException(e);
         }
     }
 
-    public Object getJMXSigarAttribute(String objname, String attribute) throws IaaSMonitoringException {
+    public Object getJMXSigarAttribute(String objname, String attribute) throws IaasMonitoringException {
         Object a = null;
         try {
             ObjectName name = new ObjectName(objname);
@@ -238,7 +238,7 @@ public class FormattedSigarMBeanClient {
         }
 
         if (a == null) {
-            throw new IaaSMonitoringException();
+            throw new IaasMonitoringException();
         }
         return a;
     }

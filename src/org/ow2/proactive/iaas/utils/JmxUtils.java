@@ -46,7 +46,7 @@ import javax.management.remote.JMXServiceURL;
 import javax.management.remote.JMXConnectorFactory;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 
 public class JmxUtils {
 
@@ -61,19 +61,19 @@ public class JmxUtils {
 
     public static Map<String, Object> getSigarProperties(
             String jmxurl, Map<String, Object> jmxenv, 
-            Boolean useVMProcesses) 
-                    throws IaaSMonitoringServiceException {
+            Boolean showVMProcesses) 
+                    throws IaasMonitoringException {
         FormattedSigarMBeanClient a;
         Map<String, Object> map = new HashMap<String, Object>();
         try {
             a = new FormattedSigarMBeanClient(jmxurl, jmxenv);
         } catch (MalformedURLException e) {
-            throw new IaaSMonitoringServiceException(e);
+            throw new IaasMonitoringException(e);
         } catch (IOException e) {
-            throw new IaaSMonitoringServiceException(e);
+            throw new IaasMonitoringException(e);
         }
         
-        map = a.getPropertyMap(useVMProcesses);
+        map = a.getPropertyMap(showVMProcesses);
         
         try {
             a.disconnect();

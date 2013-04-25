@@ -54,7 +54,7 @@ import javax.xml.bind.JAXBElement;
 import mytests.CustomizeScriptBuilder;
 
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
@@ -86,7 +86,6 @@ import com.vmware.vcloud.sdk.Vapp;
 import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
-import com.vmware.vcloud.sdk.admin.AdminOrganization;
 import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
 import com.vmware.vcloud.sdk.constants.NatPolicyType;
@@ -94,7 +93,7 @@ import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
 import com.vmware.vcloud.sdk.constants.Version;
 
-public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
+public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
 	private static final Logger logger = Logger.getLogger(VCloudAPI.class);
 

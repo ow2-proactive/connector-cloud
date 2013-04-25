@@ -37,34 +37,22 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
-import java.util.Map;
-
-import org.ow2.proactive.iaas.IaaSMonitoringApi;
-
-
-public interface IaaSMonitoringServiceMBean extends IaaSMonitoringApi {
+public interface IaasNodesListener {
 
     /**
-     * Exposes a summary of all the information of the Infrastructure.
-     * It includes all the details of each host, with details of their VMs.
-     * @return a map with a summary of all Infrastructure's information.
-     * @throws Exception
+     * Register a node in either the host or the VM JMX table. 
+     * This allows to keep track of the monitorable entities (either host or vm).
+     * @param nodeId id of the node.
+     * @param jmxUrl jmx url of the RMNode running in the entity (host or vm).
+     * @param type of the entity, either host or vm.
      */
-    public Map<String, Object> getSummary() throws Exception;
+    public void registerNode(String nodeid, String jmxurl, NodeType type);
 
     /**
-     * Exposes a summary of information about all the hosts of the Infrastructure.
-     * It includes all the details of each host.
-     * @return a map with a summary of all hosts' information.
-     * @throws Exception
+     * Un-registers the node from the host or the VM JMX table. 
+     * @param nodeId id of the node.
+     * @param type of the entity, either host or vm.
      */
-    public Map<String, Object> getHostsSummary() throws Exception;
+    public void unregisterNode(String nodeid, NodeType type);
 
-    /**
-     * Exposes a summary of information about all the VMs of the Infrastructure.
-     * It includes all the details of each VM.
-     * @return a map with a summary of all VMs' information.
-     * @throws Exception
-     */
-    public Map<String, Object> getVMsSummary() throws Exception;
 }

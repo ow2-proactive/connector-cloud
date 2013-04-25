@@ -1,3 +1,37 @@
+/*
+ *  
+ * ProActive Parallel Suite(TM): The Java(TM) library for
+ *    Parallel, Distributed, Multi-Core Computing for
+ *    Enterprise Grids & Clouds
+ *
+ * Copyright (C) 1997-2011 INRIA/University of
+ *                 Nice-Sophia Antipolis/ActiveEon
+ * Contact: proactive@ow2.org or contact@activeeon.com
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Affero General Public License
+ * as published by the Free Software Foundation; version 3 of
+ * the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+ * USA
+ *
+ * If needed, contact us to obtain a release under GPL Version 2 or 3
+ * or a different license than the AGPL.
+ *
+ *  Initial developer(s):               The ProActive Team
+ *                        http://proactive.inria.fr/team_members.htm
+ *  Contributor(s):
+ *
+ *  * $$PROACTIVE_INITIAL_DEV$$
+ */
 package org.ow2.proactive.iaas.utils;
 
 import java.util.Map;
@@ -7,42 +41,47 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceLoader;
 
 
 public class VMsMerger {
 
     private static final Logger logger = Logger.getLogger(VMsMerger.class);
-    
+
     /**
-     * The goal is to add to the current VMProperties some properties obtained from the host processes
-     * information like cpu usage, memory, etc. The problem is to find the right VMProcess (in all
-     * the hosts) that matches the current VM.
+     * The goal is to add to the current VMProperties (obtained from IaaS API) and VMProcesses 
+     * some properties obtained from Sigar agents. But first we need to find out what Sigar agent 
+     * really matches the already provided information. 
+     * @param vmId 
      * @param vmProperties 
      * @param hostsMap
+     * @param sigarsMap
      * @return the set of new extra properties of the VM.
      */
-    public static Map<String, String> enrichVMProperties(Map<String, String> vmProperties,
-            Map<String, Object> hostsMap) {
+    public static Map<String, String> getExtraVMPropertiesUsingMac(String vmId,
+            Map<String, String> vmProperties, Map<String, Object> hostsMap, Map<String, Object> sigarsMap) {
         Map<String, String> output = new HashMap<String, String>();
+
+        // We assume sigar information is available. 
         List<String> vmMacs = getMacs(vmProperties);
 
         logger.debug("MACs of the current VM: " + vmMacs);
-        
+
         if (vmMacs.isEmpty())
             return output;
-        
+
         logger.debug("Analysing hosts...");
         for (String hostid : hostsMap.keySet()) {
             logger.debug("   Host: " + hostid);
             Map<String, Object> props = (Map<String, Object>) hostsMap.get(hostid);
             for (String key : props.keySet()) {
                 logger.debug("      Key: " + key);
-                if (isMacKey(key)) {
+                if (isVMMacKey(key)) {
                     String mac = props.get(key).toString().toUpperCase();
                     if (vmMacs.contains(mac)) {
                         logger.debug("         Found!");
-                        return getProperties(key, props);
-                    } 
+                        return getProperties(vmId, key, props);
+                    }
                 } else {
                     logger.debug("                  Skipping property " + key + "...");
                 }
@@ -51,25 +90,52 @@ public class VMsMerger {
         return output;
     }
 
-    private static boolean isMacKey(String key) {
+    /**
+     * The goal is to add to the scare information of a VM coming from the IaaS API some information like 
+     * process memory usage and cpu usage as listed in the host where this VM is hosted (a kvm process for instance). 
+     * @param vmId 
+     * @param vmProperties 
+     * @param hostsMap
+     * @return the set of new extra properties of the VM.
+     */
+    public static Map<String, String> getExtraVMPropertiesByVMId(String vmId,
+            Map<String, String> vmProperties, Map<String, Object> hostsMap) {
+        Map<String, String> output = new HashMap<String, String>();
+
+        logger.debug("VM '" + vmId + "': extending basic properties...");
+        logger.debug("Analysing hosts...");
+        for (String hostid : hostsMap.keySet()) {
+            logger.debug("   Host: " + hostid);
+            Map<String, Object> hostProps = (Map<String, Object>) hostsMap.get(hostid);
+            for (String key : hostProps.keySet()) {
+                logger.debug("      Key: " + key);
+                if (isVMKey(key, vmId)) {
+                    logger.debug("         Found!");
+                    return getProperties(vmId, key, hostProps);
+                } else {
+                    logger.debug("                  Skipping property " + key + "...");
+                }
+            }
+        }
+        return output;
+    }
+
+    private static boolean isVMKey(String key, String vmId) {
+        return (key.startsWith("vm." + vmId + "."));
+    }
+
+    private static boolean isVMMacKey(String key) {
         return (key.startsWith("vm.") && key.endsWith(".mac"));
     }
 
-    private static Map<String, String> getProperties(String key, Map<String, Object> props) {
+    private static Map<String, String> getProperties(String vmId, String key, Map<String, Object> props) {
         Map<String, String> output = new HashMap<String, String>();
 
-        String vmid = getVMIdFromKey(key);
-        if (vmid == null) {
-            throw new RuntimeException("Something bad here.");
-        }
-
-        logger.debug("VM Id identified: " + vmid);
-
-        String prefix = "vm." + vmid;
+        String prefix = "vm." + vmId + ".";
         for (String k : props.keySet()) {
             if (k.startsWith(prefix)) {
                 try {
-                    output.put(k.substring(prefix.length() + 1), props.get(k).toString());
+                    output.put(k.substring(prefix.length()), props.get(k).toString());
                 } catch (Exception e) {
                     // Ignore it.
                 }
@@ -92,44 +158,4 @@ public class VMsMerger {
         return output;
     }
 
-    private static String getVMIdFromKey(String key) {
-        String regex = "vm\\.([\\w-]+)\\.mac";
-        String vmid = null;
-        Pattern strMatch = Pattern.compile(regex);
-        Matcher m = strMatch.matcher(key);
-
-        if (m.find()) {
-            try {
-                vmid = m.group(1);
-            } catch (IndexOutOfBoundsException e) {
-                // Ignore it.
-            }
-        }
-        return vmid;
-    }
-
-    public static void main(String[] args) {
-        Map<String, String> map = new HashMap<String, String>();
-        map.put("network.count", "2");
-        map.put("network.0.mac", "aa");
-        map.put("network.1.mac", "bb");
-        Map<String, Object> hostsMap = new HashMap<String, Object>();
-        Map<String, Object> host1 = new HashMap<String, Object>();
-        host1.put("unkey", "unvalue");
-        host1.put("unkey2", "unvalue2");
-        host1.put("vm.vmid1.mac", "aaaa");
-        host1.put("vm.vmid1.shouldNOTbeadded", "xxca");
-        host1.put("vm.vmid2.mac", "aa");
-        host1.put("vm.vmid2.shouldbeadded", "xxca");
-        host1.put("vm.vmid2.shouldbeadded1", "xxca1");
-        Map<String, Object> host2 = new HashMap<String, Object>();
-        host2.put("unkey", "unvalue");
-        host2.put("unkey2", "unvalue2");
-        host2.put("vm.vmid1.mac", "aaaa");
-        host2.put("vm.vmid2.mac", "ba");
-        hostsMap.put("host1", host1);
-        hostsMap.put("host2", host2);
-
-        System.out.println(enrichVMProperties(map, hostsMap));
-    }
 }

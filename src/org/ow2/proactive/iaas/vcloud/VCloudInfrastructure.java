@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaaSParamUtil;
+import org.ow2.proactive.iaas.IaasParamUtil;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInfrastructure;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI.VCloudAPIConstants;
@@ -96,7 +96,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 		USE_CONFIGURED_VALUES.put(
 				VCloudAPIConstants.InstanceParameters.RM_CRED_VAL, credentials);
 		
-		templateName = IaaSParamUtil
+		templateName = IaasParamUtil
 				.getParameterValue(
 						VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
 						parameters);
@@ -105,7 +105,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 					VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
 					templateName);
 		}
-		instanceName = IaaSParamUtil
+		instanceName = IaasParamUtil
 				.getParameterValue(
 						VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
 						parameters);
@@ -114,7 +114,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 					VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
 					instanceName);
 		}
-		vdcName = IaaSParamUtil.getParameterValue(
+		vdcName = IaasParamUtil.getParameterValue(
 				VCloudAPIConstants.InstanceParameters.VDC_NAME, parameters);
 		if (orgName != null) {
 			USE_CONFIGURED_VALUES.put(
@@ -122,11 +122,11 @@ public class VCloudInfrastructure extends IaasInfrastructure {
 		}
 		
 		// VimService parameters
-		vimServiceUrl = IaaSParamUtil.getParameterValue(
+		vimServiceUrl = IaasParamUtil.getParameterValue(
 				VCloudAPIConstants.MonitoringParameters.URL, parameters);
-		vimServiceUsername = IaaSParamUtil.getParameterValue(
+		vimServiceUsername = IaasParamUtil.getParameterValue(
 				VCloudAPIConstants.MonitoringParameters.USERNAME, parameters);
-		vimServicePassword = IaaSParamUtil.getParameterValue(
+		vimServicePassword = IaasParamUtil.getParameterValue(
 				VCloudAPIConstants.MonitoringParameters.PASSWORD, parameters);
 				
     }

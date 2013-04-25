@@ -1,11 +1,10 @@
 /*
- * ################################################################
- *
+ *  
  * ProActive Parallel Suite(TM): The Java(TM) library for
  *    Parallel, Distributed, Multi-Core Computing for
  *    Enterprise Grids & Clouds
  *
- * Copyright (C) 1997-2012 INRIA/University of
+ * Copyright (C) 1997-2011 INRIA/University of
  *                 Nice-Sophia Antipolis/ActiveEon
  * Contact: proactive@ow2.org or contact@activeeon.com
  *
@@ -31,27 +30,23 @@
  *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
- * ################################################################
- * %$ACTIVEEON_INITIAL_DEV$
+ *  * $$PROACTIVE_INITIAL_DEV$$
  */
+package org.ow2.proactive.iaas;
 
-package org.ow2.proactive.iaas.monitoring;
+import org.junit.Test;
 
-public class IaaSMonitoringServiceException extends Exception {
 
-	public IaaSMonitoringServiceException() {
-	}
+public class VMProcessHelperTest {
 
-	public IaaSMonitoringServiceException(String message) {
-		super(message);
-	}
+    @Test
+    public void nop() {
+    }
 
-	public IaaSMonitoringServiceException(Throwable cause) {
-		super(cause);
-	}
-
-	public IaaSMonitoringServiceException(String message, Throwable cause) {
-		super(message, cause);
-	}
+    public static void main(String[] args) throws Exception {
+        System.out.println("Started...");
+        Thread.sleep(10000000);
+        //Thread.sleep(500);
+    }
 
 }

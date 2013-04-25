@@ -41,10 +41,10 @@ import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringService;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceCacher;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceException;
-import org.ow2.proactive.iaas.monitoring.IaaSMonitoringServiceLoader;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringService;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceCacher;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceLoader;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
 import org.ow2.proactive.iaas.monitoring.NodeType;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
@@ -81,7 +81,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     protected abstract Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
             Map<String, ?> nodeConfiguration);
 
-    protected IaaSMonitoringService iaaSMonitoringService;
+    protected IaasMonitoringService iaaSMonitoringService;
     protected MBeanExposer mbeanExposer;
     protected String[] monitoringHostUrls;
 
@@ -208,7 +208,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
 
             try {
-                IaaSMonitoringService monitService = new IaaSMonitoringServiceCacher((IaaSMonitoringApi) getAPI());
+                IaasMonitoringService monitService = new IaasMonitoringService((IaasMonitoringApi) getAPI());
 
                 monitService.configure(nodeSourceName, options);
 
@@ -220,7 +220,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
             } catch (MBeanRegistrationException e) {
                 logger.error("Could not register IaaS Monitoring MBean.", e);
-            } catch (IaaSMonitoringServiceException e) {
+            } catch (IaasMonitoringException e) {
                 logger.error("Cannot initialize IaaSMonitoringService MBean:", e);
             }
         } else {

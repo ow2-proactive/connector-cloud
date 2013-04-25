@@ -51,6 +51,8 @@ import java.util.logging.Level;
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
+import mytests.CustomizeScriptBuilder;
+
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaaSMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
@@ -60,6 +62,7 @@ import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
 import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
+import com.vmware.vcloud.api.rest.schema.GuestCustomizationSectionType;
 import com.vmware.vcloud.api.rest.schema.InstantiateVAppTemplateParamsType;
 import com.vmware.vcloud.api.rest.schema.InstantiationParamsType;
 import com.vmware.vcloud.api.rest.schema.NatRuleType;
@@ -88,27 +91,27 @@ import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
 import com.vmware.vcloud.sdk.constants.NatPolicyType;
 import com.vmware.vcloud.sdk.constants.NatTypeType;
+import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
 import com.vmware.vcloud.sdk.constants.Version;
-
 
 public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 
-    private static final Logger logger = Logger.getLogger(VCloudAPI.class);
+	private static final Logger logger = Logger.getLogger(VCloudAPI.class);
 
-    private static Map<Integer, VCloudAPI> instances;
+	private static Map<Integer, VCloudAPI> instances;
 
-    private Map<String, IaasInstance> iaasInstances;
-    private Map<IaasInstance, Vapp> vapps;
-    private long created;
-    private VcloudClient vCloudClient;
-    private Organization org;
-    private URI endpoint;
+	private Map<String, IaasInstance> iaasInstances;
+	private Map<IaasInstance, Vapp> vapps;
+	private long created;
+	private VcloudClient vCloudClient;
+	private Organization org;
+	private URI endpoint;
 
-    private VimServiceClient vimServiceClient;
+	private VimServiceClient vimServiceClient;
 
-    // ///
-    // VCLOUD FACTORY
-    // ///
+	// ///
+	// VCLOUD FACTORY
+	// ///
 	public static IaasApi getVCloudAPI(Map<String, String> args)
 			throws URISyntaxException, AuthenticationException {
 		VCloudAPI vCloudAPI = getVCloudAPI(
@@ -127,12 +130,12 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 			String password, URI endpoint, String orgName)
 			throws AuthenticationException {
 		if (instances == null) {
-            instances = new HashMap<Integer, VCloudAPI>();
-        }
-        int hash = (login + password).hashCode();
-        VCloudAPI instance = instances.get(hash);
-        if (instance == null) {
-            try {
+			instances = new HashMap<Integer, VCloudAPI>();
+		}
+		int hash = (login + password).hashCode();
+		VCloudAPI instance = instances.get(hash);
+		if (instance == null) {
+			try {
 				instances.remove(hash);
 				instance = new VCloudAPI(login, password, endpoint, orgName);
 			} catch (Throwable t) {
@@ -143,7 +146,7 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		}
 		return instance;
 	}
-	
+
 	public static synchronized VCloudAPI getVCloudAPI(String login,
 			String password, URI endpoint, String orgName,
 			String vimServiceUrl, String vimServiceUsername,
@@ -166,7 +169,7 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		}
 		return instance;
 	}
-	
+
 	public VCloudAPI(String login, String password, URI endpoint,
 			String orgName, String vimServiceUrl, String vimServiceUsername,
 			String vimServicePassword) throws IOException,
@@ -177,7 +180,8 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		this.created = System.currentTimeMillis();
 		this.endpoint = endpoint;
 		authenticate(login, password, orgName);
-		initializeMonitoringService(vimServiceUrl, vimServiceUsername, vimServicePassword);
+		initializeMonitoringService(vimServiceUrl, vimServiceUsername,
+				vimServicePassword);
 	}
 
 	public VCloudAPI(String login, String password, URI endpoint, String orgName)
@@ -213,6 +217,7 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		arguments.put(VCloudAPIConstants.InstanceParameters.INSTANCE_ID,
 				iaasInstance.getInstanceId());
 		configureNetwork(arguments);
+		customizeGuestOs(arguments);
 		deployInstance(arguments);
 		return iaasInstance;
 	}
@@ -285,6 +290,39 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		logger.info("[" + instanceID + "] vApp network reconfigured");
 	}
 
+	private void customizeGuestOs(Map<String, String> arguments)
+			throws Exception {
+		String instanceID = arguments
+				.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
+		Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+		VM vm = vapp.getChildrenVms().get(0);
+		if (vm.isDeployed()) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(String
+						.format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
+								instanceID));
+			}
+			vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
+		}
+		GuestCustomizationSectionType guestCustomizationSection = vm
+				.getGuestCustomizationSection();
+		guestCustomizationSection.setEnabled(true);
+		CustomizeScriptBuilder customizeScriptBuilder = new CustomizeScriptBuilder();
+		customizeScriptBuilder.setRmNodeName(instanceID);
+		customizeScriptBuilder.setRmUrl(arguments
+				.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.RM_URL));
+		customizeScriptBuilder
+				.setRmCredentialValue(arguments
+						.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.RM_CRED_VAL));
+		String script = customizeScriptBuilder.buildScript();
+		if (logger.isDebugEnabled()) {
+			logger.debug(String.format("Guest OS customization script: %n%s",
+					script));
+		}
+		guestCustomizationSection.setCustomizationScript(script);
+		vm.updateSection(guestCustomizationSection).waitForTask(0);
+	}
+
 	public String deployInstance(Map<String, String> arguments)
 			throws Exception {
 		String instanceID = arguments
@@ -351,6 +389,8 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 			public static final String INSTANCE_ID = "instanceID";
 			public static final String TEMPLATE_NAME = "templateName";
 			public static final String VDC_NAME = "vdcName";
+			public static final String RM_URL = "rm.url";
+			public static final String RM_CRED_VAL = "rm.cred.val";
 		}
 
 		public class MonitoringParameters {
@@ -444,17 +484,17 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 		addFirewallRule(fwRules, "In-Out", "ANY", "internal", "external", "Any");
 
 		JAXBElement<FirewallServiceType> firewall = (new ObjectFactory())
-                .createFirewallService(firewallServiceType);
-        networkService.add(firewall);
+				.createFirewallService(firewallServiceType);
+		networkService.add(firewall);
 
-        networkConfigurationType.setFeatures(features);
+		networkConfigurationType.setFeatures(features);
 
-        VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
-        vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
+		VAppNetworkConfigurationType vAppNetworkConfigurationType = new VAppNetworkConfigurationType();
+		vAppNetworkConfigurationType.setConfiguration(networkConfigurationType);
 
-        vAppNetworkConfigurationType.setNetworkName(networkName);
+		vAppNetworkConfigurationType.setNetworkName(networkName);
 
-        NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
+		NetworkConfigSectionType networkConfigSectionType = new NetworkConfigSectionType();
 		MsgType networkMsgType = new MsgType();
 		networkConfigSectionType.setInfo(networkMsgType);
 		List<VAppNetworkConfigurationType> networkConfig = networkConfigSectionType
@@ -490,19 +530,19 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 			protocols.setIcmp(true);
 			firewallRuleType.setIcmpSubType("any");
 		} else if (protocol.equalsIgnoreCase("TCP")) {
-            protocols.setTcp(true);
-            firewallRuleType.setDestinationPortRange(portRange);
-        } else if (protocol.equalsIgnoreCase("ANY")) {
-            protocols.setAny(true);
-            firewallRuleType.setDestinationPortRange(portRange);
-        }
-        firewallRuleType.setProtocols(protocols);
-        fwRules.add(firewallRuleType);
-    }
+			protocols.setTcp(true);
+			firewallRuleType.setDestinationPortRange(portRange);
+		} else if (protocol.equalsIgnoreCase("ANY")) {
+			protocols.setAny(true);
+			firewallRuleType.setDestinationPortRange(portRange);
+		}
+		firewallRuleType.setProtocols(protocols);
+		fwRules.add(firewallRuleType);
+	}
 
-    @Override
-    public void disconnect() throws Exception {
-    }
+	@Override
+	public void disconnect() throws Exception {
+	}
 
 	private void initializeMonitoringService(String url, String username,
 			String password) {
@@ -515,43 +555,43 @@ public class VCloudAPI implements IaasApi, IaaSMonitoringApi {
 			throw new RuntimeException(e);
 		}
 
-    }
+	}
 
-    private Map<String, Object> convert(Map<String, String> a) {
-        Map<String, Object> r = new HashMap<String, Object>();
-        r.putAll(a);
-        return r;
-    }
+	private Map<String, Object> convert(Map<String, String> a) {
+		Map<String, Object> r = new HashMap<String, Object>();
+		r.putAll(a);
+		return r;
+	}
 
-    @Override
-    public String[] getHosts() throws Exception {
-        return vimServiceClient.getHosts();
-    }
+	@Override
+	public String[] getHosts() throws Exception {
+		return vimServiceClient.getHosts();
+	}
 
-    @Override
-    public String[] getVMs() throws Exception {
-        return vimServiceClient.getVMs();
-    }
+	@Override
+	public String[] getVMs() throws Exception {
+		return vimServiceClient.getVMs();
+	}
 
-    @Override
-    public String[] getVMs(String hostId) throws Exception {
-        return vimServiceClient.getVMs(hostId);
-    }
+	@Override
+	public String[] getVMs(String hostId) throws Exception {
+		return vimServiceClient.getVMs(hostId);
+	}
 
 	@Override
 	public Map<String, String> getHostProperties(String hostId)
 			throws Exception {
 		return vimServiceClient.getHostProperties(hostId);
-    }
+	}
 
-    @Override
-    public Map<String, String> getVMProperties(String vmId) throws Exception {
-        return vimServiceClient.getVMProperties(vmId);
-    }
+	@Override
+	public Map<String, String> getVMProperties(String vmId) throws Exception {
+		return vimServiceClient.getVMProperties(vmId);
+	}
 
-    @Override
-    public Map<String, Object> getVendorDetails() throws Exception {
-        return vimServiceClient.getVendorDetails();
-    }
+	@Override
+	public Map<String, Object> getVendorDetails() throws Exception {
+		return vimServiceClient.getVendorDetails();
+	}
 
 }

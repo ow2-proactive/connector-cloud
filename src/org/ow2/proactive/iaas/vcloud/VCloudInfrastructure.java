@@ -89,6 +89,12 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         } else {
         	credentials = (String) credentialsObj;
         }
+        
+		USE_CONFIGURED_VALUES.put(VCloudAPIConstants.InstanceParameters.RM_URL,
+				rmUrl);
+
+		USE_CONFIGURED_VALUES.put(
+				VCloudAPIConstants.InstanceParameters.RM_CRED_VAL, credentials);
 		
 		templateName = IaaSParamUtil
 				.getParameterValue(
@@ -151,6 +157,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME, nodeName);
         args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME,
                 (String) nodeConfiguration.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME));
+        
         return args;
     }
 }

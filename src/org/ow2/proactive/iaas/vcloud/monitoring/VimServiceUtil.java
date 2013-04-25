@@ -44,17 +44,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
-
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
-import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.DynamicProperty;
-import com.vmware.vim25.ElementDescription;
 import com.vmware.vim25.HostSystemIdentificationInfo;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
@@ -76,425 +72,357 @@ import com.vmware.vim25.ServiceContent;
 import com.vmware.vim25.TraversalSpec;
 import com.vmware.vim25.VimPortType;
 
+
 public class VimServiceUtil {
 
-	public static void disableHttpsCertificateVerification()
-			throws NoSuchAlgorithmException, KeyManagementException {
-		TrustManager[] tms = new TrustManager[] { new RelaxedTrustManager() };
-		SSLContext sslContext = SSLContext.getInstance("SSL");
-		SSLSessionContext sslServerSessionContext = sslContext
-				.getServerSessionContext();
-		sslServerSessionContext.setSessionTimeout(0);
-		sslContext.init(null, tms, null);
-		HttpsURLConnection.setDefaultSSLSocketFactory(sslContext
-				.getSocketFactory());
-	}
+    public static void disableHttpsCertificateVerification() throws NoSuchAlgorithmException,
+            KeyManagementException {
+        TrustManager[] tms = new TrustManager[] { new RelaxedTrustManager() };
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        SSLSessionContext sslServerSessionContext = sslContext.getServerSessionContext();
+        sslServerSessionContext.setSessionTimeout(0);
+        sslContext.init(null, tms, null);
+        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+    }
 
-	public static void disableHostNameVarifier() {
-		HttpsURLConnection
-				.setDefaultHostnameVerifier(new RelaxedHostNameVerifier());
-	}
+    public static void disableHostNameVarifier() {
+        HttpsURLConnection.setDefaultHostnameVerifier(new RelaxedHostNameVerifier());
+    }
 
-	public static List<ManagedObjectReference> getmObjRefsInContainerByType(
-			String mObjRefType, ManagedObjectReference container,
-			ServiceContent serviceContent, VimPortType vimPortType)
-			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+    public static List<ManagedObjectReference> getmObjRefsInContainerByType(String mObjRefType,
+            ManagedObjectReference container, ServiceContent serviceContent, VimPortType vimPortType)
+            throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
 
-		ManagedObjectReference viewController = serviceContent.getViewManager();
-		ManagedObjectReference containerView = vimPortType.createContainerView(
-				viewController, container, Arrays.asList(mObjRefType), true);
+        ManagedObjectReference viewController = serviceContent.getViewManager();
+        ManagedObjectReference containerView = vimPortType.createContainerView(viewController, container,
+                Arrays.asList(mObjRefType), true);
 
-		PropertySpec propertySpec = new PropertySpec();
-		propertySpec.setAll(Boolean.FALSE);
-		propertySpec.setType(mObjRefType);
+        PropertySpec propertySpec = new PropertySpec();
+        propertySpec.setAll(Boolean.FALSE);
+        propertySpec.setType(mObjRefType);
 
-		TraversalSpec traversalSpec = new TraversalSpec();
-		traversalSpec.setName("view");
-		traversalSpec.setPath("view");
-		traversalSpec.setSkip(false);
-		traversalSpec.setType("ContainerView");
+        TraversalSpec traversalSpec = new TraversalSpec();
+        traversalSpec.setName("view");
+        traversalSpec.setPath("view");
+        traversalSpec.setSkip(false);
+        traversalSpec.setType("ContainerView");
 
-		ObjectSpec objectSpec = new ObjectSpec();
-		objectSpec.setObj(containerView);
-		objectSpec.setSkip(Boolean.TRUE);
-		objectSpec.getSelectSet().add(traversalSpec);
+        ObjectSpec objectSpec = new ObjectSpec();
+        objectSpec.setObj(containerView);
+        objectSpec.setSkip(Boolean.TRUE);
+        objectSpec.getSelectSet().add(traversalSpec);
 
-		PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
-		propertyFilterSpec.getPropSet().add(propertySpec);
-		propertyFilterSpec.getObjectSet().add(objectSpec);
+        PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
+        propertyFilterSpec.getPropSet().add(propertySpec);
+        propertyFilterSpec.getObjectSet().add(objectSpec);
 
-		List<ObjectContent> objCtnt = vimPortType.retrieveProperties(
-				serviceContent.getPropertyCollector(),
-				Arrays.asList(propertyFilterSpec));
+        List<ObjectContent> objCtnt = vimPortType.retrieveProperties(serviceContent.getPropertyCollector(),
+                Arrays.asList(propertyFilterSpec));
 
-		List<ManagedObjectReference> result = new ArrayList<ManagedObjectReference>();
-		for (ObjectContent oc : objCtnt) {
-			result.add(oc.getObj());
-		}
-		return result;
-	}
+        List<ManagedObjectReference> result = new ArrayList<ManagedObjectReference>();
+        for (ObjectContent oc : objCtnt) {
+            result.add(oc.getObj());
+        }
+        return result;
+    }
 
-	public static Map<ManagedObjectReference, Map<String, String>> getmObjRefStaticProperties(
-			String mObjRefType, String[] properties,
-			ManagedObjectReference container, ServiceContent serviceContent,
-			VimPortType vimPortType) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
+    public static Map<ManagedObjectReference, Map<String, String>> getmObjRefStaticProperties(
+            String mObjRefType, String[] properties, ManagedObjectReference container,
+            ServiceContent serviceContent, VimPortType vimPortType) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
 
-		ManagedObjectReference viewController = serviceContent.getViewManager();
-		ManagedObjectReference containerView = vimPortType.createContainerView(
-				viewController, container, Arrays.asList(mObjRefType), true);
+        ManagedObjectReference viewController = serviceContent.getViewManager();
+        ManagedObjectReference containerView = vimPortType.createContainerView(viewController, container,
+                Arrays.asList(mObjRefType), true);
 
-		PropertySpec propertySpec = new PropertySpec();
-		propertySpec.setAll(Boolean.FALSE);
-		propertySpec.setType(mObjRefType);
-		propertySpec.getPathSet().addAll(Arrays.asList(properties));
+        PropertySpec propertySpec = new PropertySpec();
+        propertySpec.setAll(Boolean.FALSE);
+        propertySpec.setType(mObjRefType);
+        propertySpec.getPathSet().addAll(Arrays.asList(properties));
 
-		TraversalSpec traversalSpec = new TraversalSpec();
-		traversalSpec.setName("view");
-		traversalSpec.setPath("view");
-		traversalSpec.setSkip(false);
-		traversalSpec.setType("ContainerView");
+        TraversalSpec traversalSpec = new TraversalSpec();
+        traversalSpec.setName("view");
+        traversalSpec.setPath("view");
+        traversalSpec.setSkip(false);
+        traversalSpec.setType("ContainerView");
 
-		ObjectSpec objectSpec = new ObjectSpec();
-		objectSpec.setObj(containerView);
-		objectSpec.setSkip(Boolean.TRUE);
-		objectSpec.getSelectSet().add(traversalSpec);
+        ObjectSpec objectSpec = new ObjectSpec();
+        objectSpec.setObj(containerView);
+        objectSpec.setSkip(Boolean.TRUE);
+        objectSpec.getSelectSet().add(traversalSpec);
 
-		PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
-		propertyFilterSpec.getPropSet().add(propertySpec);
-		propertyFilterSpec.getObjectSet().add(objectSpec);
+        PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
+        propertyFilterSpec.getPropSet().add(propertySpec);
+        propertyFilterSpec.getObjectSet().add(objectSpec);
 
-		List<ObjectContent> objContent = vimPortType.retrieveProperties(
-				serviceContent.getPropertyCollector(),
-				Arrays.asList(propertyFilterSpec));
+        List<ObjectContent> objContent = vimPortType.retrieveProperties(
+                serviceContent.getPropertyCollector(), Arrays.asList(propertyFilterSpec));
 
-		Map<ManagedObjectReference, Map<String, String>> retPropMap = new HashMap<ManagedObjectReference, Map<String, String>>();
-		for (ObjectContent oc : objContent) {
-			Map<String, String> propMap = new HashMap<String, String>();
-			List<DynamicProperty> propSet = oc.getPropSet();
-			if (propSet != null) {
-				for (DynamicProperty dp : propSet) {
-					propMap.put(dp.getName(), dp.getVal().toString());
-				}
-			}
-			retPropMap.put(oc.getObj(), propMap);
-		}
-		return retPropMap;
-	}
+        Map<ManagedObjectReference, Map<String, String>> retPropMap = new HashMap<ManagedObjectReference, Map<String, String>>();
+        for (ObjectContent oc : objContent) {
+            Map<String, String> propMap = new HashMap<String, String>();
+            List<DynamicProperty> propSet = oc.getPropSet();
+            if (propSet != null) {
+                for (DynamicProperty dp : propSet) {
+                    propMap.put(dp.getName(), dp.getVal().toString());
+                }
+            }
+            retPropMap.put(oc.getObj(), propMap);
+        }
+        return retPropMap;
+    }
 
-	public static ObjectContent[] getObjectProperties(
-			ManagedObjectReference mobj, String[] properties,
-			ServiceContent serviceContent, VimPortType vimPort)
-			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		PropertyFilterSpec spec = new PropertyFilterSpec();
-		// property spec
-		PropertySpec propSpec = new PropertySpec();
-		propSpec.setAll(properties == null || properties.length == 0);
-		propSpec.setType(mobj.getType());
-		// FIXME:
-		propSpec.getPathSet().addAll(Arrays.asList(properties));
-		spec.getPropSet().add(propSpec);
-		// object spec
-		ObjectSpec objSpec = new ObjectSpec();
-		spec.getObjectSet().add(objSpec);
-		spec.getObjectSet().get(0).setObj(mobj);
-		spec.getObjectSet().get(0).setSkip(Boolean.FALSE);
-		List<PropertyFilterSpec> listpfs = new ArrayList<PropertyFilterSpec>(1);
-		listpfs.add(spec);
-		List<ObjectContent> listobjcont = vimPort.retrieveProperties(
-				serviceContent.getPropertyCollector(), listpfs);
-		// List<ObjectContent> listobjcont =
-		// retrievePropertiesAllObjects(listpfs,
-		// serviceContent, vimPort);
-		return listobjcont.toArray(new ObjectContent[listobjcont.size()]);
-	}
+    public static ObjectContent[] getObjectProperties(ManagedObjectReference mobj, String[] properties,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
+        PropertyFilterSpec spec = new PropertyFilterSpec();
+        // property spec
+        PropertySpec propSpec = new PropertySpec();
+        propSpec.setAll(properties == null || properties.length == 0);
+        propSpec.setType(mobj.getType());
+        // FIXME:
+        propSpec.getPathSet().addAll(Arrays.asList(properties));
+        spec.getPropSet().add(propSpec);
+        // object spec
+        ObjectSpec objSpec = new ObjectSpec();
+        spec.getObjectSet().add(objSpec);
+        spec.getObjectSet().get(0).setObj(mobj);
+        spec.getObjectSet().get(0).setSkip(Boolean.FALSE);
+        List<PropertyFilterSpec> listpfs = new ArrayList<PropertyFilterSpec>(1);
+        listpfs.add(spec);
+        List<ObjectContent> listobjcont = vimPort.retrieveProperties(serviceContent.getPropertyCollector(),
+                listpfs);
+        // List<ObjectContent> listobjcont =
+        // retrievePropertiesAllObjects(listpfs,
+        // serviceContent, vimPort);
+        return listobjcont.toArray(new ObjectContent[listobjcont.size()]);
+    }
 
-	public static List<ObjectContent> retrievePropertiesAllObjects(
-			List<PropertyFilterSpec> listpfs, ServiceContent serviceContent,
-			VimPortType vimPort) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
+    public static List<ObjectContent> retrievePropertiesAllObjects(List<PropertyFilterSpec> listpfs,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
 
-		RetrieveOptions propObjectRetrieveOpts = new RetrieveOptions();
-		List<ObjectContent> listobjcontent = new ArrayList<ObjectContent>();
+        RetrieveOptions propObjectRetrieveOpts = new RetrieveOptions();
+        List<ObjectContent> listobjcontent = new ArrayList<ObjectContent>();
 
-		RetrieveResult rslts = vimPort.retrievePropertiesEx(
-				serviceContent.getPropertyCollector(), listpfs,
-				propObjectRetrieveOpts);
-		if (rslts != null && rslts.getObjects() != null
-				&& !rslts.getObjects().isEmpty()) {
-			listobjcontent.addAll(rslts.getObjects());
-		}
-		String token = null;
-		if (rslts != null && rslts.getToken() != null) {
-			token = rslts.getToken();
-		}
-		while (token != null && !token.isEmpty()) {
-			rslts = vimPort.continueRetrievePropertiesEx(
-					serviceContent.getPropertyCollector(), token);
-			token = null;
-			if (rslts != null) {
-				token = rslts.getToken();
-				if (rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
-					listobjcontent.addAll(rslts.getObjects());
-				}
-			}
-		}
+        RetrieveResult rslts = vimPort.retrievePropertiesEx(serviceContent.getPropertyCollector(), listpfs,
+                propObjectRetrieveOpts);
+        if (rslts != null && rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
+            listobjcontent.addAll(rslts.getObjects());
+        }
+        String token = null;
+        if (rslts != null && rslts.getToken() != null) {
+            token = rslts.getToken();
+        }
+        while (token != null && !token.isEmpty()) {
+            rslts = vimPort.continueRetrievePropertiesEx(serviceContent.getPropertyCollector(), token);
+            token = null;
+            if (rslts != null) {
+                token = rslts.getToken();
+                if (rslts.getObjects() != null && !rslts.getObjects().isEmpty()) {
+                    listobjcontent.addAll(rslts.getObjects());
+                }
+            }
+        }
 
-		return listobjcontent;
-	}
+        return listobjcontent;
+    }
 
-	public static ManagedObjectReference getmObjRefByHostId(String hostId) {
-		return getEntityByTypeAndId("HostSystem", hostId);
-	}
+    public static ManagedObjectReference getmObjRefByHostId(String hostId) {
+        return getEntityByTypeAndId("HostSystem", hostId);
+    }
 
-	public static ManagedObjectReference getVMById(String vmId) {
-		return getEntityByTypeAndId("VirtualMachine", vmId);
-	}
+    public static ManagedObjectReference getVMById(String vmId) {
+        return getEntityByTypeAndId("VirtualMachine", vmId);
+    }
 
-	public static ManagedObjectReference getEntityByTypeAndId(String type,
-			String id) {
-		ManagedObjectReference ref = new ManagedObjectReference();
-		ref.setType(type);
-		ref.setValue(id);
-		return ref;
-	}
+    public static ManagedObjectReference getEntityByTypeAndId(String type, String id) {
+        ManagedObjectReference ref = new ManagedObjectReference();
+        ref.setType(type);
+        ref.setValue(id);
+        return ref;
+    }
 
-	public static Map<String, String> getHostStaticProperties(String hostId,
-			String[] properties, ServiceContent serviceContent,
-			VimPortType vimPort) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
+    public static Map<String, String> getHostStaticProperties(String hostId, String[] properties,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
 
-		return getStaticProperties(getmObjRefByHostId(hostId), properties,
-				serviceContent, vimPort);
-	}
+        return getStaticProperties(getmObjRefByHostId(hostId), properties, serviceContent, vimPort);
+    }
 
-    public static Map<String, String> getVMStaticProperties(String vmId,
-			String[] properties, ServiceContent serviceContent,
-			VimPortType vimPort) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
-		return getStaticProperties(getVMById(vmId), properties, serviceContent,
-				vimPort);
-	}
+    public static Map<String, String> getVMStaticProperties(String vmId, String[] properties,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
+        return getStaticProperties(getVMById(vmId), properties, serviceContent, vimPort);
+    }
 
-	
-	public static Map<String, Object> getRawStaticProperties(
-			ManagedObjectReference mObjRef, String[] properties,
-			ServiceContent serviceContent, VimPortType vimPort)
-			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		ObjectContent[] oContents = VimServiceUtil.getObjectProperties(mObjRef,
-				properties, serviceContent, vimPort);
-		Map<String, Object> propMap = new HashMap<String, Object>();
-		if (oContents != null) {
-			for (ObjectContent oc : oContents) {
-				List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
-				if (dynamicPropertyList != null) {
-					for (DynamicProperty dp : dynamicPropertyList) {
-						propMap.put(dp.getName(), dp);
-					}
-				}
-			}
-		}
-		return propMap;
-	}
-	
-	public static Map<String, String> getStaticProperties(
-			ManagedObjectReference mObjRef, String[] properties,
-			ServiceContent serviceContent, VimPortType vimPort)
-			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		ObjectContent[] oContents = VimServiceUtil.getObjectProperties(mObjRef,
-				properties, serviceContent, vimPort);
-		Map<String, String> propMap = new HashMap<String, String>();
-		if (oContents != null) {
-			for (ObjectContent oc : oContents) {
-				List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
-				if (dynamicPropertyList != null) {
-					for (DynamicProperty dp : dynamicPropertyList) {
-						addPropertyToMap(dp, propMap);
-					}
-				}
-			}
-		}
-		return propMap;
-	}
+    public static Map<String, Object> getRawStaticProperties(ManagedObjectReference mObjRef,
+            String[] properties, ServiceContent serviceContent, VimPortType vimPort)
+            throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+        ObjectContent[] oContents = VimServiceUtil.getObjectProperties(mObjRef, properties, serviceContent,
+                vimPort);
+        Map<String, Object> propMap = new HashMap<String, Object>();
+        if (oContents != null) {
+            for (ObjectContent oc : oContents) {
+                List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
+                if (dynamicPropertyList != null) {
+                    for (DynamicProperty dp : dynamicPropertyList) {
+                        propMap.put(dp.getName(), dp);
+                    }
+                }
+            }
+        }
+        return propMap;
+    }
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void addPropertyToMap(DynamicProperty dp,
-			Map propertyMap) {
-		Object propertyValue = dp.getVal();
-		if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
-			List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
-					.getHostSystemIdentificationInfo();
-			for (int index = 0; index < hostSystemIdInfoList.size(); index++) {
-				HostSystemIdentificationInfo info = hostSystemIdInfoList
-						.get(index);
-				if (info.getIdentifierValue() != null) {
-					String key = String.format("host.identification.%s.%s",
-							index, info.getIdentifierType().getKey());
-					propertyMap.put(key, info.getIdentifierValue());
-				}
-			}
-		} else if (propertyValue instanceof ManagedObjectReference) {
-			propertyMap.put(dp.getName(),
-					((ManagedObjectReference) propertyValue).getValue());
-		} else {
-			propertyMap.put(dp.getName(), propertyValue.toString());
-		}
-	}
+    public static Map<String, String> getStaticProperties(ManagedObjectReference mObjRef,
+            String[] properties, ServiceContent serviceContent, VimPortType vimPort)
+            throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+        ObjectContent[] oContents = VimServiceUtil.getObjectProperties(mObjRef, properties, serviceContent,
+                vimPort);
+        Map<String, String> propMap = new HashMap<String, String>();
+        if (oContents != null) {
+            for (ObjectContent oc : oContents) {
+                List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
+                if (dynamicPropertyList != null) {
+                    for (DynamicProperty dp : dynamicPropertyList) {
+                        addPropertyToMap(dp, propMap);
+                    }
+                }
+            }
+        }
+        return propMap;
+    }
 
-	public static Map<String, String> getHostDynamicProperties(String hostId,
-			String[] properties, ServiceContent serviceContent,
-			VimPortType vimPort) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
-		return getDynamicProperties(getmObjRefByHostId(hostId), properties,
-				serviceContent, vimPort);
-	}
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static void addPropertyToMap(DynamicProperty dp, Map propertyMap) {
+        Object propertyValue = dp.getVal();
+        if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
+            List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
+                    .getHostSystemIdentificationInfo();
+            for (int index = 0; index < hostSystemIdInfoList.size(); index++) {
+                HostSystemIdentificationInfo info = hostSystemIdInfoList.get(index);
+                if (info.getIdentifierValue() != null) {
+                    String key = String.format("host.identification.%s.%s", index, info.getIdentifierType()
+                            .getKey());
+                    propertyMap.put(key, info.getIdentifierValue());
+                }
+            }
+        } else if (propertyValue instanceof ManagedObjectReference) {
+            propertyMap.put(dp.getName(), ((ManagedObjectReference) propertyValue).getValue());
+        } else {
+            propertyMap.put(dp.getName(), propertyValue.toString());
+        }
+    }
 
-	public static Map<String, String> getVmDynamicProperties(String vmId,
-			String[] properties, ServiceContent serviceContent,
-			VimPortType vimPort) throws InvalidPropertyFaultMsg,
-			RuntimeFaultFaultMsg {
-		ManagedObjectReference vmById = getVMById(vmId);
-		return getDynamicProperties(vmById, properties, serviceContent, vimPort);
-	}
+    public static Map<String, String> getHostDynamicProperties(String hostId, String[] properties,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
+        return getDynamicProperties(getmObjRefByHostId(hostId), properties, serviceContent, vimPort);
+    }
 
-	public static Map<String, String> getDynamicProperties(
-			ManagedObjectReference mObjRef, String[] properties,
-			ServiceContent serviceContent, VimPortType vimPort)
-			throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
-		// Create Property Spec
-		PropertySpec propertySpec = new PropertySpec();
-		propertySpec.setAll(Boolean.FALSE);
-		propertySpec.getPathSet().add("perfCounter");
-		propertySpec.setType("PerformanceManager");
-		List<PropertySpec> propertySpecs = new ArrayList<PropertySpec>();
-		propertySpecs.add(propertySpec);
+    public static Map<String, String> getVmDynamicProperties(String vmId, String[] properties,
+            ServiceContent serviceContent, VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
+        ManagedObjectReference vmById = getVMById(vmId);
+        return getDynamicProperties(vmById, properties, serviceContent, vimPort);
+    }
 
-		// Now create Object Spec
-		ObjectSpec objectSpec = new ObjectSpec();
-		objectSpec.setObj(serviceContent.getPerfManager());
-		List<ObjectSpec> objectSpecs = new ArrayList<ObjectSpec>();
-		objectSpecs.add(objectSpec);
+    public static Map<String, String> getDynamicProperties(ManagedObjectReference mObjRef,
+            String[] properties, ServiceContent serviceContent, VimPortType vimPort)
+            throws InvalidPropertyFaultMsg, RuntimeFaultFaultMsg {
+        // Create Property Spec
+        PropertySpec propertySpec = new PropertySpec();
+        propertySpec.setAll(Boolean.FALSE);
+        propertySpec.getPathSet().add("perfCounter");
+        propertySpec.setType("PerformanceManager");
+        List<PropertySpec> propertySpecs = new ArrayList<PropertySpec>();
+        propertySpecs.add(propertySpec);
 
-		// Create PropertyFilterSpec using the PropertySpec and ObjectPec
-		// created above.
-		PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
-		propertyFilterSpec.getPropSet().add(propertySpec);
-		propertyFilterSpec.getObjectSet().add(objectSpec);
+        // Now create Object Spec
+        ObjectSpec objectSpec = new ObjectSpec();
+        objectSpec.setObj(serviceContent.getPerfManager());
+        List<ObjectSpec> objectSpecs = new ArrayList<ObjectSpec>();
+        objectSpecs.add(objectSpec);
 
-		List<PropertyFilterSpec> propertyFilterSpecs = new ArrayList<PropertyFilterSpec>();
-		propertyFilterSpecs.add(propertyFilterSpec);
+        // Create PropertyFilterSpec using the PropertySpec and ObjectPec
+        // created above.
+        PropertyFilterSpec propertyFilterSpec = new PropertyFilterSpec();
+        propertyFilterSpec.getPropSet().add(propertySpec);
+        propertyFilterSpec.getObjectSet().add(objectSpec);
 
-		List<ObjectContent> objContentList = retrievePropertiesAllObjects(
-				propertyFilterSpecs, serviceContent, vimPort);
+        List<PropertyFilterSpec> propertyFilterSpecs = new ArrayList<PropertyFilterSpec>();
+        propertyFilterSpecs.add(propertyFilterSpec);
 
-		List<PerfCounterInfo> perfCounterList = null;
+        List<ObjectContent> objContentList = retrievePropertiesAllObjects(propertyFilterSpecs,
+                serviceContent, vimPort);
 
-		if (objContentList != null && !objContentList.isEmpty()) {
-			ObjectContent objContent = objContentList.get(0);
-			List<DynamicProperty> propSet = objContent.getPropSet();
-			if (propSet != null && !propSet.isEmpty()) {
-				DynamicProperty dp = propSet.get(0);
-				perfCounterList = ((ArrayOfPerfCounterInfo) dp.getVal())
-						.getPerfCounterInfo();
-			}
-		}
+        List<PerfCounterInfo> perfCounterList = null;
 
-		List<String> propList = Arrays.asList(properties);
-		Map<Integer, PerfCounterInfo> perfCounterInfoMap = new HashMap<Integer, PerfCounterInfo>();
-		for (PerfCounterInfo pci : perfCounterList) {
-			if (propList.contains(getKey(pci))) {
-				perfCounterInfoMap.put(pci.getKey(), pci);
-			}
-		}
+        if (objContentList != null && !objContentList.isEmpty()) {
+            ObjectContent objContent = objContentList.get(0);
+            List<DynamicProperty> propSet = objContent.getPropSet();
+            if (propSet != null && !propSet.isEmpty()) {
+                DynamicProperty dp = propSet.get(0);
+                perfCounterList = ((ArrayOfPerfCounterInfo) dp.getVal()).getPerfCounterInfo();
+            }
+        }
 
-		List<PerfMetricId> availablePerfMetrics = vimPort
-				.queryAvailablePerfMetric(serviceContent.getPerfManager(),
-						mObjRef, null, null, new Integer(20));
+        List<String> propList = Arrays.asList(properties);
+        Map<Integer, PerfCounterInfo> perfCounterInfoMap = new HashMap<Integer, PerfCounterInfo>();
+        for (PerfCounterInfo pci : perfCounterList) {
+            if (propList.contains(getKey(pci))) {
+                perfCounterInfoMap.put(pci.getKey(), pci);
+            }
+        }
 
-		List<PerfMetricId> listPerfMatricId = new ArrayList<PerfMetricId>();
-		for (PerfMetricId perfMatricId : availablePerfMetrics) {
-			if (perfCounterInfoMap.containsKey(perfMatricId.getCounterId())) {
-				listPerfMatricId.add(perfMatricId);
-			}
-		}
+        List<PerfMetricId> availablePerfMetrics = vimPort.queryAvailablePerfMetric(
+                serviceContent.getPerfManager(), mObjRef, null, null, new Integer(20));
 
-		PerfQuerySpec qSpec = new PerfQuerySpec();
-		qSpec.setEntity(mObjRef);
-		// TODO: Consider optimal parameters
-		qSpec.setMaxSample(1);
-		qSpec.getMetricId().addAll(listPerfMatricId);
-		qSpec.setIntervalId(new Integer(20));
-		List<PerfQuerySpec> qSpecs = new ArrayList<PerfQuerySpec>();
-		qSpecs.add(qSpec);
+        List<PerfMetricId> listPerfMatricId = new ArrayList<PerfMetricId>();
+        for (PerfMetricId perfMatricId : availablePerfMetrics) {
+            if (perfCounterInfoMap.containsKey(perfMatricId.getCounterId())) {
+                listPerfMatricId.add(perfMatricId);
+            }
+        }
 
-		List<PerfEntityMetricBase> queryPerf = vimPort.queryPerf(
-				serviceContent.getPerfManager(), qSpecs);
-		Map<String, String> nodeProperties = new HashMap<String, String>();
-		for (PerfEntityMetricBase perfEntityMetricBase : queryPerf) {
-			PerfEntityMetric perfEntityMetric = (PerfEntityMetric) perfEntityMetricBase;
-			List<PerfMetricSeries> perfMetricsSeriesList = perfEntityMetric
-					.getValue();
-			for (PerfMetricSeries perfMetricsSeries : perfMetricsSeriesList) {
-				PerfCounterInfo perfCounterInfo = perfCounterInfoMap
-						.get(perfMetricsSeries.getId().getCounterId());
+        PerfQuerySpec qSpec = new PerfQuerySpec();
+        qSpec.setEntity(mObjRef);
+        // TODO: Consider optimal parameters
+        qSpec.setMaxSample(1);
+        qSpec.getMetricId().addAll(listPerfMatricId);
+        qSpec.setIntervalId(new Integer(20));
+        List<PerfQuerySpec> qSpecs = new ArrayList<PerfQuerySpec>();
+        qSpecs.add(qSpec);
 
-				if (perfCounterInfo != null
-						&& perfMetricsSeries instanceof PerfMetricIntSeries) {
-					List<Long> value = ((PerfMetricIntSeries) perfMetricsSeries)
-							.getValue();
-					if (!value.isEmpty()) {
-						nodeProperties.put(getKey(perfCounterInfo), value
-								.get(0).toString());
-					}
+        List<PerfEntityMetricBase> queryPerf = vimPort.queryPerf(serviceContent.getPerfManager(), qSpecs);
+        Map<String, String> nodeProperties = new HashMap<String, String>();
+        for (PerfEntityMetricBase perfEntityMetricBase : queryPerf) {
+            PerfEntityMetric perfEntityMetric = (PerfEntityMetric) perfEntityMetricBase;
+            List<PerfMetricSeries> perfMetricsSeriesList = perfEntityMetric.getValue();
+            for (PerfMetricSeries perfMetricsSeries : perfMetricsSeriesList) {
+                PerfCounterInfo perfCounterInfo = perfCounterInfoMap.get(perfMetricsSeries.getId()
+                        .getCounterId());
 
-				}
-			}
-		}
-		return nodeProperties;
-	}
+                if (perfCounterInfo != null && perfMetricsSeries instanceof PerfMetricIntSeries) {
+                    List<Long> value = ((PerfMetricIntSeries) perfMetricsSeries).getValue();
+                    if (!value.isEmpty()) {
+                        nodeProperties.put(getKey(perfCounterInfo), value.get(0).toString());
+                    }
 
-	private static String getKey(PerfCounterInfo pci) {
-		return (new StringBuilder()).append(pci.getGroupInfo().getKey())
-				.append('.').append(pci.getNameInfo().getKey()).append('.')
-				.append(pci.getRollupType().name()).toString();
-	}
+                }
+            }
+        }
+        return nodeProperties;
+    }
 
-	public static void updateKeys(Map<String, String> propertyMap) {
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_CORES,
-				"cpu.cores", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_CPU_FREQUENCY,
-				"cpu.frequency", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_CPU_USAGE, "cpu.usage",
-				propertyMap);
+    private static String getKey(PerfCounterInfo pci) {
+        return (new StringBuilder()).append(pci.getGroupInfo().getKey()).append('.')
+                .append(pci.getNameInfo().getKey()).append('.').append(pci.getRollupType().name()).toString();
+    }
 
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_MEMORY_TOTAL,
-				"memory.total", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_MEM_USAGE, "memory.usage",
-				propertyMap);
-
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_RX_RATE,
-				"network.0.rx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_NET_TX_RATE,
-				"network.0.tx", propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
-				"network.count", propertyMap);
-
-		// VM
-		replaceKeyIfPresent(VimServiceConstants.PROP_VM_CPU_CORES, "cpu.cores",
-				propertyMap);
-		replaceKeyIfPresent(VimServiceConstants.PROP_VM_MEMEORY_TOTAL,
-				"memory.total", propertyMap);
-	}
-
-	private static void replaceKeyIfPresent(String oldKey, String newKey,
-			Map<String, String> propertyMap) {
-		if (propertyMap.containsKey(oldKey)) {
-			propertyMap.put(newKey, propertyMap.remove(oldKey));
-		}
-	}
-
-	// non-instantiable
-	private VimServiceUtil() {
-	}
+    // non-instantiable
+    private VimServiceUtil() {
+    }
 
 }

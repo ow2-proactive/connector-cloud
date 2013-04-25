@@ -58,6 +58,7 @@ public class VimServiceConstants {
 
 	// Static properties for VMs.
 	public static final String PROP_VM_CPU_CORES = "summary.config.numCpu";
+	public static final String PROP_VM_CPU_FREQUENCY = "summary.quickStats.staticCpuEntitlement";
 	public static final String PROP_VM_MEMEORY_TOTAL = "summary.config.memorySizeMB";
 	public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
 	public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
@@ -85,7 +86,7 @@ public class VimServiceConstants {
 			PROP_STATE };
 
 	public static final String[] VM_STATIC_PROPERTIES = new String[] {
-			PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_MEMEORY_TOTAL,
+			PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY, PROP_VM_MEMEORY_TOTAL,
 			PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED,
 			PROP_VM_NETWORK, PROP_STATE };
 

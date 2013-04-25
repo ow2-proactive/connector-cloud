@@ -36,6 +36,7 @@
 package org.ow2.proactive.iaas;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
@@ -77,9 +78,15 @@ public class VimServiceClientTest {
     private static final String USER_KEY = "vmware.user";
     private static final String PASS_KEY = "vmware.pass";
     private static final String RUN_SERVICE_CLINET_TEST_KEY = "vmware.runtest";
+    private static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
+
+    private int keysNotContainedMaximum = 0;
 
     private VimServiceClient v;
     private boolean testCorrectlyConfigured = false;
+
+    private static Map<String, Object> allhosts;
+    private static Map<String, Object> allvms;
 
     @Before
     public void setUp() throws ViServiceClientException {
@@ -100,9 +107,16 @@ public class VimServiceClientTest {
             String user = prop.getProperty(USER_KEY);
             String pass = prop.getProperty(PASS_KEY);
             String runtest = prop.getProperty(RUN_SERVICE_CLINET_TEST_KEY);
+
+            try {
+                keysNotContainedMaximum = Integer.parseInt(prop.getProperty(MAX_NOT_CONTAINED_KEYS_KEY));
+            } catch (Exception e) {
+                // Ignore, use default value.
+            }
+
             if (runtest == null || runtest.equals("false")) {
                 System.out.println("Skipping test (to run tests, set propertly the key '" +
-                    RUN_SERVICE_CLINET_TEST_KEY + "' in file '"+ TEST_CONFIG_FILENAME +"').");
+                    RUN_SERVICE_CLINET_TEST_KEY + "' in file '" + TEST_CONFIG_FILENAME + "').");
                 return;
             }
 
@@ -114,6 +128,36 @@ public class VimServiceClientTest {
 
             v.initialize(url, user, pass);
             testCorrectlyConfigured = true;
+
+            if (testCorrectlyConfigured == false)
+                return;
+        }
+
+        if (allhosts == null) {
+            System.out.println("Getting all Host properties (this will only happen once)...\n");
+            allhosts = new HashMap<String, Object>();
+            for (String hostid : v.getHosts()) {
+                System.out.println("Getting properties of host: " + hostid);
+                Map<String, String> props = v.getHostProperties(hostid);
+
+                allhosts.put(hostid, props);
+            }
+            System.out.println("Host properties obtained.\n");
+        } else {
+            System.out.println("Host properties already obtained. ");
+        }
+
+        if (allvms == null) {
+            System.out.println("Getting all VM properties (this will only happen once)...\n");
+            allvms = new HashMap<String, Object>();
+            for (String vmid : v.getVMs()) {
+                System.out.println("Getting properties of VM: " + vmid);
+                Map<String, String> props = v.getVMProperties(vmid);
+                allvms.put(vmid, props);
+            }
+            System.out.println("VM properties obtained.\n");
+        } else {
+            System.out.println("VM properties already obtained. ");
         }
     }
 
@@ -146,98 +190,110 @@ public class VimServiceClientTest {
         if (testCorrectlyConfigured == false)
             return;
 
-        for (String hostid : v.getHosts())
+        for (String hostid : v.getHosts()) {
+            System.out.println("Checking host: " + hostid);
             System.out.println("VMs at " + hostid + ": " + Arrays.asList(v.getVMs(hostid)));
+        }
     }
 
     @Test
     public void getHostProperties_cpuProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_CPU);
+        for (String hostid : allhosts.keySet()) {
+            System.out.println("Checking host: " + hostid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
+            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_CPU);
+        }
     }
 
     @Test
     public void getVMProperties_cpuProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_CPU);
+        for (String vmid : allvms.keySet()) {
+            System.out.println("Checking VM: " + vmid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allvms.get(vmid);
+            checkMapProperties("VM", map, VM_EXPECTED_KEYS_CPU);
+        }
     }
 
     @Test
     public void getHostProperties_memoryProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_MEMORY);
+        for (String hostid : allhosts.keySet()) {
+            System.out.println("Checking host: " + hostid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
+            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_MEMORY);
+        }
     }
 
     @Test
     public void getVMProperties_memoryProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_MEMORY);
+        for (String vmid : allvms.keySet()) {
+            System.out.println("Checking VM: " + vmid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allvms.get(vmid);
+            checkMapProperties("VM", map, VM_EXPECTED_KEYS_MEMORY);
+        }
     }
 
     @Test
     public void getHostProperties_storageProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_STORAGE);
+        for (String hostid : allhosts.keySet()) {
+            System.out.println("Checking host: " + hostid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
+            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_STORAGE);
+        }
     }
 
     @Test
     public void getVMProperties_storageProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_STORAGE);
+        for (String vmid : allvms.keySet()) {
+            System.out.println("Checking VM: " + vmid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allvms.get(vmid);
+            checkMapProperties("VM", map, VM_EXPECTED_KEYS_STORAGE);
+        }
     }
 
     @Test
     public void getHostProperties_networkProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_NETWORK);
+        for (String hostid : allhosts.keySet()) {
+            System.out.println("Checking host: " + hostid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
+            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_NETWORK);
+        }
     }
 
     @Test
     public void getVMProperties_networkProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_NETWORK);
+        for (String vmid : allvms.keySet()) {
+            System.out.println("Checking VM: " + vmid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allvms.get(vmid);
+            checkMapProperties("VM", map, VM_EXPECTED_KEYS_NETWORK);
+        }
     }
 
     @Test
     public void getHostProperties_miscProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts())
-            checkMapProperties("Host", v.getHostProperties(hostid), HOST_EXPECTED_KEYS_MISC);
+        for (String hostid : allhosts.keySet()) {
+            System.out.println("Checking host: " + hostid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
+            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_MISC);
+        }
     }
 
     @Test
     public void getVMProperties_miscProperties() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String vmid : v.getVMs())
-            checkMapProperties("VM", v.getVMProperties(vmid), VM_EXPECTED_KEYS_MISC);
+        for (String vmid : allvms.keySet()) {
+            System.out.println("Checking VM: " + vmid);
+            @SuppressWarnings("unchecked")
+            Map<String, String> map = (Map<String, String>) allvms.get(vmid);
+            checkMapProperties("VM", map, VM_EXPECTED_KEYS_MISC);
+        }
     }
 
     private void checkMapProperties(String entityType, Map<String, String> map, String[] expectedKeys)
@@ -253,8 +309,12 @@ public class VimServiceClientTest {
             for (String key : notContained) {
                 str.append("\n   KEY: '" + key + "' not present;");
             }
-            System.out.println("TEST FAILED" + str.toString());
-            throw new Exception(str.toString());
+            if (notContained.size() > keysNotContainedMaximum) {
+                System.out.println("TEST FAILED: " + str.toString());
+                throw new Exception(str.toString());
+            } else {
+                System.out.println("TEST OK, BUT SOME KEYS MISSING: " + str.toString());
+            }
         }
     }
 

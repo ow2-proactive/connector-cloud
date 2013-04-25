@@ -51,12 +51,10 @@ import java.util.logging.Level;
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
-import mytests.CustomizeScriptBuilder;
-
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
 import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;

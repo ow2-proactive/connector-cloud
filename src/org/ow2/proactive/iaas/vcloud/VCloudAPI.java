@@ -35,6 +35,7 @@
 package org.ow2.proactive.iaas.vcloud;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -75,6 +76,7 @@ import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
 import com.vmware.vcloud.api.rest.schema.ReferenceType;
 import com.vmware.vcloud.api.rest.schema.VAppNetworkConfigurationType;
 import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
+import com.vmware.vcloud.api.rest.schema.ovf.RASDType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
 import com.vmware.vcloud.sdk.Organization;
 import com.vmware.vcloud.sdk.Task;
@@ -84,6 +86,9 @@ import com.vmware.vcloud.sdk.Vapp;
 import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
+import com.vmware.vcloud.sdk.VirtualDisk;
+import com.vmware.vcloud.sdk.constants.BusSubType;
+import com.vmware.vcloud.sdk.constants.BusType;
 import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
 import com.vmware.vcloud.sdk.constants.NatPolicyType;
@@ -372,6 +377,39 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 	public IaasInstance getIaasInstance(String instanceID) {
 		return iaasInstances.get(instanceID);
 	}
+	
+	public void attachAdditionalVirtualDisk(IaasInstance instance,
+			long diskSize, String busType, String busSubType) throws Exception {
+		VirtualDisk additionalDisk = new VirtualDisk(
+				BigInteger.valueOf(diskSize), BusType.valueOf(busType),
+				BusSubType.valueOf(busSubType));
+		attachAdditionalVirtualDisk(instance, additionalDisk);
+	}
+
+	public void attachAdditionalVirtualDisk(IaasInstance instance,
+			long diskSize, String busType, String busSubType, int busNumber,
+			int unitNumber) throws Exception {
+		VirtualDisk additionalDisk = new VirtualDisk(
+				BigInteger.valueOf(diskSize), BusType.valueOf(busType),
+				BusSubType.valueOf(busSubType), busNumber, unitNumber);
+		attachAdditionalVirtualDisk(instance, additionalDisk);
+	}
+	
+	private void attachAdditionalVirtualDisk(IaasInstance instance,
+			VirtualDisk additionalDisk) throws Exception {
+		VM vm = vapps.get(instance).getChildrenVms().get(0);
+		List<VirtualDisk> disks = VM.getDisks(vCloudClient, vm.getReference());
+		disks.add(additionalDisk);
+		try {
+			vm.updateDisks(disks).waitForTask(0);
+		} catch (VCloudException e) {
+			logger.error(
+					String.format(
+							"An error occurred while attaching an additional disk to the virtual machine (instance-id:%s) :%n",
+							instance.getInstanceId()), e);
+			throw new Exception(e);
+		}
+	}
 
 	public class VCloudAPIConstants {
 		public class ApiParameters {
@@ -394,6 +432,16 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 			public static final String URL = "vim.service.url";
 			public static final String USERNAME = "vim.service.username";
 			public static final String PASSWORD = "vim.service.password";
+		}
+		
+		public class VirtualDiskParameters {
+			public static final String BUS_TYPE_SCSI = "SCSI";
+			public static final String BUS_TYPE_IDE = "IDE";
+			
+			public static final String BUS_SUBTYPE_BUS_LOGIC = "BUS_LOGIC";
+			public static final String BUS_SUBTYPE_LSI_LOGIC = "LSI_LOGIC";
+			public static final String BUS_SUBTYPE_LSI_LOGIC_SAS = "LSI_LOGIC_SAS";
+			public static final String BUS_SUBTYPE_PARA_VIRTUAL = "PARA_VIRTUAL";
 		}
 	}
 

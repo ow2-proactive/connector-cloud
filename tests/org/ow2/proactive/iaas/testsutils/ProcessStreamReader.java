@@ -1,10 +1,12 @@
+package org.ow2.proactive.iaas.testsutils;
 /*
- *  
+ * ################################################################
+ *
  * ProActive Parallel Suite(TM): The Java(TM) library for
  *    Parallel, Distributed, Multi-Core Computing for
  *    Enterprise Grids & Clouds
  *
- * Copyright (C) 1997-2011 INRIA/University of
+ * Copyright (C) 1997-2012 INRIA/University of
  *                 Nice-Sophia Antipolis/ActiveEon
  * Contact: proactive@ow2.org or contact@activeeon.com
  *
@@ -30,22 +32,42 @@
  *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
- *  * $$PROACTIVE_INITIAL_DEV$$
+ * ################################################################
+ * %$ACTIVEEON_INITIAL_DEV$
  */
-package org.ow2.proactive.iaas;
-
-import org.junit.Test;
 
 
-public class VMProcessHelperTest {
 
-    @Test
-    public void nop() {
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+
+public class ProcessStreamReader extends Thread {
+    private String outputPrefix;
+    private InputStream in;
+    private PrintStream out;
+
+    public ProcessStreamReader(String type, InputStream is, PrintStream out) {
+        this.outputPrefix = type;
+        this.in = is;
+        this.out = out;
     }
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("Started...");
-        Thread.sleep(600);
+    @Override
+    public void run() {
+
+        BufferedReader buffered = new BufferedReader(new InputStreamReader(in));
+        try {
+            String line;
+            while ((line = buffered.readLine()) != null) {
+                out.println(outputPrefix + line);
+            }
+        } catch (Exception ioe) {
+            System.err.println("An error occurred while reading from stream:");
+            ioe.printStackTrace();
+        }
     }
 
 }

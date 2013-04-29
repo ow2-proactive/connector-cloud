@@ -48,10 +48,11 @@ public class FormattedSigarMBeanClient {
             addNetworkProperties(propertyMap);
             addProcessProperties(propertyMap);
             addStorageProperties(propertyMap);
-            
+            addStatusProperties(propertyMap);
+
             if (showVMProcesses)
                 addVMProcessesProperties(propertyMap);
-            
+
         } catch (Exception se) {
             logger.error("Error getting some properties.", se);
         }
@@ -110,12 +111,14 @@ public class FormattedSigarMBeanClient {
                     Long tx = (Long) connector.getMBeanServerConnection().getAttribute(on, "TxBytes");
                     Long rx = (Long) connector.getMBeanServerConnection().getAttribute(on, "RxBytes");
                     String mac = (String) connector.getMBeanServerConnection().getAttribute(on, "Hwaddr");
+                    Long speed = (Long) connector.getMBeanServerConnection().getAttribute(on, "Speed");
 
                     properties.put("network." + counter + ".name", name);
                     properties.put("network." + counter + ".tx", tx);
                     properties.put("network." + counter + ".rx", rx);
                     properties.put("network." + counter + ".mac", mac);
-                     
+                    properties.put("network." + counter + ".speed", (speed < 0 ? 0 : speed));
+
                     ttx += tx;
                     trx += rx;
                     counter++;
@@ -215,6 +218,12 @@ public class FormattedSigarMBeanClient {
             throw new IaasMonitoringException(e);
         } catch (MalformedObjectNameException e) {
             throw new IaasMonitoringException(e);
+        }
+    }
+
+    private void addStatusProperties(Map<String, Object> properties) throws IaasMonitoringException {
+        if (!properties.isEmpty()) {
+            properties.put("status", "up");
         }
     }
 

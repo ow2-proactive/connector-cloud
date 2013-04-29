@@ -53,37 +53,37 @@ import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 
 
 public class VimServiceClientTest {
-    private static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
-    private static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
+    static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
+    static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
 
-    private static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
+    static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
             "memory.actualfree" };
-    private static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
+    static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
             "memory.actualfree" };
 
-    private static final String[] VM_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used", };
-    private static final String[] HOST_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used" };
+    static final String[] VM_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used", };
+    static final String[] HOST_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used" };
 
-    private static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
+    static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
             "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
-    private static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
+    static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
             "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
 
-    private static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
-    private static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status", "ids" };
+    static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
+    static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status" };
 
-    private static final String TEST_CONFIG_FILENAME = "tests/test.properties";
+    static final String TEST_CONFIG_FILENAME = "tests/test.properties";
 
-    private static final String URL_KEY = "vmware.url";
-    private static final String USER_KEY = "vmware.user";
-    private static final String PASS_KEY = "vmware.pass";
-    private static final String RUN_SERVICE_CLINET_TEST_KEY = "vmware.runtest";
-    private static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
+    static final String URL_KEY = "vmware.url";
+    static final String USER_KEY = "vmware.user";
+    static final String PASS_KEY = "vmware.pass";
+    static final String RUN_SERVICE_CLINET_TEST_KEY = "vmware.runtest";
+    static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
 
-    private int keysNotContainedMaximum = 0;
+    private static int keysNotContainedMaximum = 0;
 
-    private VimServiceClient v;
-    private boolean testCorrectlyConfigured = false;
+    private static VimServiceClient v;
+    private static boolean testCorrectlyConfigured = false;
 
     private static Map<String, Object> allhosts;
     private static Map<String, Object> allvms;
@@ -198,6 +198,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getHostProperties_cpuProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String hostid : allhosts.keySet()) {
             System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
@@ -208,6 +211,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getVMProperties_cpuProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String vmid : allvms.keySet()) {
             System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
@@ -218,6 +224,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getHostProperties_memoryProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String hostid : allhosts.keySet()) {
             System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
@@ -228,6 +237,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getVMProperties_memoryProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String vmid : allvms.keySet()) {
             System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
@@ -238,6 +250,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getHostProperties_storageProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String hostid : allhosts.keySet()) {
             System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
@@ -248,6 +263,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getVMProperties_storageProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String vmid : allvms.keySet()) {
             System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
@@ -258,6 +276,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getHostProperties_networkProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String hostid : allhosts.keySet()) {
             System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
@@ -268,6 +289,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getVMProperties_networkProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String vmid : allvms.keySet()) {
             System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
@@ -278,6 +302,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getHostProperties_miscProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String hostid : allhosts.keySet()) {
             System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
@@ -288,6 +315,9 @@ public class VimServiceClientTest {
 
     @Test
     public void getVMProperties_miscProperties() throws Exception {
+        if (testCorrectlyConfigured == false)
+            return;
+
         for (String vmid : allvms.keySet()) {
             System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")

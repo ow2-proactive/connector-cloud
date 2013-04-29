@@ -87,6 +87,9 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
      */
     private boolean autoUpdate = false;
 
+    /**
+     * Loader of values. This loader will directly contact the API.
+     */
     private IaasMonitoringServiceLoader loader;
     
     /**
@@ -266,7 +269,6 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
     @Override
     public void unregisterNode(String nodeid, NodeType type) {
         unregisterNode(nodeid, type);
-        
     }
 
     @Override

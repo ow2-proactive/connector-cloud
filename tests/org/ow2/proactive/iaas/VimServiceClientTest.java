@@ -35,23 +35,25 @@
 
 package org.ow2.proactive.iaas;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
+import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
-import org.junit.Test;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
 import org.junit.After;
 import org.junit.Before;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.io.InputStream;
-import java.util.Properties;
-import java.io.FileInputStream;
-import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
-import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
+import org.junit.Ignore;
+import org.junit.Test;
 
-
+@Ignore
 public class VimServiceClientTest {
     private static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
     private static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };

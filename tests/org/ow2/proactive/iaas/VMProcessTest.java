@@ -34,16 +34,19 @@
  */
 package org.ow2.proactive.iaas;
 
-import java.util.Map;
-import org.junit.Test;
-import java.util.List;
-import org.junit.Before;
-import java.util.Arrays;
-import java.util.ArrayList;
-import org.hyperic.sigar.Sigar;
-import org.hyperic.sigar.SigarProxy;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMProcess;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.hyperic.sigar.Sigar;
+import org.hyperic.sigar.SigarProxy;
+import org.junit.Before;
+import org.junit.Test;
 
 
 public class VMProcessTest {
@@ -91,7 +94,7 @@ public class VMProcessTest {
         System.out.println(clazz.getCanonicalName());
         String separator = System.getProperty("file.separator");
         //String classpath = System.getProperty("java.class.path");
-        String pwd = System.getProperty("user.dir");
+        String pwd = new File(".").getAbsolutePath();
 
         String path = System.getProperty("java.home") + separator + "bin" + separator + "java";
 

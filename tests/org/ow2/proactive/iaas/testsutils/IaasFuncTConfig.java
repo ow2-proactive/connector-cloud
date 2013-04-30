@@ -38,20 +38,15 @@ package org.ow2.proactive.iaas.testsutils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.net.URL;
 import java.util.Properties;
 
-public class IaasFuncTConfig {
+public class IaasFuncTConfig extends Properties{
 
-    public static final String RESTAPI_TEST_LOGIN = "restapi.test.login";
-    public static final String RESTAPI_TEST_PASSWORD = "restapi.test.password";
-    public static final String RESTAPI_TEST_SCHEDULER_HOME = "restapi.test.scheduler.home";
-    public static final String RESTAPI_TEST_RM_HOME = "restapi.test.rm.home";
-    public static final String RESTAPI_TEST_PORT = "restapi.test.port";
+    public static final String TEST_CONFIG_FILENAME = "tests/test.properties";
+    public static final String RESTAPI_TEST_SCHEDULER_HOME = "test.scheduler.home";
+    public static final String RESTAPI_TEST_RM_HOME = "test.rm.home";
     
     private static final IaasFuncTConfig instance = new IaasFuncTConfig();
-    
-    private Properties props;
     
     private IaasFuncTConfig() {
         try {
@@ -67,24 +62,9 @@ public class IaasFuncTConfig {
     }
 
     private void init() throws Exception {
-        props = new Properties();
-        URL url = IaasFuncTConfig.class
-                .getResource("config/restapi-test.properties");
-        FileInputStream fis = new FileInputStream(new File(url.toURI()));
-        props.load(fis);
-        props.putAll(System.getProperties());
-    }
-
-    public String getLogin() {
-        return props.getProperty(RESTAPI_TEST_LOGIN);
-    }
-
-    public String getPassword() {
-        return props.getProperty(RESTAPI_TEST_PASSWORD);
-    }
-    
-    public String getProperty(String key) {
-        return props.getProperty(key);
+        FileInputStream fis = new FileInputStream(new File(TEST_CONFIG_FILENAME));
+        this.load(fis);
+        this.putAll(System.getProperties());
     }
 
 }

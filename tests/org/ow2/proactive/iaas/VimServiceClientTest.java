@@ -35,23 +35,20 @@
 
 package org.ow2.proactive.iaas;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.io.InputStream;
-import java.util.Properties;
-import java.io.FileInputStream;
+import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
-import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 
-
+@Ignore
 public class VimServiceClientTest {
     static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
     static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
@@ -72,12 +69,10 @@ public class VimServiceClientTest {
     static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
     static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status" };
 
-    static final String TEST_CONFIG_FILENAME = "tests/test.properties";
 
     static final String URL_KEY = "vmware.url";
     static final String USER_KEY = "vmware.user";
     static final String PASS_KEY = "vmware.pass";
-    static final String RUN_SERVICE_CLINET_TEST_KEY = "vmware.runtest";
     static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
 
     private static int keysNotContainedMaximum = 0;
@@ -89,24 +84,13 @@ public class VimServiceClientTest {
     private static Map<String, Object> allvms;
 
     @Before
-    public void setUp() throws ViServiceClientException {
-        Properties prop = new Properties();
-        try {
-            InputStream in = new FileInputStream(new File(TEST_CONFIG_FILENAME));
-            prop.load(in);
-            in.close();
-        } catch (Exception e) {
-            System.out
-                    .println("Error loading the file '" + TEST_CONFIG_FILENAME + "'. Test will be skipped.");
-            return;
-        }
-
+    public void setUp() throws Exception {
         v = new VimServiceClient();
+        IaasFuncTConfig prop = IaasFuncTConfig.getInstance();
         if (prop.isEmpty() == false) {
             String url = prop.getProperty(URL_KEY);
             String user = prop.getProperty(USER_KEY);
             String pass = prop.getProperty(PASS_KEY);
-            String runtest = prop.getProperty(RUN_SERVICE_CLINET_TEST_KEY);
 
             try {
                 keysNotContainedMaximum = Integer.parseInt(prop.getProperty(MAX_NOT_CONTAINED_KEYS_KEY));
@@ -114,15 +98,8 @@ public class VimServiceClientTest {
                 // Ignore, use default value.
             }
 
-            if (runtest == null || runtest.equals("false")) {
-                System.out.println("Skipping test (to run tests, set propertly the key '" +
-                    RUN_SERVICE_CLINET_TEST_KEY + "' in file '" + TEST_CONFIG_FILENAME + "').");
-                return;
-            }
-
             if (url == null || user == null || pass == null) {
-                System.out.println("Error of the content of the file '" + TEST_CONFIG_FILENAME +
-                    "'. Test will be skipped.");
+                System.out.println("Error of the content of the tests configuration file. Test will be skipped.");
                 return;
             }
 

@@ -301,20 +301,6 @@ public class IaasFuncTHelper {
         }
     }
 
-    public static int getPort() throws Exception {
-        if (port == -1) {
-            String portProperty = IaasFuncTConfig.getInstance().getProperty(
-                    IaasFuncTConfig.RESTAPI_TEST_PORT);
-            if (portProperty != null && portProperty.length() != 0) {
-                port = Integer.parseInt(portProperty);
-            } else {
-                port = IaasFuncTUtils.findFreePort();
-            }
-        }
-        return port;
-
-    }
-
     public static String getString(InputStream is) {
         return new Scanner(is).useDelimiter("\\A").next();
     }

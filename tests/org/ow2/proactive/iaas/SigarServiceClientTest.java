@@ -49,6 +49,7 @@ import org.junit.Before;
 import org.junit.runners.MethodSorters;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTHelper;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.resourcemanager.frontend.RMConnection;
@@ -61,7 +62,6 @@ import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SigarServiceClientTest {
 
-    static final String TEST_CONFIG_FILENAME = VimServiceClientTest.TEST_CONFIG_FILENAME;
     static final String[] VM_EXPECTED_KEYS_CPU = VimServiceClientTest.VM_EXPECTED_KEYS_CPU;
     static final String[] HOST_EXPECTED_KEYS_CPU = VimServiceClientTest.HOST_EXPECTED_KEYS_CPU;
 
@@ -76,10 +76,9 @@ public class SigarServiceClientTest {
 
     static final String[] VM_EXPECTED_KEYS_MISC = VimServiceClientTest.VM_EXPECTED_KEYS_MISC;
     static final String[] HOST_EXPECTED_KEYS_MISC = VimServiceClientTest.HOST_EXPECTED_KEYS_MISC;
-    
-    static final String RUN_SERVICE_CLINET_TEST_KEY = VimServiceClientTest.RUN_SERVICE_CLINET_TEST_KEY;
 
-    private static int keysNotContainedMaximum = 2;
+    static final String MAX_NOT_CONTAINED_KEYS_KEY = "sigar.maximum_not_contained_keys";
+    private static int keysNotContainedMaximum = 0;
 
     private static String rmurl;
     private static Map<String, String> rmNodeProps;
@@ -88,7 +87,15 @@ public class SigarServiceClientTest {
     @Before
     public void startRM() throws Exception {
         if (rmurl == null) {
-            System.out.println("Running in: " + new File(".").getAbsolutePath());
+
+            String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);
+            System.out.println(k);
+            try {
+                keysNotContainedMaximum = Integer.parseInt(k);
+            } catch (Exception e) {
+                // Ignore, use default.
+            }
+
             try {
                 System.out.println("Starting RM (make sure no other RM is running)...");
                 rmurl = IaasFuncTHelper.startResourceManager();

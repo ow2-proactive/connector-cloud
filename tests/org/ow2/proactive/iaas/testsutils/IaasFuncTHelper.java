@@ -68,6 +68,8 @@ import org.ow2.proactive.scheduler.util.SchedulerStarter;
 
 public class IaasFuncTHelper {
 
+    private static URL testConfigFilename = IaasFuncTHelper.class.getResource("config/test.properties");
+    
     private static URL defaultPortalProperties = IaasFuncTHelper.class
             .getResource("config/defaultPortal.properties");
 
@@ -80,7 +82,6 @@ public class IaasFuncTHelper {
             .getResource("config/schedHibernateConfig.xml");
 
     private static URL defaultPAConfigFile = IaasFuncTHelper.class.getResource("config/defaultPAConfig.xml");
-    //private static URL defaultPAConfigFile = IaasFuncTHelper.class.getResource("config/ProActiveConfiguration.xml");
 
     private static URL rmLog4jConfig = IaasFuncTHelper.class.getResource("config/rmLog4JConfig.properties");
 
@@ -102,10 +103,6 @@ public class IaasFuncTHelper {
 
     private static final long defaultNodeTimeout = 20 * 1000;
 
-    private static int port = -1;
-
-    private static String restfulSchedulerUrl;
-
     private static Process rmProcess;
 
     private static Process schedProcess;
@@ -116,16 +113,6 @@ public class IaasFuncTHelper {
 
 
     private IaasFuncTHelper() {
-    }
-
-    public static void startRestfulSchedulerWebapp() throws Exception {
-        String rmUrl = startResourceManager();
-        startScheduler(rmUrl);
-    }
-
-    public static void stopRestfulSchedulerWebapp() {
-        stopScheduler();
-        stopRm();
     }
 
     public static String startResourceManager() throws Exception {
@@ -349,6 +336,11 @@ public class IaasFuncTHelper {
         File rmCredentails = new File(getRmHome(), "config/authentication/rm.cred");
         return Credentials.getCredentials(new FileInputStream(rmCredentails));
     }
+    
+    
+    public static String getTestConfigPathname() throws Exception {
+        return (new File(testConfigFilename.toURI())).getAbsolutePath();
+    }
 
     private static String getClassPath() throws Exception {
         StringBuilder classpath = new StringBuilder();
@@ -360,7 +352,4 @@ public class IaasFuncTHelper {
         return classpath.toString();
     }
 
-    public static String getRestfulSchedulerUrl() {
-        return restfulSchedulerUrl;
-    }
 }

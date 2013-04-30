@@ -86,6 +86,7 @@ public class SigarServiceClientTest {
 
     @Before
     public void startRM() throws Exception {
+        
         if (rmurl == null) {
 
             String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);

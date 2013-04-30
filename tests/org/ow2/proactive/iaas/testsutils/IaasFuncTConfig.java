@@ -36,13 +36,11 @@ package org.ow2.proactive.iaas.testsutils;
  * $PROACTIVE_INITIAL_DEV$
  */
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
 
 public class IaasFuncTConfig extends Properties{
 
-    public static final String TEST_CONFIG_FILENAME = "tests/test.properties";
     public static final String RESTAPI_TEST_SCHEDULER_HOME = "test.scheduler.home";
     public static final String RESTAPI_TEST_RM_HOME = "test.rm.home";
     
@@ -62,7 +60,7 @@ public class IaasFuncTConfig extends Properties{
     }
 
     private void init() throws Exception {
-        FileInputStream fis = new FileInputStream(new File(TEST_CONFIG_FILENAME));
+        FileInputStream fis = new FileInputStream(IaasFuncTHelper.getTestConfigPathname());
         this.load(fis);
         this.putAll(System.getProperties());
     }

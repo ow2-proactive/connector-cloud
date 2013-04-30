@@ -76,8 +76,8 @@
 		</copy>
 
 		<junit haltonfailure="true">
-
 			<jvmarg value="-Djava.security.policy=${junit.grant.all.policy}"/>					
+			<jvmarg value="-Dscheduling.project.dir=${scheduling.project.dir}"/>					
 			<classpath refid="classpath.test"/>
 			<formatter type="brief" usefile="false"/>
 			<batchtest fork="yes">

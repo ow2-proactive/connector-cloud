@@ -70,9 +70,6 @@ public class IaasFuncTHelper {
 
     private static URL testConfigFilename = IaasFuncTHelper.class.getResource("config/test.properties");
     
-    private static URL defaultPortalProperties = IaasFuncTHelper.class
-            .getResource("config/defaultPortal.properties");
-
     private static URL serverJavaPolicy = IaasFuncTHelper.class
             .getResource("config/server-java.security.policy");
 
@@ -152,8 +149,6 @@ public class IaasFuncTHelper {
             System.out);
         out.start();
 
-        //Thread.sleep(1000 * 200);
-        
         String port = CentralPAPropertyRepository.PA_RMI_PORT.getValueAsString();
         String url = "rmi://localhost:" + port + "/";
 
@@ -320,16 +315,12 @@ public class IaasFuncTHelper {
         return (new File(forkedTaskLog4JConfig.toURI())).getAbsolutePath();
     }
 
-    private static File getdefaultPortalPropertiesPathname() throws Exception {
-        return new File(defaultPortalProperties.toURI());
-    }
-
     private static String getRmHome() throws Exception {
-        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.RESTAPI_TEST_RM_HOME);
+        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 
     private static String getSchedHome() throws Exception {
-        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.RESTAPI_TEST_SCHEDULER_HOME);
+        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 
     public static Credentials getRmCredentials() throws Exception {

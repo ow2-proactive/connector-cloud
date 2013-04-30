@@ -41,8 +41,7 @@ import java.util.Properties;
 
 public class IaasFuncTConfig extends Properties{
 
-    public static final String RESTAPI_TEST_SCHEDULER_HOME = "test.scheduler.home";
-    public static final String RESTAPI_TEST_RM_HOME = "test.rm.home";
+    public static final String TEST_SCHEDULER_HOME = "scheduling.project.dir";
     
     private static final IaasFuncTConfig instance = new IaasFuncTConfig();
     

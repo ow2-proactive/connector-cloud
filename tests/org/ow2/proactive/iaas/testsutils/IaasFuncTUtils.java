@@ -1,4 +1,3 @@
-package org.ow2.proactive.iaas.testsutils;
 /*
  * ################################################################
  *
@@ -37,6 +36,8 @@ package org.ow2.proactive.iaas.testsutils;
  */
 
 
+
+package org.ow2.proactive.iaas.testsutils;
 
 import java.io.Closeable;
 import java.io.File;

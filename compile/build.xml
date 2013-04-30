@@ -13,6 +13,7 @@
 	<property name="dist.dir" value="${base.dir}/dist"/>
 	<property name="palib.dir" value="${scheduling.project.dir}/dist/lib"/>
 	<property name="ourlib.dir" value="${base.dir}/lib"/>
+	<property name="test.tmp.dir" value="${base.dir}/tmp"/>
 	<property name="ourpalib.dir" value="${ourlib.dir}/scheduling"/>
 	<property name="junit.grant.all.policy" value="${test.dir}/grant-all-java.security.policy" />
 	<property name="main-class" value="Starter"/>
@@ -42,6 +43,7 @@
 	</path>
 
 	<target name="clean" description="Clean build folders" depends="doc.clean">
+		<delete dir="${test.tmp.dir}"/>
 		<delete dir="${build.dir}"/>
 		<delete dir="${dist.dir}"/>
 		<delete dir="${ourlib.dir}/scheduling"/>

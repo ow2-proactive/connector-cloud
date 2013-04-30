@@ -34,16 +34,18 @@
  */
 package org.ow2.proactive.iaas;
 
-import java.util.Map;
-import org.junit.Test;
-import java.util.List;
-import org.junit.Before;
-import java.util.Arrays;
-import java.util.ArrayList;
-import org.hyperic.sigar.Sigar;
-import org.hyperic.sigar.SigarProxy;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMProcess;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.hyperic.sigar.Sigar;
+import org.hyperic.sigar.SigarProxy;
+import org.junit.Before;
+import org.junit.Test;
 
 
 public class VMProcessTest {
@@ -87,25 +89,21 @@ public class VMProcessTest {
         assertTrue(vmp.getProperty("id").equals("instance-00000109"));
     }
 
-    public static void startSecondJVM(Class<? extends Object> clazz) throws Exception {
+    public static void startSecondJVM(Class<?> clazz) throws Exception {
         System.out.println(clazz.getCanonicalName());
         String separator = System.getProperty("file.separator");
-        //String classpath = System.getProperty("java.class.path");
-        String pwd = System.getProperty("user.dir");
-
+        String pwd = clazz.getClassLoader().getResource("").getFile();
         String path = System.getProperty("java.home") + separator + "bin" + separator + "java";
 
         ArrayList<String> array = new ArrayList<String>();
         array.add(path);
         array.add("-cp");
-        array.add(pwd + separator + "build" + separator + "test-classes:" + pwd + separator + "build" +
-            separator + "classes");
+        array.add(pwd);
         array.add(clazz.getCanonicalName());
         array.addAll(Arrays.asList(KVM_COMMAND_LINE_SAMPLE.split(" ")));
         System.out.println("ARRAY: " + array);
 
-        ProcessBuilder processBuilder = new ProcessBuilder(array);
-        Process process = processBuilder.start();
+        new ProcessBuilder(array).start();
     }
 
     private void assertTrue(boolean b) throws Exception {

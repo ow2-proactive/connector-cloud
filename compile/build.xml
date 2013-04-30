@@ -37,8 +37,8 @@
 
 	<path id="classpath.test">
 		<path refid="classpath"/>
-		<pathelement location="${classes.dir}"/>
 		<pathelement location="${classes.test.dir}"/>
+		<pathelement location="${classes.dir}"/>
 	</path>
 
 	<target name="clean" description="Clean build folders" depends="doc.clean">

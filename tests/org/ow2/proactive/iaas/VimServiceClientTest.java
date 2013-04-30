@@ -35,9 +35,18 @@
 
 package org.ow2.proactive.iaas;
 
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
+import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,6 +56,10 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 @Ignore
 public class VimServiceClientTest {

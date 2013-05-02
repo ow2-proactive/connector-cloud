@@ -39,13 +39,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 
+import org.apache.commons.io.FileUtils;
+import org.hyperic.sigar.PFlags;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.Before;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runners.MethodSorters;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
@@ -84,10 +89,31 @@ public class SigarServiceClientTest {
     private static Map<String, String> rmNodeProps;
     private static boolean testConfigured = false;
 
+    private static String pflagName;
+    private static String pflagValue;
+    
+    private static TemporaryFolder tmpFold;
+
     @Before
     public void startRM() throws Exception {
-        
+
         if (rmurl == null) {
+
+            // Initialize some environment variables needed for tests.
+            
+            // Initialization for PFlags test.
+            tmpFold = new TemporaryFolder();
+            tmpFold.create();
+            String PFLAG_DIR = tmpFold.getRoot().getAbsolutePath();
+
+            pflagName = "tomcat-process";
+            File f = tmpFold.newFile(pflagName);
+            f.deleteOnExit();
+
+            pflagValue = "pid:3030,port:8081,prop:" + (new Random()).nextInt(1024);
+            FileUtils.writeStringToFile(f, pflagValue);
+
+            // Get some test parameters.
 
             String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);
             System.out.println(k);
@@ -97,9 +123,13 @@ public class SigarServiceClientTest {
                 // Ignore, use default.
             }
 
+            // Start the RM. 
+
             try {
                 System.out.println("Starting RM (make sure no other RM is running)...");
-                rmurl = IaasFuncTHelper.startResourceManager();
+                Map<String, String> rmNodeJvmArgs = new HashMap<String, String>();
+                rmNodeJvmArgs.put(PFlags.PFLAGS_DIR_KEY, PFLAG_DIR);
+                rmurl = IaasFuncTHelper.startResourceManager(rmNodeJvmArgs);
                 testConfigured = true;
             } catch (Exception e) {
                 System.out.println("Error while launching the RM...");
@@ -216,6 +246,28 @@ public class SigarServiceClientTest {
         checkMapProperties("VM", rmNodeProps, VM_EXPECTED_KEYS_MISC);
     }
 
+    @Test
+    public void getPFlagsProperties() throws Exception {
+        if (testConfigured == false)
+            return;
+
+        String pflagKey = "pflags." + pflagName;
+        if (rmNodeProps.containsKey(pflagKey)) {
+            if (rmNodeProps.get(pflagKey).equals(pflagValue)) {
+                return;
+            } else {
+                String str = "TEST FAILED: key '" + pflagKey + "' with invalid value.";
+                throw new Exception(str);
+            }
+        } else {
+            String str = "TEST FAILED: key '" + pflagKey + "' not present. The following keys are present: ";
+            for (String key: rmNodeProps.keySet()){
+                str = str +  "\n - " + key;
+            }
+            throw new Exception(str);
+        }
+    }
+
     private void checkMapProperties(String entityType, Map<String, String> map, String[] expectedKeys)
             throws Exception {
         List<String> notContained = new ArrayList<String>();
@@ -243,5 +295,6 @@ public class SigarServiceClientTest {
         System.out.println("RM not needed anymore. Shutting it down...");
         rmurl = null;
         IaasFuncTHelper.stopRm();
+        tmpFold.delete();
     }
 }

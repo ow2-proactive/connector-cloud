@@ -44,6 +44,7 @@ import java.net.URL;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import org.objectweb.proactive.api.PAFuture;
@@ -112,7 +113,7 @@ public class IaasFuncTHelper {
     private IaasFuncTHelper() {
     }
 
-    public static String startResourceManager() throws Exception {
+    public static String startResourceManager(Map<String, String> rmNodeJvmArgs) throws Exception {
         List<String> commandList = new ArrayList<String>();
         String javaPath = IaasFuncTUtils.getJavaPathFromSystemProperties();
         commandList.add(javaPath);
@@ -165,12 +166,12 @@ public class IaasFuncTHelper {
         PAFuture.waitFor(state);
         state.getNodeSource().size();
         System.out.println("Creating node source...");
-        createNodeSource(rm, rmCredentials, rmEventMonitor);
+        createNodeSource(rm, rmCredentials, rmEventMonitor, rmNodeJvmArgs);
         rm.disconnect();
         return url;
     }
 
-    public static void createNodeSource(ResourceManager rm, Credentials rmCred, RMEventMonitor rmEventMonitor)
+    public static void createNodeSource(ResourceManager rm, Credentials rmCred, RMEventMonitor rmEventMonitor, Map<String, String> jvmArgs)
             throws Exception {
         String nodeSourceName = defaultNodeSourceName + System.currentTimeMillis();
 
@@ -179,7 +180,7 @@ public class IaasFuncTHelper {
         rmEventMonitor.addWaitCondition(waitCondition);
         
         Object[] infrastructureParams = new Object[] { "", rmCred.getBase64(), defaultNumberOfNodes,
-                defaultNodeTimeout, IaasFuncTUtils.buildJvmParameters() };
+                defaultNodeTimeout, IaasFuncTUtils.buildJvmParameters(jvmArgs) };
         BooleanWrapper nodeSourceCreated = rm
                 .createNodeSource(nodeSourceName, LocalInfrastructure.class.getName(), infrastructureParams,
                         StaticPolicy.class.getName(), null);

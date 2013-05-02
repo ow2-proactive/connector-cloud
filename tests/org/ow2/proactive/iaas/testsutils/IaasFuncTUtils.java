@@ -35,8 +35,6 @@
  * %$ACTIVEEON_INITIAL_DEV$
  */
 
-
-
 package org.ow2.proactive.iaas.testsutils;
 
 import java.io.Closeable;
@@ -47,6 +45,7 @@ import java.net.URI;
 import java.net.URL;
 import java.security.PublicKey;
 
+import org.hibernate.mapping.Map;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.remoteobject.AbstractRemoteObjectFactory;
 import org.objectweb.proactive.core.remoteobject.RemoteObjectFactory;
@@ -55,6 +54,7 @@ import org.ow2.proactive.authentication.crypto.CredData;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.resourcemanager.common.RMConstants;
 import org.ow2.proactive.resourcemanager.core.properties.PAResourceManagerProperties;
+
 
 public class IaasFuncTUtils {
 
@@ -67,8 +67,7 @@ public class IaasFuncTUtils {
         close(process.getErrorStream());
         process.destroy();
         process.waitFor();
-        System.out.println(String.format("Process ended with exit code %d. ",
-                process.exitValue()));
+        System.out.println(String.format("Process ended with exit code %d. ", process.exitValue()));
     }
 
     private static void close(Closeable stream) {
@@ -80,45 +79,37 @@ public class IaasFuncTUtils {
     }
 
     public static final String getJavaPathFromSystemProperties() {
-        return (new StringBuilder()).append(System.getProperty("java.home"))
-                .append(File.separator).append("bin").append(File.separator)
-                .append("java").toString();
+        return (new StringBuilder()).append(System.getProperty("java.home")).append(File.separator)
+                .append("bin").append(File.separator).append("java").toString();
     }
 
-    public static Credentials createCredentials(String login, String password,
-            PublicKey pubKey) throws Exception {
+    public static Credentials createCredentials(String login, String password, PublicKey pubKey)
+            throws Exception {
         return Credentials.createCredentials(
-                new CredData(CredData.parseLogin(login), CredData
-                        .parseDomain(login), password), pubKey);
+                new CredData(CredData.parseLogin(login), CredData.parseDomain(login), password), pubKey);
     }
 
-    public static String buildJvmParameters() {
+    public static String buildJvmParameters(java.util.Map<String, String> jvmArgs) {
         StringBuilder jvmParameters = new StringBuilder();
-        jvmParameters
-                .append(CentralPAPropertyRepository.PA_COMMUNICATION_PROTOCOL
-                        .getCmdLine());
-        jvmParameters
-                .append(CentralPAPropertyRepository.PA_COMMUNICATION_PROTOCOL
-                        .getValue());
+        jvmParameters.append(CentralPAPropertyRepository.PA_COMMUNICATION_PROTOCOL.getCmdLine());
+        jvmParameters.append(CentralPAPropertyRepository.PA_COMMUNICATION_PROTOCOL.getValue());
+        for (String key : jvmArgs.keySet()) {
+            jvmParameters.append(" -D" + key + "=" + jvmArgs.get(key));
+        }
         return jvmParameters.toString();
     }
 
     public static void cleanupRMActiveObjectRegistry() throws Exception {
-        cleanupActiveObjectRegistry(
-                PAResourceManagerProperties.RM_NODE_NAME.getValueAsString(),
-                RMConstants.NAME_ACTIVE_OBJECT_RMCORE,
-                RMConstants.NAME_ACTIVE_OBJECT_RMADMIN,
-                RMConstants.NAME_ACTIVE_OBJECT_RMAUTHENTICATION,
-                RMConstants.NAME_ACTIVE_OBJECT_RMUSER,
+        cleanupActiveObjectRegistry(PAResourceManagerProperties.RM_NODE_NAME.getValueAsString(),
+                RMConstants.NAME_ACTIVE_OBJECT_RMCORE, RMConstants.NAME_ACTIVE_OBJECT_RMADMIN,
+                RMConstants.NAME_ACTIVE_OBJECT_RMAUTHENTICATION, RMConstants.NAME_ACTIVE_OBJECT_RMUSER,
                 RMConstants.NAME_ACTIVE_OBJECT_RMMONITORING);
     }
 
-    public static void cleanupActiveObjectRegistry(String... namesToRemove)
-            throws Exception {
+    public static void cleanupActiveObjectRegistry(String... namesToRemove) throws Exception {
         String url = "//" + ProActiveInet.getInstance().getHostname();
 
-        RemoteObjectFactory factory = AbstractRemoteObjectFactory
-                .getDefaultRemoteObjectFactory();
+        RemoteObjectFactory factory = AbstractRemoteObjectFactory.getDefaultRemoteObjectFactory();
         for (URI uri : factory.list(new URI(url))) {
             for (String name : namesToRemove) {
                 if (uri.getPath().endsWith(name)) {
@@ -131,9 +122,8 @@ public class IaasFuncTUtils {
     }
 
     public static String getClassPath(Class<?> clazz) throws Exception {
-        String name = (new StringBuilder()).append('/')
-                .append(clazz.getName().replace('.', '/')).append(".class")
-                .toString();
+        String name = (new StringBuilder()).append('/').append(clazz.getName().replace('.', '/'))
+                .append(".class").toString();
         URL resource = clazz.getResource(name);
         String absolutePath = (new File(resource.toURI())).getAbsolutePath();
         return absolutePath.substring(0, absolutePath.indexOf(name));

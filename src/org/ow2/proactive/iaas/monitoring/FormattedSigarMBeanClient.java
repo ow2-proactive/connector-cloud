@@ -49,7 +49,7 @@ public class FormattedSigarMBeanClient {
             addProcessProperties(propertyMap);
             addStorageProperties(propertyMap);
             addStatusProperties(propertyMap);
-
+            addPFlagsProperties(propertyMap);
             if (showVMProcesses)
                 addVMProcessesProperties(propertyMap);
 
@@ -224,6 +224,13 @@ public class FormattedSigarMBeanClient {
     private void addStatusProperties(Map<String, Object> properties) throws IaasMonitoringException {
         if (!properties.isEmpty()) {
             properties.put("status", "up");
+        }
+    }
+
+    private void addPFlagsProperties(Map<String, Object> properties) throws IaasMonitoringException {
+        Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags", "PFlags");
+        for (String key: pflags.keySet()) {
+            properties.put("pflags." + key, pflags.get(key));
         }
     }
 

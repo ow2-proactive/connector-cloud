@@ -11,10 +11,16 @@ public class Deploy extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
+        String vappId = results[0].toString();
+        System.out.println("results[0].vappId=" + vappId + ", vcloud.instance.id=" +
+            System.getProperty("vcloud.instance.id"));
+
         VCloudAPI api = (VCloudAPI) createApi(args);
         args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID, results[0].toString());
-        api.deployInstance(args);
-        return results[0];
+        String ipAddress = api.deployInstance(args);
+        System.setProperty("vcloud.instance.ipaddress", ipAddress);
+
+        return vappId + "," + ipAddress;
     }
 
 }

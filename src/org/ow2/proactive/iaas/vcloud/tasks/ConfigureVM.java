@@ -11,16 +11,12 @@ public class ConfigureVM extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        try {
-            VCloudAPI api = (VCloudAPI) createApi(args);
-            String instanceID = results[0].toString();
-            int cpu = 1;
-            int memoryMB = 1024;
-            int diskGB = 3;
-            api.configureVM(instanceID, cpu, memoryMB, diskGB);
-        } catch (Throwable e) {
-            throw new RuntimeException(e.getMessage() + " <-- " + e.getCause().getMessage());
-        }
+        VCloudAPI api = (VCloudAPI) createApi(args);
+        String instanceID = results[0].toString();
+        int cpu = Integer.valueOf(args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.CORES));
+        int memoryMB = Integer.valueOf(args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.MEMORY));
+        int diskGB = Integer.valueOf(args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.STORAGE));
+        api.configureVM(instanceID, cpu, memoryMB, diskGB);
 
         return results[0];
     }

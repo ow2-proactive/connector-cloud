@@ -11,13 +11,8 @@ public class ConfigureNetwork extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        try {
-            VCloudAPI api = (VCloudAPI) createApi(args);
-            args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID, results[0].toString());
-            api.configureNetwork(args);
-        } catch (Throwable e) {
-            throw new RuntimeException(e.getMessage() + " <-- " + e.getCause().getMessage());
-        }
+        VCloudAPI api = (VCloudAPI) createApi(args);
+        args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID, results[0].toString());
 
         return results[0];
     }

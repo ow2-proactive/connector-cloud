@@ -35,6 +35,7 @@
 package org.ow2.proactive.iaas.vcloud;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -46,7 +47,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import javax.security.sasl.AuthenticationException;
@@ -56,6 +56,8 @@ import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 
+import com.vmware.vcloud.api.rest.schema.CaptureVAppParamsType;
+import com.vmware.vcloud.api.rest.schema.CustomizationSectionType;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
 import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
 import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
@@ -82,10 +84,17 @@ import com.vmware.vcloud.sdk.Vapp;
 import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
+import com.vmware.vcloud.sdk.VirtualCpu;
+import com.vmware.vcloud.sdk.VirtualDisk;
+import com.vmware.vcloud.sdk.VirtualMemory;
+import com.vmware.vcloud.sdk.constants.BusSubType;
+import com.vmware.vcloud.sdk.constants.BusType;
 import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
 import com.vmware.vcloud.sdk.constants.NatPolicyType;
 import com.vmware.vcloud.sdk.constants.NatTypeType;
+import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
+import com.vmware.vcloud.sdk.constants.VappStatus;
 import com.vmware.vcloud.sdk.constants.Version;
 
 
@@ -96,7 +105,6 @@ public class VCloudAPI implements IaasApi {
     private static Map<Integer, VCloudAPI> instances;
 
     private Map<String, IaasInstance> iaasInstances;
-    private Map<IaasInstance, Vapp> vapps;
     private long created;
     private VcloudClient vcd;
     private Organization org;
@@ -135,7 +143,7 @@ public class VCloudAPI implements IaasApi {
     public VCloudAPI(String login, String password, URI endpoint, String orgName) throws IOException,
             KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
             VCloudException {
-        this.vapps = new HashMap<IaasInstance, Vapp>();
+        this.iaasInstances = new HashMap<String, IaasInstance>();
         this.created = System.currentTimeMillis();
         this.endpoint = endpoint;
         authenticate(login, password, orgName);
@@ -178,7 +186,6 @@ public class VCloudAPI implements IaasApi {
 
         IaasInstance iaasInstance = new IaasInstance(instanceID);
         iaasInstances.put(instanceID, iaasInstance);
-        vapps.put(iaasInstance, vapp);
 
         logger.info("[" + instanceID + "] Instanciated '" + templateName + "' as '" + instanceName + "' on " +
             vdcName + " ");
@@ -213,8 +220,47 @@ public class VCloudAPI implements IaasApi {
         logger.info("[" + instanceID + "] vApp network reconfigured");
     }
 
+    public void configureVM(String instanceID, int cpu, int memoryMB, int diskMB) throws Exception {
+        logger.debug("[" + instanceID + "] Reconfigure VM");
+        Vapp vapp = Vapp.getVappById(vcd, instanceID);
+        VM vm = vapp.getChildrenVms().get(0);
+
+        // CPU
+        logger.debug("[" + instanceID + "] Modifying CPU count");
+        VirtualCpu vCpu = vm.getCpu();
+        vCpu.setNoOfCpus(cpu);
+        vm.updateCpu(vCpu).waitForTask(0);
+
+        // Memory
+        logger.debug("[" + instanceID + "] Modifying memory amount");
+        VirtualMemory vMemory = vm.getMemory();
+        vMemory.setMemorySize(BigInteger.valueOf(memoryMB));
+        vm.updateMemory(vMemory).waitForTask(0);
+
+        // Disk
+        logger.debug("[" + instanceID + "] Modifying disk size");
+        List<VirtualDisk> vDisks = vm.getDisks();
+        Iterator<VirtualDisk> it = vDisks.iterator();
+        boolean updated = false;
+        while (it.hasNext()) {
+            VirtualDisk vDisk = it.next();
+            if (vDisk.isHardDisk() && !updated) {
+                updated = true;
+                logger.debug("[" + instanceID + "] Disk " + vDisk.getHardDiskBusType() + " " +
+                    vDisk.getHardDiskSize() + " MB -> " + diskMB + " MB");
+                vDisk.updateHardDiskSize(BigInteger.valueOf(diskMB));
+                vm.updateDisks(vDisks).waitForTask(0);
+            }
+        }
+
+        vm.upgradeHardware().waitForTask(0);
+        logger.info("[" + instanceID + "] VM reconfigured : " + cpu + " CPU / " + memoryMB + " MB RAM / " +
+            diskMB + " MB Disk");
+    }
+
     public String deployInstance(Map<String, String> arguments) throws Exception {
         String instanceID = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
+        logger.debug("[" + instanceID + "] vApp being deployed");
 
         Vapp vapp = Vapp.getVappById(vcd, instanceID);
         vapp.deploy(true, 0, false).waitForTask(0);
@@ -228,27 +274,115 @@ public class VCloudAPI implements IaasApi {
         return ip;
     }
 
+    public void startInstance(IaasInstance instance) throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] VM being started");
+        Vapp vapp = Vapp.getVappById(vcd, instance.getInstanceId());
+        if (vapp.isDeployed()) {
+            VM vm = vapp.getChildrenVms().iterator().next();
+            vm.powerOn().waitForTask(0);
+        }
+        logger.info("[" + instance.getInstanceId() + "] VM started");
+    }
+
     @Override
     public void stopInstance(IaasInstance instance) throws Exception {
-        vapps.get(instance).shutdown();
+        logger.debug("[" + instance.getInstanceId() + "] VM being stopped");
+        Vapp vapp = Vapp.getVappById(vcd, instance.getInstanceId());
+        if (vapp.isDeployed()) {
+            VM vm = vapp.getChildrenVms().iterator().next();
+            vapp.powerOff().waitForTask(0);
+        }
+        logger.info("[" + instance.getInstanceId() + "] VM stopped");
+    }
+
+    public void undeployInstance(IaasInstance instance) throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] vApp being undeployed");
+        Vapp vapp = Vapp.getVappById(vcd, instance.getInstanceId());
+        if (vapp.isDeployed()) {
+            if (vapp.getVappStatus() == VappStatus.POWERED_ON) {
+                vapp.undeploy(UndeployPowerActionType.POWEROFF).waitForTask(0);
+            } else {
+                vapp.undeploy(UndeployPowerActionType.DEFAULT).waitForTask(0);
+            }
+        }
+        logger.info("[" + instance.getInstanceId() + "] vApp undeployed");
     }
 
     public void deleteInstance(IaasInstance instance) throws Exception {
-        vapps.get(instance).delete();
+        logger.debug("[" + instance.getInstanceId() + "] vApp being deleted");
+        Vapp.getVappById(vcd, instance.getInstanceId()).delete().waitForTask(0);
+        logger.info("[" + instance.getInstanceId() + "] vApp deleted");
     }
 
     public void rebootInstance(IaasInstance instance) throws Exception {
-        vapps.get(instance).reboot();
+        logger.debug("[" + instance.getInstanceId() + "] vApp being rebooted");
+        this.stopInstance(instance);
+        this.startInstance(instance);
+        logger.info("[" + instance.getInstanceId() + "] vApp rebooted");
+    }
+
+    public void templateFromInstance(Map<String, String> arguments, IaasInstance instance, String templateName)
+            throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] vApp templating");
+        // get the vdc
+        String vdcName = "COMMUN-P5"; //arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
+        Vdc vdc = Vdc.getVdcByReference(vcd, org.getVdcRefsByName().get(vdcName));
+        // capture vapp params
+        Vapp vapp = Vapp.getVappById(vcd, instance.getInstanceId());
+        CaptureVAppParamsType captureVappParams = new CaptureVAppParamsType();
+        captureVappParams.setName(templateName);
+        captureVappParams.setSource(vapp.getReference());
+        // set the customization settings to true
+        CustomizationSectionType customizationSectionType = new CustomizationSectionType();
+        customizationSectionType.setCustomizeOnInstantiate(true);
+        customizationSectionType.setInfo(new MsgType());
+        // add the customization settings to the capture vapp params.
+        captureVappParams.getSection().add(
+                new com.vmware.vcloud.api.rest.schema.ObjectFactory()
+                        .createCustomizationSection(customizationSectionType));
+
+        // perform the capture vapp operation
+        VappTemplate vappTemplate = vdc.captureVapp(captureVappParams);
+        logger.debug("Sleeping 60sec.");
+        Thread.sleep(60000);
+        logger.info("[" + instance.getInstanceId() + "] vApp template done under '" + templateName + "'");
     }
 
     public void snapshotInstance(IaasInstance instance, String name, String description, boolean memory,
             boolean quiesce) throws Exception {
-        vapps.get(instance).createSnapshot(name, description, memory, quiesce);
+        logger.debug("[" + instance.getInstanceId() + "] vApp snapshoting");
+        Vapp.getVappById(vcd, instance.getInstanceId()).createSnapshot(name, description, memory, quiesce)
+                .waitForTask(0);
+        logger.info("[" + instance.getInstanceId() + "] vApp snapshot done under '" + name + "'");
+    }
+
+    public void removeSnapshotInstance(IaasInstance instance) throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] vApp removing all snapshots");
+        Vapp.getVappById(vcd, instance.getInstanceId()).removeAllSnapshots().waitForTask(0);
+        logger.info("[" + instance.getInstanceId() + "] vApp removed all snapshots");
+    }
+
+    public void revertSnapshotInstance(IaasInstance instance, String name, String description,
+            boolean memory, boolean quiesce) throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] vApp reverting to snapshot");
+        Vapp.getVappById(vcd, instance.getInstanceId()).revertToCurrentSnapshot().waitForTask(0);
+        logger.info("[" + instance.getInstanceId() + "] vApp revert to snapshot");
+    }
+
+    public void addDisk(IaasInstance instance, int sizeMB, String mountpoint) throws Exception {
+        logger.debug("[" + instance.getInstanceId() + "] add a disk to the VM");
+        Vapp vapp = Vapp.getVappById(vcd, instance.getInstanceId());
+        VM vm = vapp.getChildrenVms().get(0);
+        VirtualDisk vDisk = new VirtualDisk(BigInteger.valueOf(sizeMB), BusType.SCSI, BusSubType.LSI_LOGIC);
+        List<VirtualDisk> vDisks = vm.getDisks();
+        vDisks.add(vDisk);
+        vm.updateDisks(vDisks).waitForTask(0);
+        logger.info("[" + instance.getInstanceId() + "] Disk added to the vApp'");
     }
 
     @Override
     public boolean isInstanceStarted(IaasInstance instance) throws Exception {
-        return vapps.get(instance).isDeployed();
+        return Vapp.getVappById(vcd, instance.getInstanceId()).isDeployed();
     }
 
     @Override
@@ -273,6 +407,9 @@ public class VCloudAPI implements IaasApi {
             public static final String INSTANCE_ID = "instanceID";
             public static final String TEMPLATE_NAME = "templateName";
             public static final String VDC_NAME = "vdcName";
+            public static final String CORES = "cores";
+            public static final String MEMORY = "memory";
+            public static final String STORAGE = "storage";
         }
     }
 

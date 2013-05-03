@@ -36,15 +36,11 @@
 package org.ow2.proactive.iaas;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
-
 import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.PFlags;
 import org.junit.FixMethodOrder;
@@ -65,8 +61,16 @@ import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+/**
+ * These tests check for the presence of certain monitoring information as it 
+ * is retrieved from a sigar mbean in an RMNode.
+ * @author mjost
+ */
 public class SigarServiceClientTest {
 
+    /**
+     * Set of keys that are expected to be present in the response. 
+     */
     static final String[] VM_EXPECTED_KEYS_CPU = VimServiceClientTest.VM_EXPECTED_KEYS_CPU;
     static final String[] HOST_EXPECTED_KEYS_CPU = VimServiceClientTest.HOST_EXPECTED_KEYS_CPU;
 
@@ -83,15 +87,33 @@ public class SigarServiceClientTest {
     static final String[] HOST_EXPECTED_KEYS_MISC = VimServiceClientTest.HOST_EXPECTED_KEYS_MISC;
 
     static final String MAX_NOT_CONTAINED_KEYS_KEY = "sigar.maximum_not_contained_keys";
+    
+    /**
+     * Maximum allowed amount of keys not present (per test) before considered the 
+     * test as failed.
+     */
     private static int keysNotContainedMaximum = 0;
-
+    
+    /**
+     * Url of the RM.
+     */
     private static String rmurl;
+    
+    /**
+     * Properties obtained from querying the RMNode (using Sigar's MBeans)
+     */
     private static Map<String, String> rmNodeProps;
+    
+    /**
+     * Flag to tell if the test was correctly configured and can continue.
+     */
     private static boolean testConfigured = false;
 
+    /**
+     * PFlags test attributes.
+     */
     private static String pflagName;
     private static String pflagValue;
-    
     private static TemporaryFolder tmpFold;
 
     @Before
@@ -101,20 +123,24 @@ public class SigarServiceClientTest {
 
             // Initialize some environment variables needed for tests.
             
-            // Initialization for PFlags test.
+            // INITIALIZATION FOR PFLAGS TEST
+            // PFlags files will be stored in a temporary folder.
             tmpFold = new TemporaryFolder();
             tmpFold.create();
-            String PFLAG_DIR = tmpFold.getRoot().getAbsolutePath();
+            String tmpFoldPath = tmpFold.getRoot().getAbsolutePath();
 
+            // The PFlag name is as follows.
             pflagName = "tomcat-process";
             File f = tmpFold.newFile(pflagName);
             f.deleteOnExit();
 
+            // The PFlag value is as follows.
             pflagValue = "pid:3030,port:8081,prop:" + (new Random()).nextInt(1024);
             FileUtils.writeStringToFile(f, pflagValue);
+            // END OF INITIALIZATION FOR PFLAGS TEST
 
+            
             // Get some test parameters.
-
             String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);
             System.out.println(k);
             try {
@@ -128,7 +154,7 @@ public class SigarServiceClientTest {
             try {
                 System.out.println("Starting RM (make sure no other RM is running)...");
                 Map<String, String> rmNodeJvmArgs = new HashMap<String, String>();
-                rmNodeJvmArgs.put(PFlags.PFLAGS_DIR_KEY, PFLAG_DIR);
+                rmNodeJvmArgs.put(PFlags.PFLAGS_DIR_KEY, tmpFoldPath);
                 rmurl = IaasFuncTHelper.startResourceManager(rmNodeJvmArgs);
                 testConfigured = true;
             } catch (Exception e) {
@@ -142,12 +168,14 @@ public class SigarServiceClientTest {
 
     @Test
     public void a01_getRMNodeSigarProperties_Test() throws Exception {
-        System.out.println("Connecting to existing RM to '" + rmurl + "'...");
+        System.out.println("Connecting and login to existing RM to '" + rmurl + "'...");
 
         RMAuthentication auth = RMConnection.join(rmurl);
         Credentials c = IaasFuncTHelper.getRmCredentials();
         ResourceManager rm = auth.login(c);
 
+        System.out.println("Done.");
+        
         RMInitialState state = rm.getMonitoring().getState();
         List<RMNodeEvent> events = state.getNodesEvents();
         String jmxurl = null;
@@ -161,9 +189,18 @@ public class SigarServiceClientTest {
 
         Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(c);
         rmNodeProps = Utils.convertToStringMap(JmxUtils.getSigarProperties(jmxurl, jmxenv, true));
-        System.out.println(rmNodeProps);
+        System.out.println("Map properties: '\n" + rmNodeProps + "\n'");
+        
+        StringBuffer str = new StringBuffer();
+        for (String key: rmNodeProps.keySet()){
+            str.append("\n - " + key);
+        }
+        
+        System.out.println("Map keys: '\n" + str.toString() + "\n'");
 
+        System.out.println("Disconnecting...");
         rm.disconnect();
+        System.out.println("Done.");
     }
 
     @Test
@@ -260,10 +297,7 @@ public class SigarServiceClientTest {
                 throw new Exception(str);
             }
         } else {
-            String str = "TEST FAILED: key '" + pflagKey + "' not present. The following keys are present: ";
-            for (String key: rmNodeProps.keySet()){
-                str = str +  "\n - " + key;
-            }
+            String str = "TEST FAILED: key '" + pflagKey + "' not present.";
             throw new Exception(str);
         }
     }
@@ -277,7 +311,7 @@ public class SigarServiceClientTest {
 
         if (notContained.size() > 0) {
             StringBuffer str = new StringBuffer();
-            str.append("\nSome keys were not found in a " + entityType + " properties map: " + map);
+            str.append("\nSome keys were not found in a " + entityType + ".");
             for (String key : notContained) {
                 str.append("\n   KEY: '" + key + "' not present;");
             }

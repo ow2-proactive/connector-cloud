@@ -137,10 +137,13 @@ public class IaasFuncTHelper {
         commandList.add(getClassPath());
         commandList.add(RMStarter.class.getName());
         
-        System.out.println("RM START COMMAND: ");
+        System.out.println("Starting RM...");
+        System.out.println("(RM START COMMAND: '");
         for (String c: commandList){
             System.out.print(c + " ");
         }
+        System.out.println("')");
+        System.out.println("Done.");
         
         ProcessBuilder processBuilder = new ProcessBuilder(commandList);
         processBuilder.redirectErrorStream(true);
@@ -155,19 +158,28 @@ public class IaasFuncTHelper {
 
         System.out.println("Connecting to the RM at '" + url + "'...");
         RMAuthentication rmAuth = RMConnection.waitAndJoin(url, TimeUnit.SECONDS.toMillis(120));
+        System.out.println("Done.");
 
         Credentials rmCredentials = getRmCredentials();
-        ResourceManager rm = rmAuth.login(rmCredentials);
-
+        
         System.out.println("Logging to RM...");
+        ResourceManager rm = rmAuth.login(rmCredentials);
+        System.out.println("Done.");
+
         RMEventMonitor rmEventMonitor = new RMEventMonitor();
         RMEventListener eventListener = RMEventListener.createEventListener(rmEventMonitor);
         RMInitialState state = rm.getMonitoring().addRMEventListener(eventListener);
         PAFuture.waitFor(state);
         state.getNodeSource().size();
+        
         System.out.println("Creating node source...");
         createNodeSource(rm, rmCredentials, rmEventMonitor, rmNodeJvmArgs);
+        System.out.println("Done.");
+        
+        System.out.println("Disconnecting...");
         rm.disconnect();
+        System.out.println("Done.");
+        
         return url;
     }
 

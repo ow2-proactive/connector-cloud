@@ -58,7 +58,7 @@ import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 
-
+@org.junit.Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class SigarServiceClientTest {
 

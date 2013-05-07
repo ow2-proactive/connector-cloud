@@ -73,12 +73,13 @@ public class NovaInfrastructure extends IaasInfrastructure {
     protected void configure(Object... parameters) {
         super.configure(parameters);
 
-        userName = (String) parameters[2];
-        password = (String) parameters[3];
-        tenantName = (String) parameters[4];
-        imageRef = (String) parameters[5];
-        flavorRef = (String) parameters[6];
-        credentials = new String((byte[]) parameters[7]);
+        int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
+        userName = (String) parameters[offset + 0];
+        password = (String) parameters[offset + 1];
+        tenantName = (String) parameters[offset + 2];
+        imageRef = (String) parameters[offset + 3];
+        flavorRef = (String) parameters[offset + 4];
+        credentials = new String((byte[]) parameters[offset + 5]);
     }
 
     @Override

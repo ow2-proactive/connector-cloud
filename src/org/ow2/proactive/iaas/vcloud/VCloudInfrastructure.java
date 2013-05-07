@@ -40,8 +40,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaasParamUtil;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInfrastructure;
+import org.ow2.proactive.iaas.vcloud.VCloudAPI.VCloudAPIConstants;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 
 
@@ -52,27 +54,94 @@ public class VCloudInfrastructure extends IaasInfrastructure {
     protected String login;
     @Configurable(description = "Password")
     protected String password;
-    @Configurable(description = "Virtual DataCenter (VDC) name.")
-    protected String vdcName;
+    @Configurable(description = "Virtual Organization name.")
+    protected String orgName;
     @Configurable(credential = true, description = "Absolute path of the credential file")
     protected File rmCredentialsPath;
-    protected String credentials = "";
+    protected String credentials;
+    
+    @Configurable(description = "Virtual Application template name.")
+    protected String templateName;
+    @Configurable(description = "Virtual Machine instance name.")
+    String instanceName;
+    @Configurable(description = "Virtual Data Center name.")
+    protected String vdcName;
+    
+    @Configurable(description = "Vitural Center Metadata Service URL.")
+    protected String vimServiceUrl;
+    @Configurable(description = "Vitural Center Metadata Service username.")
+    protected String vimServiceUsername;
+    @Configurable(description = "Vitural Center Metadata Service password.")
+    protected String vimServicePassword;
 
     @Override
     protected void configure(Object... parameters) {
         super.configure(parameters);
 
-        login = (String) parameters[2];
-        password = (String) parameters[3];
-        vdcName = (String) parameters[4];
-        credentials = new String((byte[]) parameters[6]);
+        int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
+        login = (String) parameters[offset + 0];
+        password = (String) parameters[offset + 1];
+        orgName = (String) parameters[offset + 2];
+        
+        Object credentialsObj = parameters[offset + 3];
+        if (credentialsObj instanceof byte[]) {
+        	credentials = new String((byte[]) credentialsObj);
+        } else {
+        	credentials = (String) credentialsObj;
+        }
+        
+		USE_CONFIGURED_VALUES.put(VCloudAPIConstants.InstanceParameters.RM_URL,
+				rmUrl);
+
+		USE_CONFIGURED_VALUES.put(
+				VCloudAPIConstants.InstanceParameters.RM_CRED_VAL, credentials);
+		
+		templateName = IaasParamUtil
+				.getParameterValue(
+						VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
+						parameters);
+		if (templateName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME,
+					templateName);
+		}
+		instanceName = IaasParamUtil
+				.getParameterValue(
+						VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
+						parameters);
+		if (instanceName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.INSTANCE_NAME,
+					instanceName);
+		}
+		vdcName = IaasParamUtil.getParameterValue(
+				VCloudAPIConstants.InstanceParameters.VDC_NAME, parameters);
+		if (orgName != null) {
+			USE_CONFIGURED_VALUES.put(
+					VCloudAPIConstants.InstanceParameters.VDC_NAME, vdcName);
+		}
+		
+		// VimService parameters
+		vimServiceUrl = IaasParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.URL, parameters);
+		vimServiceUsername = IaasParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.USERNAME, parameters);
+		vimServicePassword = IaasParamUtil.getParameterValue(
+				VCloudAPIConstants.MonitoringParameters.PASSWORD, parameters);
+				
     }
 
     @Override
     protected IaasApi getAPI() {
         IaasApi api;
         try {
-            api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), vdcName);
+        	if (vimServiceUrl == null) {
+            api = VCloudAPI.getVCloudAPI(login, password, new URI(iaasApiUrl), orgName);
+        	} else {
+				api = VCloudAPI.getVCloudAPI(login, password, new URI(
+						iaasApiUrl), orgName, vimServiceUrl,
+						vimServiceUsername, vimServicePassword);
+        	}
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -88,6 +157,7 @@ public class VCloudInfrastructure extends IaasInfrastructure {
         args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME, nodeName);
         args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME,
                 (String) nodeConfiguration.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME));
+        
         return args;
     }
 }

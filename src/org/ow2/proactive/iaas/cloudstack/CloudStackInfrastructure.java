@@ -89,15 +89,16 @@ public class CloudStackInfrastructure extends IaasInfrastructure {
     protected void configure(Object... parameters) {
         super.configure(parameters);
         
-        apiKey = (String) parameters[2];
-        secretKey = (String) parameters[3];
-        defaultServiceOfferingId = (String) parameters[4];
-        smallServiceOfferingId = (String) parameters[5];
-        mediumServiceOfferingId = (String) parameters[6];
-        largeServiceOfferingId = (String) parameters[7];
-        templateId = (String) parameters[8];
-        zoneId = (String) parameters[9];
-        rmAddress = (String) parameters[10];
+        int offset = IaasInfrastructure.NB_OF_BASE_PARAMETERS;
+        apiKey = (String) parameters[offset + 0];
+        secretKey = (String) parameters[offset + 1];
+        defaultServiceOfferingId = (String) parameters[offset + 2];
+        smallServiceOfferingId = (String) parameters[offset + 3];
+        mediumServiceOfferingId = (String) parameters[offset + 4];
+        largeServiceOfferingId = (String) parameters[offset + 5];
+        templateId = (String) parameters[offset + 6];
+        zoneId = (String) parameters[offset + 7];
+        rmAddress = (String) parameters[offset + 8];
     }
 
     @Override

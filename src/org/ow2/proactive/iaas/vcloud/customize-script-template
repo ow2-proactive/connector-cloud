@@ -1,0 +1,17 @@
+#!/bin/sh
+
+rm_config_dir=/home/univcloud/rm-node-config
+
+rm_node_name_file=$rm_config_dir/rm.node.name
+rm_url_file=$rm_config_dir/rm.url
+rm_cred_val_file=$rm_config_dir/rm.cred.val
+
+rm_node_name=@rm.node.name@
+rm_url=@rm.url@
+rm_cred_val=@rm.cred.val@ 
+
+if [ x"$1" = x"postcustomization" ] ; then
+  echo $rm_node_name > "$rm_node_name_file"
+  echo $rm_url > "$rm_url_file"
+  echo $rm_cred_val > "$rm_cred_val_file"
+fi

@@ -1,6 +1,7 @@
 package org.ow2.proactive.iaas.vcloud.tasks;
 
 import java.io.Serializable;
+import java.util.HashMap;
 
 import org.ow2.proactive.iaas.IaasExecutable;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
@@ -11,13 +12,27 @@ public class Undeploy extends IaasExecutable {
 
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        String vappId = results[0].toString();
+        HashMap<String, String> occiAttributes = new HashMap<String, String>();
+        VCloudAPI api = null;
+        try {
+            api = (VCloudAPI) createApi(args);
+            String vappId = args.get("vappid").split("/")[2];
+            System.out.println("[Undeploy task] Undeploying " + vappId + "...");
 
-        VCloudAPI api = (VCloudAPI) createApi(args);
-        args.put(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID, results[0].toString());
-        api.undeployInstance(api.getIaasInstance(vappId));
+            api.undeployInstance(vappId);
+            occiAttributes.put("action.state", "done");
 
-        return results[0];
+        } catch (Throwable e) {
+            e.printStackTrace();
+            occiAttributes.put("action.state", "error");
+            occiAttributes.put("occi.compute.error.code", "1");
+            occiAttributes.put("occi.compute.error.description", e.getMessage());
+        } finally {
+            if(api !=null) {
+                api.disconnect();
+            }
+        }
+        return occiAttributes;
     }
 
 }

@@ -12,8 +12,11 @@ public class Delete extends IaasExecutable {
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
         VCloudAPI api = (VCloudAPI) createApi(args);
-        String instanceID = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
-        api.deleteInstance(api.getIaasInstance(instanceID));
+        String instanceId = args.get("vappid").split("/")[2];
+
+        System.out.println("[Delete task] Deleting " + instanceId + "...");
+        api.deleteInstance(instanceId);
+        api.disconnect();
 
         return null;
     }

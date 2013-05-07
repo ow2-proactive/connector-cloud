@@ -13,7 +13,9 @@
 	<property name="dist.dir" value="${base.dir}/dist"/>
 	<property name="palib.dir" value="${scheduling.project.dir}/dist/lib"/>
 	<property name="ourlib.dir" value="${base.dir}/lib"/>
+	<property name="test.tmp.dir" value="${base.dir}/tmp"/>
 	<property name="ourpalib.dir" value="${ourlib.dir}/scheduling"/>
+	<property name="junit.grant.all.policy" value="${test.dir}/grant-all-java.security.policy" />
 	<property name="main-class" value="Starter"/>
 
 	<import file="../doc/src/build.xml" optional="true"/>
@@ -22,7 +24,7 @@
 		<mkdir dir="${ourlib.dir}"/>
 		<mkdir dir="${ourpalib.dir}"/>
 		<copy todir="${ourpalib.dir}">
-			<fileset dir="${palib.dir}" includes="**/*.jar" excludes="typica.jar"/>
+			<fileset dir="${palib.dir}" includes="**/*.jar,**/*.so" excludes="typica.jar,vim25.jar"/>
 		</copy>
 		<copy todir="${ourpalib.dir}">
 			<fileset dir="${typica.jar.dir}/" includes="**/*.jar"/>
@@ -36,19 +38,21 @@
 
 	<path id="classpath.test">
 		<path refid="classpath"/>
-		<pathelement location="${classes.dir}"/>
 		<pathelement location="${classes.test.dir}"/>
+		<pathelement location="${classes.dir}"/>
 	</path>
 
 	<target name="clean" description="Clean build folders" depends="doc.clean">
+		<delete dir="${test.tmp.dir}"/>
 		<delete dir="${build.dir}"/>
 		<delete dir="${dist.dir}"/>
+		<delete dir="${ourlib.dir}/scheduling"/>
 	</target>
 
 	<target name="compile" depends="copyDependencies" description="Compile">
 		<mkdir dir="${classes.dir}"/>
 		<copy todir="${classes.dir}">
-			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico"/>
+			<fileset dir="../src" includes="**/*.xml,**/*.properties,**/*.txt,**/*.ico,**/start-proactive-node"/>
 		</copy>
 		<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="on"
 			   debuglevel="lines,vars,source" includeantruntime="false"/>
@@ -66,7 +70,14 @@
 		<mkdir dir="${classes.test.dir}"/>
 		<javac srcdir="${test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
 			   includeantruntime="false"/>
+
+		<copy todir="${classes.test.dir}">
+			<fileset dir="${test.dir}" includes="**/*.policy,**/*.xml,**/*.properties,**/*.txt"/>
+		</copy>
+
 		<junit haltonfailure="true">
+			<jvmarg value="-Djava.security.policy=${junit.grant.all.policy}"/>					
+			<jvmarg value="-Dscheduling.project.dir=${scheduling.project.dir}"/>					
 			<classpath refid="classpath.test"/>
 			<formatter type="brief" usefile="false"/>
 			<batchtest fork="yes">

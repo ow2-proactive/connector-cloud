@@ -50,7 +50,21 @@ import org.junit.Test;
 @org.junit.Ignore
 public class VMProcessTest {
 
-    private static final String KVM_COMMAND_LINE_SAMPLE = "/usr/bin/kvm -S -M pc-1.0 -enable-kvm -m 4096 -smp 2,sockets=2,cores=1,threads=1 -name instance-00000109 -uuid 7de378fc-5f62-4961-a6a7-f3ffc812ad2b -nodefconfig -nodefaults -chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000109.monitor,server,nowait -mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown -drive file=/store/nova/instances/instance-00000109/disk,if=none,id=drive-virtio-disk0,format=qcow2,cache=none -device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1 -netdev tap,fd=19,id=hostnet0 -device rtl8139,netdev=hostnet0,id=net0,mac=fa:16:3e:41:17:68,bus=pci.0,addr=0x3 -chardev file,id=charserial0,path=/store/nova/instances/instance-00000109/console.log -device isa-serial,chardev=charserial0,id=serial0 -chardev pty,id=charserial1 -device isa-serial,chardev=charserial1,id=serial1 -usb -device usb-tablet,id=input0 -vnc 192.168.1.13:3 -k en-us -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5";
+    private static final String INSTANCE = "instance-00000109";
+    private static final String UUID = "7de378fc-5f62-4961-a6a7-f3ffc812ad2b";
+    private static final String MAC = "fa:16:3e:41:17:68";
+    private static final String KVM_COMMAND_LINE_SAMPLE = 
+            "/usr/bin/kvm -S -M pc-1.0 -enable-kvm -m 4096 -smp 2,sockets=2,cores=1,threads=1" + 
+            " -name " + INSTANCE + " -uuid " + UUID + " -nodefconfig -nodefaults " + 
+            "-chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000109.monitor,server,nowait " + 
+            "-mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown " + 
+            "-drive file=/store/nova/instances/instance-00000109/disk,if=none,id=drive-virtio-disk0,format=qcow2,cache=none "+ 
+            "-device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1"+ 
+            " -netdev tap,fd=19,id=hostnet0 -device rtl8139,netdev=hostnet0,id=net0,mac="+MAC+",bus=pci.0,addr=0x3 "+
+            "-chardev file,id=charserial0,path=/store/nova/instances/instance-00000109/console.log "+
+            "-device isa-serial,chardev=charserial0,id=serial0 -chardev pty,id=charserial1 "+
+            "-device isa-serial,chardev=charserial1,id=serial1 -usb -device usb-tablet,id=input0 "+
+            "-vnc 192.168.1.13:3 -k en-us -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5";
 
     @Before
     public void before() throws Exception {
@@ -84,13 +98,13 @@ public class VMProcessTest {
 
         VMProcess vmp = vmps.get(0);
 
-        assertTrue(vmp.getProperty("uuid").equals("7de378fc-5f62-4961-a6a7-f3ffc812ad2b"));
-        assertTrue(vmp.getProperty("mac").equals("fa:16:3e:41:17:68"));
-        assertTrue(vmp.getProperty("id").equals("instance-00000109"));
+        assertTrue(vmp.getProperty("uuid").equals(UUID));
+        assertTrue(vmp.getProperty("mac").equals(MAC));
+        assertTrue(vmp.getProperty("id").equals(INSTANCE));
+        
     }
 
     public static void startSecondJVM(Class<?> clazz) throws Exception {
-        System.out.println(clazz.getCanonicalName());
         String separator = System.getProperty("file.separator");
         String pwd = clazz.getClassLoader().getResource("").getFile();
         String path = System.getProperty("java.home") + separator + "bin" + separator + "java";
@@ -101,9 +115,11 @@ public class VMProcessTest {
         array.add(pwd);
         array.add(clazz.getCanonicalName());
         array.addAll(Arrays.asList(KVM_COMMAND_LINE_SAMPLE.split(" ")));
-        System.out.println("ARRAY: " + array);
+        System.out.println("Starting JVM: " + array);
 
         new ProcessBuilder(array).start();
+        
+        System.out.println("Done.");
     }
 
     private void assertTrue(boolean b) throws Exception {

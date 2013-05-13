@@ -116,6 +116,9 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     private VimServiceClient vimServiceClient;
 
+    private String credLogin;
+    private String credPassword;
+
     // ///
     // VCLOUD FACTORY
     // ///
@@ -199,6 +202,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void authenticate(String login, String password, String orgName) throws VCloudException,
             KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
         VcloudClient.setLogLevel(Level.OFF);
+        credLogin = login;
+        credPassword = password;
         logger.info("Authenticating to vCloud infrastructure...");
         vCloudClient = new VcloudClient(this.endpoint.toString(), Version.V5_1);
         vCloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
@@ -206,6 +211,17 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         org = Organization.getOrganizationByReference(vCloudClient,
                 vCloudClient.getOrgRefsByName().get(orgName));
         logger.debug("Authentication success for " + login);
+    }
+    
+    private void checkConnection() throws VCloudException {
+        try {
+            vCloudClient.extendSession();
+            vCloudClient.getUpdatedOrgList();
+        } catch(VCloudException e) {
+            logger.warn("Session seems to have expired, trying to reconnect..." + e.getMessage());
+            logger.debug("Session seems to have expired, trying to reconnect...", e);
+            vCloudClient.login(credLogin, credPassword);
+        }
     }
 
     @Override
@@ -223,6 +239,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         String instanceName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME);
         String vdcName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
 
+        checkConnection();
         Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcName));
 
         InstantiateVAppTemplateParamsType instVappTemplParamsType = new InstantiateVAppTemplateParamsType();
@@ -253,6 +270,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     }
 
     public void configureNetwork(String instanceID, String vdcName) throws Exception {
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcName));
 
@@ -279,6 +297,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void configureVM(String instanceID, int cpu, int memoryMB, int diskMB) throws Exception {
         logger.info("[" + instanceID + "] Reconfiguring VM : " + cpu + " CPU / " + memoryMB + " MB RAM / " +
             diskMB + " MB Disk");
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
 
@@ -317,6 +336,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public void undeployInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Undeploying vApp...");
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         if (vapp.isDeployed()) {
             if (vapp.getVappStatus() == VappStatus.POWERED_ON) {
@@ -362,6 +382,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     }
 
     public String deployInstance(String instanceID) throws Exception {
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         vapp.deploy(true, 0, false).waitForTask(0);
 
@@ -378,6 +399,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public void startInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Starting VM...");
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         if (vapp.isDeployed()) {
             VM vm = vapp.getChildrenVms().iterator().next();
@@ -388,6 +410,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public void stopInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Stopping VM...");
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         if (vapp.isDeployed()) {
             VM vm = vapp.getChildrenVms().iterator().next();
@@ -398,6 +421,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public void deleteInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Deleting vApp...");
+        checkConnection();
         Vapp.getVappById(vCloudClient, instanceID).delete().waitForTask(0);
         logger.debug("[" + instanceID + "] vApp deleted");
     }
@@ -412,6 +436,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void templateFromInstance(Map<String, String> arguments, String instanceID, String templateName)
             throws Exception {
         logger.info("[" + instanceID + "] vApp templating...");
+        checkConnection();
         // get the vdc
         String vdcName = "COMMUN-P5"; //arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
         Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcName));
@@ -439,6 +464,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void snapshotInstance(String instanceID, String name, String description, boolean memory,
             boolean quiesce) throws Exception {
         logger.info("[" + instanceID + "] vApp snapshoting to '" + name + "'...");
+        checkConnection();
         Vapp.getVappById(vCloudClient, instanceID).createSnapshot(name, description, memory, quiesce)
                 .waitForTask(0);
         logger.debug("[" + instanceID + "] vApp snapshot done under '" + name + "'");
@@ -446,18 +472,21 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public void removeSnapshotInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Removing all vApp snapshots");
+        checkConnection();
         Vapp.getVappById(vCloudClient, instanceID).removeAllSnapshots().waitForTask(0);
         logger.debug("[" + instanceID + "] Removed all vApp snapshots");
     }
 
     public void revertSnapshotInstance(String instanceID) throws Exception {
         logger.info("[" + instanceID + "] Reverting vApp to snapshot");
+        checkConnection();
         Vapp.getVappById(vCloudClient, instanceID).revertToCurrentSnapshot().waitForTask(0);
         logger.debug("[" + instanceID + "] vApp revert to snapshot");
     }
 
     public void addVMDisk(String instanceID, int sizeMB, String mountpoint) throws Exception {
         logger.info("[" + instanceID + "] add a disk to the VM...");
+        checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         VirtualDisk vDisk = new VirtualDisk(BigInteger.valueOf(sizeMB), BusType.SCSI, BusSubType.LSI_LOGIC);
@@ -468,6 +497,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     }
 
     public boolean isInstanceStarted(String instanceID) throws Exception {
+        checkConnection();
         return Vapp.getVappById(vCloudClient, instanceID).isDeployed();
     }
 
@@ -495,6 +525,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     }
 
     private void attachAdditionalVirtualDisk(String instanceID, VirtualDisk additionalDisk) throws Exception {
+        checkConnection();
         VM vm = Vapp.getVappById(vCloudClient, instanceID).getChildrenVms().get(0);
         List<VirtualDisk> disks = VM.getDisks(vCloudClient, vm.getReference());
         disks.add(additionalDisk);

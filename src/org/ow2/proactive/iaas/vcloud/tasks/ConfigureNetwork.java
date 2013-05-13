@@ -13,9 +13,18 @@ public class ConfigureNetwork extends IaasExecutable {
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
         VCloudAPI api = null;
+        String vappId = null;
         try {
             api = (VCloudAPI) createApi(args);
-            String vappId = args.get("vappid").split("/")[2];
+            if (args.get("vappid") != null) {
+                vappId = args.get("vappid").split("/")[2];
+            } else if( System.getProperty("occi.compute.vendor.vmpath") != null ) {
+                vappId = System.getProperty("occi.compute.vendor.vmpath").split("/")[2];
+                PropertyUtils.propagateProperty("occi.compute.vendor.vmpath");
+            } else {
+                vappId = System.getProperty("vcloud.vapp.id");
+                PropertyUtils.propagateProperty("vcloud.vapp.id");
+            } 
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
             System.out.println("[ConfigureNetwork task] Configuring vApp [" + vappId + "] with network [" +
                 vdcName + "]...");

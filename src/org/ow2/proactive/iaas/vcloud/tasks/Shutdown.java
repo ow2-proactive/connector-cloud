@@ -6,6 +6,7 @@ import java.util.HashMap;
 import org.ow2.proactive.iaas.IaasExecutable;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
+import org.ow2.proactive.scripting.PropertyUtils;
 
 
 public class Shutdown extends IaasExecutable {
@@ -14,14 +15,23 @@ public class Shutdown extends IaasExecutable {
     public Serializable execute(TaskResult... results) throws Throwable {
         HashMap<String, String> occiAttributes = new HashMap<String, String>();
         VCloudAPI api = null;
+        String vappId = null;
 
         try {
             api = (VCloudAPI) createApi(args);
             System.out.println("Stopping " + args.get("vappid"));
-            String instanceId = args.get("vappid").split("/")[2]; // vmpath schema = VCLOUD/Paris1-Gold/ID
-            System.out.println("[Shutdown task] Shutdown " + instanceId + "...");
+            if (args.get("vappid") != null) {
+                vappId = args.get("vappid").split("/")[2];
+            } else if( System.getProperty("occi.compute.vendor.vmpath") != null ) {
+                vappId = System.getProperty("occi.compute.vendor.vmpath").split("/")[2];
+                PropertyUtils.propagateProperty("occi.compute.vendor.vmpath");
+            } else {
+                vappId = System.getProperty("vcloud.vapp.id");
+                PropertyUtils.propagateProperty("vcloud.vapp.id");
+            }
+            System.out.println("[Shutdown task] Shutdown " + vappId + "...");
 
-            api.stopInstance(instanceId);
+            api.stopInstance(vappId);
             occiAttributes.put("action.state", "done");
 
         } catch (Throwable e) {

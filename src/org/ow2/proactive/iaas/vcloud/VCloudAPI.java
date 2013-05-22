@@ -52,31 +52,11 @@ import java.util.logging.Level;
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
-import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
-
-import com.vmware.vcloud.api.rest.schema.CaptureVAppParamsType;
-import com.vmware.vcloud.api.rest.schema.CustomizationSectionType;
-import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
-import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
-import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
-import com.vmware.vcloud.api.rest.schema.GuestCustomizationSectionType;
-import com.vmware.vcloud.api.rest.schema.InstantiateVAppTemplateParamsType;
-import com.vmware.vcloud.api.rest.schema.InstantiationParamsType;
-import com.vmware.vcloud.api.rest.schema.NatRuleType;
-import com.vmware.vcloud.api.rest.schema.NatServiceType;
-import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
-import com.vmware.vcloud.api.rest.schema.NetworkConfigSectionType;
-import com.vmware.vcloud.api.rest.schema.NetworkConfigurationType;
-import com.vmware.vcloud.api.rest.schema.NetworkFeaturesType;
-import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
-import com.vmware.vcloud.api.rest.schema.ObjectFactory;
-import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
-import com.vmware.vcloud.api.rest.schema.ReferenceType;
-import com.vmware.vcloud.api.rest.schema.VAppNetworkConfigurationType;
+import com.vmware.vcloud.api.rest.schema.*;
 import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
 import com.vmware.vcloud.sdk.Organization;
@@ -94,11 +74,13 @@ import com.vmware.vcloud.sdk.constants.BusSubType;
 import com.vmware.vcloud.sdk.constants.BusType;
 import com.vmware.vcloud.sdk.constants.FenceModeValuesType;
 import com.vmware.vcloud.sdk.constants.FirewallPolicyType;
+import com.vmware.vcloud.sdk.constants.IpAddressAllocationModeType;
 import com.vmware.vcloud.sdk.constants.NatPolicyType;
 import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
 import com.vmware.vcloud.sdk.constants.VappStatus;
 import com.vmware.vcloud.sdk.constants.Version;
+import org.apache.log4j.Logger;
 
 
 public class VCloudAPI implements IaasApi, IaasMonitoringApi {
@@ -119,9 +101,6 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     private String credLogin;
     private String credPassword;
 
-    // ///
-    // VCLOUD FACTORY
-    // ///
     public static IaasApi getVCloudAPI(Map<String, String> args) throws URISyntaxException,
             AuthenticationException {
         VCloudAPI vCloudAPI = getVCloudAPI(args.get(VCloudAPIConstants.ApiParameters.USER_NAME),
@@ -537,6 +516,99 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
                             "An error occurred while attaching an additional disk to the virtual machine (instance-id:%s) :%n",
                             instanceID), e);
             throw new Exception(e);
+        }
+    }
+
+    public VcloudClient getVCloud() {
+        return vCloudClient;
+    }
+
+    public String cloneVapp(String vdcName, String vappTemplateId, String vappName) throws Exception {
+        Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefByName(vdcName));
+        Vapp originVapp = Vapp.getVappById(vCloudClient, vappTemplateId);
+
+        CloneVAppParamsType cloneVappParamsType = new CloneVAppParamsType();
+        cloneVappParamsType.setName(vappName);
+        cloneVappParamsType.setSource(originVapp.getReference());
+        Vapp clonedVapp = vdc.cloneVapp(cloneVappParamsType);
+        List<Task> tasks = clonedVapp.getTasks();
+        if (tasks.size() > 0) {
+            tasks.get(0).waitForTask(0);
+        }
+        return clonedVapp.getResource().getId();
+    }
+
+    public String copy(String vdcName, String vappName, String vmTemplateName, String newVmName) throws Exception {
+        Vapp vapp = findVappByName(vdcName, vappName);
+
+        VM template = findVmByName(vapp, vmTemplateName);
+
+        ReferenceType vappTemplateRef = new ReferenceType();
+        vappTemplateRef.setName(newVmName);
+        vappTemplateRef.setHref(template.getResource().getHref());
+
+        SourcedCompositionItemParamType vmItem = new SourcedCompositionItemParamType();
+        vmItem.setSource(vappTemplateRef);
+
+        NetworkConnectionSectionType networkConnectionSectionType = configureStaticPoolNetwork(vapp);
+
+        InstantiationParamsType vmInstantiationParamsType = new InstantiationParamsType();
+        List<JAXBElement<? extends SectionType>> vmSections = vmInstantiationParamsType.getSection();
+        vmSections.add(new ObjectFactory().createNetworkConnectionSection(networkConnectionSectionType));
+        vmItem.setInstantiationParams(vmInstantiationParamsType);
+
+        RecomposeVAppParamsType recomposeVAppParamsType = new RecomposeVAppParamsType();
+        recomposeVAppParamsType.getSourcedItem().add(vmItem);
+        vapp.recomposeVapp(recomposeVAppParamsType).waitForTask(0);
+
+        List<Task> reTasks = vapp.getTasks();
+        if (reTasks.size() > 0)
+            reTasks.get(0).waitForTask(0);
+
+        // reload
+        vapp = findVappByName(vdcName, vappName);
+        return findVmByName(vapp, newVmName).getResource().getId();
+    }
+
+    private Vapp findVappByName(String vdcName, String vappName) throws VCloudException {
+        Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcName));
+        ReferenceType vapp = vdc.getVappRefByName(vappName);
+        return Vapp.getVappByReference(vCloudClient, vapp);
+    }
+
+    private NetworkConnectionSectionType configureStaticPoolNetwork(Vapp vapp) throws VCloudException {
+        NetworkConnectionSectionType networkConnectionSectionType = new NetworkConnectionSectionType();
+        MsgType networkInfo = new MsgType();
+        networkConnectionSectionType.setInfo(networkInfo);
+
+        NetworkConnectionType networkConnectionType = new NetworkConnectionType();
+        networkConnectionType.setNetwork(vapp.getNetworkConfigSection().getNetworkConfig().get(0).getNetworkName());
+        networkConnectionType.setIpAddressAllocationMode(IpAddressAllocationModeType.POOL.value());
+        networkConnectionType.setIsConnected(true);
+        networkConnectionSectionType.getNetworkConnection().add(networkConnectionType);
+        return networkConnectionSectionType;
+    }
+
+    private VM findVmByName(Vapp vapp, String vmTemplateName) throws VCloudException {
+        for (VM vm : vapp.getChildrenVms()) {
+            if (vm.getResource().getName().equals(vmTemplateName)) {
+                return vm;
+            }
+        }
+        return null;
+    }
+
+    public void customize(String vappId, String customizationScript) throws Exception {
+        Vapp vapp = Vapp.getVappById(vCloudClient, vappId);
+        for (VM vm : vapp.getChildrenVms()) {
+            if(vm.isDeployed()){
+                vm.undeploy(UndeployPowerActionType.SHUTDOWN).waitForTask(0);
+            }
+            GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
+            guestCustomizationSection.setEnabled(true);
+            guestCustomizationSection.setCustomizationScript(customizationScript);
+            vm.updateSection(guestCustomizationSection).waitForTask(0);
+            vm.deploy(true, 0, true).waitForTask(0);
         }
     }
 

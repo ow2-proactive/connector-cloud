@@ -125,7 +125,7 @@ public class VimServiceClient {
 		isConnected = true;
 	}
 
-	private void disconnet() throws ViServiceClientException {
+	private void disconnect() throws ViServiceClientException {
 		if (isConnected) {
 			try {
 				vimPort.logout(serviceContent.getSessionManager());
@@ -145,10 +145,12 @@ public class VimServiceClient {
 	private void ensureConnected() throws ViServiceClientException {
 		if (System.currentTimeMillis() > nextLoginTime) {
             synchronized (this) {
-                if (System.currentTimeMillis() > nextLoginTime) {
-                    disconnet();
-                    connect();
+                try {
+                    disconnect();
+                } catch (ViServiceClientException e) {
+    				logger.error("Ignoring exception while disconnecting: ", e);
                 }
+                connect();
             }
         }
     }

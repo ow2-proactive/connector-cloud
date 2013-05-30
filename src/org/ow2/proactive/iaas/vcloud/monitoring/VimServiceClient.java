@@ -195,8 +195,8 @@ public class VimServiceClient {
                     DynamicProperty hostName = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_NAME);
                     DynamicProperty hostIds = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_HOST_SYSTEM_IDENTIFICATION);
 
-                    VimServiceUtil.addPropertyToMap(hostName, hostMap);
-                    VimServiceUtil.addPropertyToMap(hostIds, hostMap);
+                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostName, hostMap);
+                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostIds, hostMap);
                     
                     hostMap.put("id", hostMor.getValue());
 

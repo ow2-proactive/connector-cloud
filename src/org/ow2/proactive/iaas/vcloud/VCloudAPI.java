@@ -614,10 +614,10 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
 
     public class VCloudAPIConstants {
         public class ApiParameters {
-            static final String API_URL = "apiurl";
-            static final String USER_NAME = "username";
-            static final String PASSWORD = "password";
-            static final String ORGANIZATION_NAME = "organizationName";
+            public static final String API_URL = "apiurl";
+            public static final String USER_NAME = "username";
+            public static final String PASSWORD = "password";
+            public static final String ORGANIZATION_NAME = "organizationName";
         }
 
         public class InstanceParameters {

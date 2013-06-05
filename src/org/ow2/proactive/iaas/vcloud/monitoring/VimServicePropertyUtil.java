@@ -162,9 +162,9 @@ public class VimServicePropertyUtil {
         propertyMap.put("storage.used", String.valueOf(used));
         
         replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_COMMITTED,
-                "hv.storage.committed", propertyMap);
+                "hypervisor.storage.committed", propertyMap);
         replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_UNCOMMITTED,
-                "hv.storage.uncommited", propertyMap);
+                "hypervisor.storage.uncommited", propertyMap);
     }
 
     private static void replaceStatus(String oldKey, String newKey,

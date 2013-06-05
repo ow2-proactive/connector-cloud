@@ -49,10 +49,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
+
+import org.apache.commons.codec.binary.Base64;
 
 import com.vmware.vim25.ArrayOfGuestDiskInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
@@ -310,16 +313,18 @@ public class VimServiceUtil {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void resloveAndAddDynamicPropertyToMap(DynamicProperty dp, Map propertyMap) {
+    public static void resloveAndAddDynamicPropertyToMap(DynamicProperty dp,
+            Map propertyMap) {
         Object propertyValue = dp.getVal();
         if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
             List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
                     .getHostSystemIdentificationInfo();
             for (int index = 0; index < hostSystemIdInfoList.size(); index++) {
-                HostSystemIdentificationInfo info = hostSystemIdInfoList.get(index);
+                HostSystemIdentificationInfo info = hostSystemIdInfoList
+                        .get(index);
                 if (info.getIdentifierValue() != null) {
-                    String key = String.format("host.identification.%s.%s", index, info.getIdentifierType()
-                            .getKey());
+                    String key = String.format("host.identification.%s.%s",
+                            index, info.getIdentifierType().getKey());
                     propertyMap.put(key, info.getIdentifierValue());
                 }
             }
@@ -333,29 +338,30 @@ public class VimServiceUtil {
                     if (capacity == null) {
                         continue;
                     }
-                    propertyMap.put(String.format("vm.disk.%s.total", index),
+                    String path = guestDiskInfo.getDiskPath();
+                    String name = DiskPathUtil.toName(path);
+                    
+                    propertyMap.put(String.format("disk.%s.total", name),
                             String.valueOf(capacity));
                     Long freeSpace = guestDiskInfo.getFreeSpace();
                     if (freeSpace == null) {
-                        propertyMap.put(
-                                String.format("vm.disk.%s.free", index), "0");
-                        propertyMap.put(
-                                String.format("vm.disk.%s.used", index),
+                        propertyMap.put(String.format("disk.%s.free", name),
+                                "0");
+                        propertyMap.put(String.format("disk.%s.used", name),
                                 String.valueOf(capacity));
                     } else {
                         long used = capacity - freeSpace;
-                        propertyMap.put(
-                                String.format("vm.disk.%s.free", index),
+                        propertyMap.put(String.format("disk.%s.free", name),
                                 String.valueOf(freeSpace));
-                        propertyMap.put(
-                                String.format("vm.disk.%s.used", index),
+                        propertyMap.put(String.format("disk.%s.used", name),
                                 String.valueOf(used));
                     }
                 }
             }
         } else if (propertyValue instanceof ManagedObjectReference) {
-        
-            propertyMap.put(dp.getName(), ((ManagedObjectReference) propertyValue).getValue());
+
+            propertyMap.put(dp.getName(),
+                    ((ManagedObjectReference) propertyValue).getValue());
         } else {
             propertyMap.put(dp.getName(), propertyValue.toString());
         }

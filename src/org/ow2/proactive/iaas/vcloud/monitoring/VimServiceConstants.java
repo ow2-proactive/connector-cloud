@@ -76,8 +76,8 @@ public class VimServiceConstants {
     public static final String PROP_VM_CPU_USAGE = "summary.quickStats.overallCpuUsage";
     public static final String PROP_VM_MEMEORY_TOTAL = "summary.config.memorySizeMB";
     public static final String PROP_VM_MEMORY_USAGE = "summary.quickStats.guestMemoryUsage";
-//    public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
-//    public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
+    public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
+    public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
     public static final String PROP_VM_NETWORK = "summary.config.numEthernetCards";
     public static final String PROP_VM_PARENT = "summary.runtime.host";
     public static final String PROP_VM_DISK = "guest.disk";
@@ -99,6 +99,7 @@ public class VimServiceConstants {
     public static final String[] VM_STATIC_PROPERTIES = new String[] {
             PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY,
             PROP_VM_CPU_USAGE, PROP_VM_MEMEORY_TOTAL, PROP_VM_MEMORY_USAGE,
+            PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED,
             PROP_VM_NETWORK, PROP_STATE, PROP_VM_DISK };
 
     public static final String[] DS_STATIC_PROPERTIES = new String[] {

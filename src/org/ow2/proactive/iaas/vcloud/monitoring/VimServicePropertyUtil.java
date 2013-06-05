@@ -143,10 +143,8 @@ public class VimServicePropertyUtil {
         long total = 0;
         long free = 0;
         long used = 0;
-        List<String> toRemove = new ArrayList<String>();
         for (String key : propertyMap.keySet()) {
-            if (key.startsWith("vm.disk.")) {
-                toRemove.add(key);
+            if (key.startsWith("disk.")) {
                 long value = Long.valueOf(propertyMap.get(key));
                 if (key.endsWith(".total")) {
                     total += value;
@@ -159,12 +157,14 @@ public class VimServicePropertyUtil {
                 }
             }
         }
-        
         propertyMap.put("storage.total", String.valueOf(total));
         propertyMap.put("storage.free", String.valueOf(free));
         propertyMap.put("storage.used", String.valueOf(used));
         
-        removeAll(toRemove, propertyMap);
+        replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_COMMITTED,
+                "hyv.storage.committed", propertyMap);
+        replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_UNCOMMITTED,
+                "hyv.storage.uncommited", propertyMap);
     }
 
     private static void replaceStatus(String oldKey, String newKey,

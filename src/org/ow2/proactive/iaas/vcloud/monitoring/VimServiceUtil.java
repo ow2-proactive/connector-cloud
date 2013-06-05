@@ -55,8 +55,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
 
-import org.apache.commons.codec.binary.Base64;
-
 import com.vmware.vim25.ArrayOfGuestDiskInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
 import com.vmware.vim25.ArrayOfManagedObjectReference;
@@ -338,22 +336,22 @@ public class VimServiceUtil {
                     if (capacity == null) {
                         continue;
                     }
-                    String path = guestDiskInfo.getDiskPath();
-                    String name = DiskPathUtil.toName(path);
                     
-                    propertyMap.put(String.format("disk.%s.total", name),
+                    propertyMap.put(String.format("disk.%s.path", index),
+                            guestDiskInfo.getDiskPath());
+                    propertyMap.put(String.format("disk.%s.total", index),
                             String.valueOf(capacity));
                     Long freeSpace = guestDiskInfo.getFreeSpace();
                     if (freeSpace == null) {
-                        propertyMap.put(String.format("disk.%s.free", name),
+                        propertyMap.put(String.format("disk.%s.free", index),
                                 "0");
-                        propertyMap.put(String.format("disk.%s.used", name),
+                        propertyMap.put(String.format("disk.%s.used", index),
                                 String.valueOf(capacity));
                     } else {
                         long used = capacity - freeSpace;
-                        propertyMap.put(String.format("disk.%s.free", name),
+                        propertyMap.put(String.format("disk.%s.free", index),
                                 String.valueOf(freeSpace));
-                        propertyMap.put(String.format("disk.%s.used", name),
+                        propertyMap.put(String.format("disk.%s.used", index),
                                 String.valueOf(used));
                     }
                 }

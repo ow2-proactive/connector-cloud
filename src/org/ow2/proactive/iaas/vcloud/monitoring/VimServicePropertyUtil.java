@@ -144,7 +144,7 @@ public class VimServicePropertyUtil {
         long free = 0;
         long used = 0;
         for (String key : propertyMap.keySet()) {
-            if (key.startsWith("disk.")) {
+            if (key.startsWith("disk.") && !key.endsWith(".path")) {
                 long value = Long.valueOf(propertyMap.get(key));
                 if (key.endsWith(".total")) {
                     total += value;
@@ -162,9 +162,9 @@ public class VimServicePropertyUtil {
         propertyMap.put("storage.used", String.valueOf(used));
         
         replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_COMMITTED,
-                "hyv.storage.committed", propertyMap);
+                "hv.storage.committed", propertyMap);
         replaceKeyIfPresent(VimServiceConstants.PROP_VM_STORAGE_UNCOMMITTED,
-                "hyv.storage.uncommited", propertyMap);
+                "hv.storage.uncommited", propertyMap);
     }
 
     private static void replaceStatus(String oldKey, String newKey,

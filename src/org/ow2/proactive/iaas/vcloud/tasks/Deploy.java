@@ -21,12 +21,14 @@ public class Deploy extends IaasExecutable {
             String vappId = null;
             if (args.get("vappid") != null) {
                 vappId = args.get("vappid").split("/")[2];
-            } else if( System.getProperty("occi.compute.vendor.vmpath") != null ) {
+            } else if (System.getProperty("occi.compute.vendor.vmpath") != null) {
                 vappId = System.getProperty("occi.compute.vendor.vmpath").split("/")[2];
                 PropertyUtils.propagateProperty("occi.compute.vendor.vmpath");
-            } else {
+            } else if (System.getProperty("vcloud.vapp.id") != null) {
                 vappId = System.getProperty("vcloud.vapp.id");
                 PropertyUtils.propagateProperty("vcloud.vapp.id");
+            } else {
+                vappId = (String) results[0].value();
             }
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
             System.out.println("[Deploy task] Deploying vApp " + vappId + "...");

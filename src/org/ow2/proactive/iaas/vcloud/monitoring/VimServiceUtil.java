@@ -37,6 +37,11 @@
 
 package org.ow2.proactive.iaas.vcloud.monitoring;
 
+import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.DS_STATIC_PROPERTIES;
+import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.PROP_DS_CAPACITY;
+import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.PROP_DS_FREE_SPACE;
+import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.PROP_DS_TYPE;
+
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -44,13 +49,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
+
+import com.vmware.vim25.ArrayOfGuestDiskInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
+import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.DynamicProperty;
+import com.vmware.vim25.GuestDiskInfo;
 import com.vmware.vim25.HostSystemIdentificationInfo;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
@@ -286,7 +296,13 @@ public class VimServiceUtil {
                 List<DynamicProperty> dynamicPropertyList = oc.getPropSet();
                 if (dynamicPropertyList != null) {
                     for (DynamicProperty dp : dynamicPropertyList) {
-                        addPropertyToMap(dp, propMap);
+                        if (dp.getVal() instanceof ArrayOfManagedObjectReference) {
+                            resolveArrayOfManagedObjectReference(
+                                    (ArrayOfManagedObjectReference) dp.getVal(),
+                                    propMap, serviceContent, vimPort);
+                        } else {
+                            resloveAndAddDynamicPropertyToMap(dp, propMap);
+                        }
                     }
                 }
             }
@@ -295,23 +311,88 @@ public class VimServiceUtil {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public static void addPropertyToMap(DynamicProperty dp, Map propertyMap) {
+    public static void resloveAndAddDynamicPropertyToMap(DynamicProperty dp,
+            Map propertyMap) {
         Object propertyValue = dp.getVal();
         if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
             List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
                     .getHostSystemIdentificationInfo();
             for (int index = 0; index < hostSystemIdInfoList.size(); index++) {
-                HostSystemIdentificationInfo info = hostSystemIdInfoList.get(index);
+                HostSystemIdentificationInfo info = hostSystemIdInfoList
+                        .get(index);
                 if (info.getIdentifierValue() != null) {
-                    String key = String.format("host.identification.%s.%s", index, info.getIdentifierType()
-                            .getKey());
+                    String key = String.format("host.identification.%s.%s",
+                            index, info.getIdentifierType().getKey());
                     propertyMap.put(key, info.getIdentifierValue());
                 }
             }
+        } else if (propertyValue instanceof ArrayOfGuestDiskInfo) {
+            List<GuestDiskInfo> guestDiskInfoList = ((ArrayOfGuestDiskInfo) propertyValue)
+                    .getGuestDiskInfo();
+            if (guestDiskInfoList != null) {
+                for (int index = 0; index < guestDiskInfoList.size(); index++) {
+                    GuestDiskInfo guestDiskInfo = guestDiskInfoList.get(index);
+                    Long capacity = guestDiskInfo.getCapacity();
+                    if (capacity == null) {
+                        continue;
+                    }
+                    
+                    propertyMap.put(String.format("disk.%s.path", index),
+                            guestDiskInfo.getDiskPath());
+                    propertyMap.put(String.format("disk.%s.total", index),
+                            String.valueOf(capacity));
+                    Long freeSpace = guestDiskInfo.getFreeSpace();
+                    if (freeSpace == null) {
+                        propertyMap.put(String.format("disk.%s.free", index),
+                                "0");
+                        propertyMap.put(String.format("disk.%s.used", index),
+                                String.valueOf(capacity));
+                    } else {
+                        long used = capacity - freeSpace;
+                        propertyMap.put(String.format("disk.%s.free", index),
+                                String.valueOf(freeSpace));
+                        propertyMap.put(String.format("disk.%s.used", index),
+                                String.valueOf(used));
+                    }
+                }
+            }
         } else if (propertyValue instanceof ManagedObjectReference) {
-            propertyMap.put(dp.getName(), ((ManagedObjectReference) propertyValue).getValue());
+
+            propertyMap.put(dp.getName(),
+                    ((ManagedObjectReference) propertyValue).getValue());
         } else {
             propertyMap.put(dp.getName(), propertyValue.toString());
+        }
+    }
+    
+    private static void resolveArrayOfManagedObjectReference(
+            ArrayOfManagedObjectReference array,
+            Map<String, String> propertyMap, ServiceContent serviceContent,
+            VimPortType vimPort) throws InvalidPropertyFaultMsg,
+            RuntimeFaultFaultMsg {
+        List<ManagedObjectReference> mObjRefList = ((ArrayOfManagedObjectReference) array)
+                .getManagedObjectReference();
+        for (int index = 0; index < mObjRefList.size(); index++) {
+            ManagedObjectReference mObjRef = mObjRefList.get(index);
+            if ("Datastore".equals(mObjRef.getType())) {
+                Map<String, String> props = getStaticProperties(mObjRef,
+                        DS_STATIC_PROPERTIES, serviceContent, vimPort);
+                String type = props.get(PROP_DS_TYPE);
+                if ("VMFS".equals(type) || "NFS".equals(type)) {
+                    String id = mObjRef.getValue();
+                    String capacity = props.get(PROP_DS_CAPACITY);
+                    if (capacity != null) {
+                        propertyMap.put(
+                                String.format("host.datastore.%s.total", id),
+                                capacity);
+                    }
+                    String free = props.get(PROP_DS_FREE_SPACE);
+                    propertyMap.put(
+                            String.format("host.datastore.%s.free", id),
+                            (free == null) ? "0" : free);
+                }
+                break;
+            }
         }
     }
 

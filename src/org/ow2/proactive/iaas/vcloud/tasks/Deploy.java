@@ -32,6 +32,7 @@ public class Deploy extends IaasExecutable {
             System.out.println("[Deploy task] Deploying vApp " + vappId + "...");
 
             String ipAddress = api.deployInstance(vappId);
+            String vmPassword = api.getPassword(vappId);
 
             System.setProperty("vcloud.instance.ipaddress", ipAddress);
             PropertyUtils.propagateProperty("vcloud.instance.ipaddress");
@@ -42,6 +43,7 @@ public class Deploy extends IaasExecutable {
             occiAttributes.put("occi.compute.error.code", "0");
             occiAttributes.put("occi.networkinterface.address", ipAddress);
             occiAttributes.put("occi.compute.vendor.vmpath", "VCLOUD/" + vdcName + "/" + vappId);
+            occiAttributes.put("occi.compute.password", vmPassword);
 
         } catch (Throwable e) {
             e.printStackTrace();

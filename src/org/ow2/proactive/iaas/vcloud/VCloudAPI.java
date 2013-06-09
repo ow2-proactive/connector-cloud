@@ -362,6 +362,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         }
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
         guestCustomizationSection.setEnabled(true);
+        guestCustomizationSection.getDomainUserPassword();
         CustomizeScriptBuilder customizeScriptBuilder = new CustomizeScriptBuilder();
         customizeScriptBuilder.setRmNodeName(instanceID);
         customizeScriptBuilder
@@ -375,6 +376,28 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         guestCustomizationSection.setCustomizationScript(script);
         vm.updateSection(guestCustomizationSection).waitForTask(0);
     }
+    
+    public void setPassword(String instanceID, String password) throws Exception {
+        Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+        VM vm = vapp.getChildrenVms().get(0);
+        GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
+        if (vm.isDeployed()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug(String
+                        .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
+                                instanceID));
+            }
+            vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
+        }
+        guestCustomizationSection.setAdminPassword(password);
+    }
+    
+    public String getPassword(String instanceID) throws Exception {
+        Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+        VM vm = vapp.getChildrenVms().get(0);
+        GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
+        return guestCustomizationSection.getAdminPassword();        
+    }
 
     public String deployInstance(Map<String, String> arguments) throws Exception {
         String instanceID = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
@@ -385,7 +408,6 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         vapp.deploy(true, 0, false).waitForTask(0);
-
         vapp = Vapp.getVappByReference(vCloudClient, vapp.getReference());
         VAppNetworkConfigurationType vAppNetworkConfigType = vapp.getNetworkConfigSection()
                 .getNetworkConfig().iterator().next();

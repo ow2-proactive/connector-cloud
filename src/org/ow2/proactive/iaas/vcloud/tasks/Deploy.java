@@ -2,6 +2,7 @@ package org.ow2.proactive.iaas.vcloud.tasks;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 
 import org.ow2.proactive.iaas.IaasExecutable;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
@@ -35,6 +36,8 @@ public class Deploy extends IaasExecutable {
 
             String ipAddress = api.deployInstance(vappId);
             String vmPassword = api.getPassword(vappId);
+            List<String> vmIDs = api.getVmId(vappId);
+            String vmId = vmIDs.get(0);
 
             System.setProperty("vcloud.instance.ipaddress", ipAddress);
             PropertyUtils.propagateProperty("vcloud.instance.ipaddress");
@@ -44,7 +47,7 @@ public class Deploy extends IaasExecutable {
             occiAttributes.put("action.state", "done");
             occiAttributes.put("occi.compute.error.code", "0");
             occiAttributes.put("occi.networkinterface.address", ipAddress);
-            occiAttributes.put("occi.compute.vendor.vmpath", "VCLOUD/" + vdcName + "/" + vappId);
+            occiAttributes.put("occi.compute.vendor.vmpath", "VCLOUD/" + vdcName + "/" + vappId + "/" + vmId);
             occiAttributes.put("occi.compute.password", vmPassword);
 
         } catch (Throwable e) {

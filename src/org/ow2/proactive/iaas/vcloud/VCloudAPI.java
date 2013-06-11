@@ -42,6 +42,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -249,8 +250,17 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         instVappTemplParamsType.setName(instanceName);
         instVappTemplParamsType.setSource(getVAppTemplate(templateName).getReference());
         Vapp vapp = vdc.instantiateVappTemplate(instVappTemplParamsType);
+        logger.debug("Instanciating '" + templateName + "' as '" + instanceName + "' on " + vdcName + " ");
 
-        vapp.getTasks().get(0).waitForTask(0);
+        logger.debug("Number of tasks : " + vapp.getTasks().size());
+        logger.debug("Task[0] : " + vapp.getTasks().get(0).getReference().getName());
+        logger.debug("Task opname : " + vapp.getTasks().get(0).getResource().getOperation());
+        Task task = vapp.getTasks().get(0);
+        try {
+            task.waitForTask(0);
+        } catch (Throwable e) {
+            logger.debug("ERR: Task error : " + task.getResource().getError());
+        }
 
         vapp = Vapp.getVappByReference(vCloudClient, vapp.getReference());
 
@@ -400,6 +410,18 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
         return guestCustomizationSection.getAdminPassword();
+    }
+    
+    public List<String> getVmId(String instanceID) throws Exception {
+        List<String> vmIDs = new ArrayList<String>();
+        Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+        for (VM vm : vapp.getChildrenVms()) {
+            String vmName = vm.getReference().getName();
+            String vmId = vm.getReference().getId();
+            String vmHref = vm.getReference().getHref();
+            vmIDs.add(vmId);
+        }
+        return vmIDs;
     }
 
     public void listEverything() throws Exception {

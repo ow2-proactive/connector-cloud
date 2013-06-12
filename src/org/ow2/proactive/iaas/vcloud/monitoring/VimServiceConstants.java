@@ -79,8 +79,13 @@ public class VimServiceConstants {
     public static final String PROP_VM_STORAGE_COMMITTED = "summary.storage.committed";
     public static final String PROP_VM_STORAGE_UNCOMMITTED = "summary.storage.uncommitted";
     public static final String PROP_VM_NETWORK = "summary.config.numEthernetCards";
-    public static final String PROP_VM_PARENT = "summary.runtime.host";
+    public static final String PROP_VM_HOST = "summary.runtime.host";
     public static final String PROP_VM_DISK = "guest.disk";
+    public static final String PROP_VM_NAME = "name";
+    public static final String PROP_VM_RESOURCE_POOL = "resourcePool";
+    public static final String PROP_VM_RESOURCE_POOL_NAME = PROP_VM_RESOURCE_POOL + "-name";
+    public static final String PROP_VM_PARENT_VAPP = "parent";
+    public static final String PROP_VM_PARENT_VAPP_NAME = PROP_VM_PARENT_VAPP + "-name";
 
     /** Dynamic properties for both host systems and virtual machines. */
     // Average amount of data received per second
@@ -97,7 +102,7 @@ public class VimServiceConstants {
             PROP_HOST_NETWORK_COUNT, PROP_HOST_SITE, PROP_STATE, PROP_HOST_DS };
 
     public static final String[] VM_STATIC_PROPERTIES = new String[] {
-            PROP_VM_PARENT, PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY,
+            PROP_VM_NAME, PROP_VM_PARENT_VAPP, PROP_VM_RESOURCE_POOL, PROP_VM_HOST, PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY,
             PROP_VM_CPU_USAGE, PROP_VM_MEMEORY_TOTAL, PROP_VM_MEMORY_USAGE,
             PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED,
             PROP_VM_NETWORK, PROP_STATE, PROP_VM_DISK };

@@ -12,18 +12,24 @@ import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.PROP_
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.PROP_VM_MEMORY_USAGE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 public class VimServicePropertyUtil {
 
+	private static final Logger logger = Logger.getLogger(VimServicePropertyUtil.class);
+	
     public static class VM {
         public static void standardize(Map<String, String> propertyMap) {
-            replaceKeyIfPresent(VimServiceConstants.PROP_VM_PARENT, "host",
+            replaceKeyIfPresent(VimServiceConstants.PROP_VM_HOST, "host",
                     propertyMap);
             setCupUsageProperties(PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY,
                     PROP_VM_CPU_USAGE, propertyMap);
             setVmMemoryUsageProperties(propertyMap);
+            setVmIdProperties(propertyMap);
             setVmStorageUsageProperties(propertyMap);
             replaceKeyIfPresent(VimServiceConstants.PROP_VM_NETWORK,
                     "network.count", propertyMap);
@@ -59,8 +65,13 @@ public class VimServicePropertyUtil {
     private static void setCupUsageProperties(final String numOfCoresKey,
             final String cpuFrequencyKey, final String cpuUsageKey,
             Map<String, String> propertyMap) {
-        int numOfCores = Integer.valueOf(propertyMap.remove(numOfCoresKey));
-        propertyMap.put("cpu.cores", String.valueOf(numOfCores));
+        
+        int numOfCores = 1; // best effort
+        
+        if (propertyMap.containsKey(numOfCoresKey)) {
+            numOfCores = Integer.valueOf(propertyMap.remove(numOfCoresKey));
+            propertyMap.put("cpu.cores", String.valueOf(numOfCores));
+        }
         
         float fghz = 0, usage = 0;
         if (propertyMap.containsKey(cpuFrequencyKey)) {
@@ -136,6 +147,42 @@ public class VimServicePropertyUtil {
         propertyMap.put("memory.total", String.valueOf(totalInBytes));
         propertyMap.put("memory.used", String.valueOf(usageInBytes));
         propertyMap.put("memory.free", String.valueOf(freeInBytes));
+    }
+    
+    private static void setVmIdProperties(
+            Map<String, String> propertyMap) {
+        String[] toRemove = new String[]{VimServiceConstants.PROP_VM_RESOURCE_POOL, 
+                VimServiceConstants.PROP_VM_RESOURCE_POOL_NAME,
+                VimServiceConstants.PROP_VM_PARENT_VAPP,
+                VimServiceConstants.PROP_VM_PARENT_VAPP_NAME,
+                VimServiceConstants.PROP_VM_NAME};
+        
+        String vdcFullName = propertyMap.get(VimServiceConstants.PROP_VM_RESOURCE_POOL_NAME);
+        String vAppFullName = propertyMap.get(VimServiceConstants.PROP_VM_PARENT_VAPP_NAME);
+        String vmFullName = propertyMap.get(VimServiceConstants.PROP_VM_NAME);
+        
+        if (vmFullName != null) {
+            propertyMap.put("name", vmFullName);
+        }
+        
+        if (vdcFullName!= null && vAppFullName != null && vmFullName != null) {
+            String vdc = VimServiceUtil.getHumanNameFromMorName(vdcFullName);
+            String vappid = VimServiceUtil.getIdFromMorName(vAppFullName);
+            String vmid = VimServiceUtil.getIdFromMorName(vmFullName);
+            String fullVmId = "urn:vcloud:vm:" + vmid;
+            String fullvAppId = "urn:vcloud:vapp:" + vappid;
+            String vendorid = fullvAppId + "," + fullVmId;
+            
+            propertyMap.put("vendor.vm.site.name", vdc);
+            propertyMap.put("vendor.vm.id", vendorid);
+        } else {
+            logger.error("Could not generate ids for VM: vdc='" + 
+                    vdcFullName + "' vapp='" + vAppFullName + "' vm='" + vmFullName + "'." );
+        }
+        
+        propertyMap.put("vendor.name", "VCLOUD");
+            
+        removeAll(Arrays.asList(toRemove), propertyMap);
     }
     
     private static void setVmStorageUsageProperties(

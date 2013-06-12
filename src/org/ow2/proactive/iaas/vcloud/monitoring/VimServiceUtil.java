@@ -54,6 +54,9 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
+import javax.xml.ws.soap.SOAPFaultException;
+
+import org.apache.log4j.Logger;
 
 import com.vmware.vim25.ArrayOfGuestDiskInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
@@ -85,6 +88,13 @@ import com.vmware.vim25.VimPortType;
 
 public class VimServiceUtil {
 
+    public static final String NO_HUMAN_READABLE_NAME_FROM_MOR_NAME = "<no-human-readable-name>";
+    public static final String NO_ID_FROM_MOR_NAME = "<no-id>";
+    public static final String VIM25_VM_TYPE = "VirtualMachine";
+    public static final String VIM25_HOST_TYPE = "HostSystem";
+            
+	private static final Logger logger = Logger.getLogger(VimServiceUtil.class);
+	
     public static void disableHttpsCertificateVerification() throws NoSuchAlgorithmException,
             KeyManagementException {
         TrustManager[] tms = new TrustManager[] { new RelaxedTrustManager() };
@@ -239,11 +249,11 @@ public class VimServiceUtil {
     }
 
     public static ManagedObjectReference getmObjRefByHostId(String hostId) {
-        return getEntityByTypeAndId("HostSystem", hostId);
+        return getEntityByTypeAndId(VIM25_HOST_TYPE, hostId);
     }
 
     public static ManagedObjectReference getVMById(String vmId) {
-        return getEntityByTypeAndId("VirtualMachine", vmId);
+        return getEntityByTypeAndId(VIM25_VM_TYPE, vmId);
     }
 
     public static ManagedObjectReference getEntityByTypeAndId(String type, String id) {
@@ -301,7 +311,7 @@ public class VimServiceUtil {
                                     (ArrayOfManagedObjectReference) dp.getVal(),
                                     propMap, serviceContent, vimPort);
                         } else {
-                            resloveAndAddDynamicPropertyToMap(dp, propMap);
+                            resloveAndAddDynamicPropertyToMap(dp, propMap, serviceContent, vimPort, mObjRef.getType());
                         }
                     }
                 }
@@ -312,7 +322,8 @@ public class VimServiceUtil {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static void resloveAndAddDynamicPropertyToMap(DynamicProperty dp,
-            Map propertyMap) {
+            Map propertyMap, ServiceContent serviceContent, VimPortType vimPort, 
+            String morType) {
         Object propertyValue = dp.getVal();
         if (propertyValue instanceof ArrayOfHostSystemIdentificationInfo) {
             List<HostSystemIdentificationInfo> hostSystemIdInfoList = ((ArrayOfHostSystemIdentificationInfo) propertyValue)
@@ -357,14 +368,56 @@ public class VimServiceUtil {
                 }
             }
         } else if (propertyValue instanceof ManagedObjectReference) {
-
-            propertyMap.put(dp.getName(),
+            String resourcePool = "resourcePool";
+            String parent = "parent";
+            
+            if (dp.getName().equals(resourcePool)){
+                ManagedObjectReference resp = getEntityByTypeAndId("ResourcePool", ((ManagedObjectReference) propertyValue).getValue());
+                String name = null;
+                try {
+                    name = getMORProperty(resp, "name", serviceContent, vimPort);
+                    propertyMap.put(resourcePool, ((ManagedObjectReference) propertyValue).getValue());
+                    propertyMap.put(resourcePool + "-name", name);
+                } catch (RuntimeFaultFaultMsg e) {
+                    logger.error(e);
+                }
+            } else if (dp.getName().equals(parent)){
+                ManagedObjectReference resp = null;
+                if (morType.equals(VIM25_VM_TYPE)){
+                    resp = getEntityByTypeAndId("Folder", ((ManagedObjectReference) propertyValue).getValue());
+                }else{
+                    resp = getEntityByTypeAndId("ClusterComputeResource", ((ManagedObjectReference) propertyValue).getValue());
+                }
+                
+                String name = null;
+                try {
+                    name = getMORProperty(resp, "name", serviceContent, vimPort);
+                    propertyMap.put(parent, ((ManagedObjectReference) propertyValue).getValue());
+                    propertyMap.put(parent + "-name", name);
+                } catch (RuntimeFaultFaultMsg e) {
+                    logger.error(e);
+                }
+            } else {
+                propertyMap.put(dp.getName(),
                     ((ManagedObjectReference) propertyValue).getValue());
+            }
         } else {
             propertyMap.put(dp.getName(), propertyValue.toString());
         }
     }
     
+    private static String getMORProperty(ManagedObjectReference mor, String prop, ServiceContent serviceContent, VimPortType vimPort) throws RuntimeFaultFaultMsg{
+        String ret = null;
+        try {
+            Map<String, Object> oc = VimServiceUtil.getRawStaticProperties(mor, new String[]{prop}, serviceContent, vimPort);
+            ret = (String)((DynamicProperty)oc.get("name")).getVal();
+        } catch (InvalidPropertyFaultMsg e) {
+            ret = "<no property '"+prop+"' found>";
+            logger.error(ret, e);
+        }
+        return ret;
+        
+    }
     private static void resolveArrayOfManagedObjectReference(
             ArrayOfManagedObjectReference array,
             Map<String, String> propertyMap, ServiceContent serviceContent,
@@ -500,6 +553,24 @@ public class VimServiceUtil {
     private static String getKey(PerfCounterInfo pci) {
         return (new StringBuilder()).append(pci.getGroupInfo().getKey()).append('.')
                 .append(pci.getNameInfo().getKey()).append('.').append(pci.getRollupType().name()).toString();
+    }
+    
+    public static String getHumanNameFromMorName(String name){
+        if (name == null ){
+            return NO_HUMAN_READABLE_NAME_FROM_MOR_NAME;
+        }
+        if (name.indexOf("(") < 0){
+            return name.trim();
+        }else{
+            return name.substring(0,name.indexOf("(")).trim();
+        }
+    }
+    
+    public static String getIdFromMorName(String name){
+        if (name == null || name.isEmpty() || name.indexOf("(") < 0 || name.indexOf(")") < 0){
+            return NO_ID_FROM_MOR_NAME;
+        }
+        return name.substring(name.indexOf("(")+1,name.indexOf(")")).replace("(", "").replace(")", "");
     }
 
     // non-instantiable

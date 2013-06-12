@@ -42,21 +42,47 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
 
+import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
-import com.vmware.vcloud.api.rest.schema.*;
+
+import com.vmware.vcloud.api.rest.schema.CaptureVAppParamsType;
+import com.vmware.vcloud.api.rest.schema.CloneVAppParamsType;
+import com.vmware.vcloud.api.rest.schema.CustomizationSectionType;
+import com.vmware.vcloud.api.rest.schema.FirewallRuleProtocols;
+import com.vmware.vcloud.api.rest.schema.FirewallRuleType;
+import com.vmware.vcloud.api.rest.schema.FirewallServiceType;
+import com.vmware.vcloud.api.rest.schema.GuestCustomizationSectionType;
+import com.vmware.vcloud.api.rest.schema.InstantiateVAppTemplateParamsType;
+import com.vmware.vcloud.api.rest.schema.InstantiationParamsType;
+import com.vmware.vcloud.api.rest.schema.NatRuleType;
+import com.vmware.vcloud.api.rest.schema.NatServiceType;
+import com.vmware.vcloud.api.rest.schema.NatVmRuleType;
+import com.vmware.vcloud.api.rest.schema.NetworkConfigSectionType;
+import com.vmware.vcloud.api.rest.schema.NetworkConfigurationType;
+import com.vmware.vcloud.api.rest.schema.NetworkConnectionSectionType;
+import com.vmware.vcloud.api.rest.schema.NetworkConnectionType;
+import com.vmware.vcloud.api.rest.schema.NetworkFeaturesType;
+import com.vmware.vcloud.api.rest.schema.NetworkServiceType;
+import com.vmware.vcloud.api.rest.schema.ObjectFactory;
+import com.vmware.vcloud.api.rest.schema.RecomposeVAppParamsType;
+import com.vmware.vcloud.api.rest.schema.ReferenceType;
+import com.vmware.vcloud.api.rest.schema.SourcedCompositionItemParamType;
+import com.vmware.vcloud.api.rest.schema.VAppNetworkConfigurationType;
 import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
 import com.vmware.vcloud.sdk.Organization;
@@ -80,7 +106,6 @@ import com.vmware.vcloud.sdk.constants.NatTypeType;
 import com.vmware.vcloud.sdk.constants.UndeployPowerActionType;
 import com.vmware.vcloud.sdk.constants.VappStatus;
 import com.vmware.vcloud.sdk.constants.Version;
-import org.apache.log4j.Logger;
 
 
 public class VCloudAPI implements IaasApi, IaasMonitoringApi {
@@ -191,12 +216,12 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
                 vCloudClient.getOrgRefsByName().get(orgName));
         logger.debug("Authentication success for " + login);
     }
-    
+
     private void checkConnection() throws VCloudException {
         try {
             vCloudClient.extendSession();
             vCloudClient.getUpdatedOrgList();
-        } catch(VCloudException e) {
+        } catch (VCloudException e) {
             logger.warn("Session seems to have expired, trying to reconnect..." + e.getMessage());
             logger.debug("Session seems to have expired, trying to reconnect...", e);
             vCloudClient.login(credLogin, credPassword);
@@ -225,8 +250,17 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         instVappTemplParamsType.setName(instanceName);
         instVappTemplParamsType.setSource(getVAppTemplate(templateName).getReference());
         Vapp vapp = vdc.instantiateVappTemplate(instVappTemplParamsType);
+        logger.debug("Instanciating '" + templateName + "' as '" + instanceName + "' on " + vdcName + " ");
 
-        vapp.getTasks().get(0).waitForTask(0);
+        logger.debug("Number of tasks : " + vapp.getTasks().size());
+        logger.debug("Task[0] : " + vapp.getTasks().get(0).getReference().getName());
+        logger.debug("Task opname : " + vapp.getTasks().get(0).getResource().getOperation());
+        Task task = vapp.getTasks().get(0);
+        try {
+            task.waitForTask(0);
+        } catch (Throwable e) {
+            logger.debug("ERR: Task error : " + task.getResource().getError());
+        }
 
         vapp = Vapp.getVappByReference(vCloudClient, vapp.getReference());
 
@@ -355,7 +389,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         guestCustomizationSection.setCustomizationScript(script);
         vm.updateSection(guestCustomizationSection).waitForTask(0);
     }
-    
+
     public void setPassword(String instanceID, String password) throws Exception {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
@@ -370,12 +404,54 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         }
         guestCustomizationSection.setAdminPassword(password);
     }
-    
+
     public String getPassword(String instanceID) throws Exception {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
-        return guestCustomizationSection.getAdminPassword();        
+        return guestCustomizationSection.getAdminPassword();
+    }
+    
+    public List<String> getVmId(String instanceID) throws Exception {
+        List<String> vmIDs = new ArrayList<String>();
+        Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+        for (VM vm : vapp.getChildrenVms()) {
+            String vmName = vm.getReference().getName();
+            String vmId = vm.getReference().getId();
+            String vmHref = vm.getReference().getHref();
+            vmIDs.add(vmId);
+        }
+        return vmIDs;
+    }
+
+    public void listEverything() throws Exception {
+        HashMap<String, ReferenceType> orgs = vCloudClient.getOrgRefsByName();
+        for (Entry<String, ReferenceType> orgEntry : orgs.entrySet()) {
+            System.out.println("ORG => " + orgEntry.getKey() + " --> " + orgEntry.getValue().getId());
+            Organization org = Organization.getOrganizationByReference(vCloudClient, orgEntry.getValue());
+            HashMap<String, ReferenceType> vdcEntries = org.getVdcRefsByName();
+            for (Entry<String, ReferenceType> vdcEntry : vdcEntries.entrySet()) {
+                System.out.println("  VDC => " + vdcEntry.getKey() + " --> " + vdcEntry.getValue().getId());
+
+                Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcEntry.getKey()));
+                HashMap<String, ReferenceType> vapps = vdc.getVappRefsByName();
+                for (Entry<String, ReferenceType> vappEntry : vapps.entrySet()) {
+                    String vappName = vappEntry.getKey();
+                    String vappId = Vapp.getVappByReference(vCloudClient, vappEntry.getValue()).getResource()
+                            .getId();
+                    System.out.println("    VAPP => " + vappName + " --> " + vappId);
+
+                    Vapp vapp = Vapp.getVappByReference(vCloudClient, vappEntry.getValue());
+                    for (VM vm : vapp.getChildrenVms()) {
+                        String vmName = vm.getReference().getName();
+                        String vmId = vm.getReference().getId();
+                        String vmHref = vm.getReference().getHref();
+                        System.out.println("      VM => " + vmName + " --> " + vmId + " [" + vmHref + "]");
+                    }
+                }
+            }
+        }
+
     }
 
     public String deployInstance(Map<String, String> arguments) throws Exception {
@@ -560,7 +636,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         return clonedVapp.getResource().getId();
     }
 
-    public String copy(String vdcName, String vappName, String vmTemplateName, String newVmName) throws Exception {
+    public String copy(String vdcName, String vappName, String vmTemplateName, String newVmName)
+            throws Exception {
         Vapp vapp = findVappByName(vdcName, vappName);
 
         VM template = findVmByName(vapp, vmTemplateName);
@@ -604,7 +681,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         networkConnectionSectionType.setInfo(networkInfo);
 
         NetworkConnectionType networkConnectionType = new NetworkConnectionType();
-        networkConnectionType.setNetwork(vapp.getNetworkConfigSection().getNetworkConfig().get(0).getNetworkName());
+        networkConnectionType.setNetwork(vapp.getNetworkConfigSection().getNetworkConfig().get(0)
+                .getNetworkName());
         networkConnectionType.setIpAddressAllocationMode(IpAddressAllocationModeType.POOL.value());
         networkConnectionType.setIsConnected(true);
         networkConnectionSectionType.getNetworkConnection().add(networkConnectionType);
@@ -623,7 +701,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void customize(String vappId, String customizationScript) throws Exception {
         Vapp vapp = Vapp.getVappById(vCloudClient, vappId);
         for (VM vm : vapp.getChildrenVms()) {
-            if(vm.isDeployed()){
+            if (vm.isDeployed()) {
                 vm.undeploy(UndeployPowerActionType.SHUTDOWN).waitForTask(0);
             }
             GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();

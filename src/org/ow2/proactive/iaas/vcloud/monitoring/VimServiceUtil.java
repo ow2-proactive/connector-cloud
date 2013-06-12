@@ -59,11 +59,13 @@ import javax.xml.ws.soap.SOAPFaultException;
 import org.apache.log4j.Logger;
 
 import com.vmware.vim25.ArrayOfGuestDiskInfo;
+import com.vmware.vim25.ArrayOfGuestNicInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
 import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.DynamicProperty;
 import com.vmware.vim25.GuestDiskInfo;
+import com.vmware.vim25.GuestNicInfo;
 import com.vmware.vim25.HostSystemIdentificationInfo;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
@@ -365,6 +367,19 @@ public class VimServiceUtil {
                         propertyMap.put(String.format("disk.%s.used", index),
                                 String.valueOf(used));
                     }
+                }
+            }
+        } else if (propertyValue instanceof ArrayOfGuestNicInfo) {
+            List<GuestNicInfo> guestNicInfoList = ((ArrayOfGuestNicInfo) propertyValue)
+                    .getGuestNicInfo();
+            if (guestNicInfoList != null) {
+                for (int index = 0; index < guestNicInfoList.size(); index++) {
+                    GuestNicInfo guestNicInfo = guestNicInfoList.get(index);
+                    String ipAdd = guestNicInfo.getIpAddress().get(0);
+                    String mac = guestNicInfo.getMacAddress();
+                    
+                    propertyMap.put(String.format("network.%s.ip", index), ipAdd);
+                    propertyMap.put(String.format("network.%s.mac", index), mac);
                 }
             }
         } else if (propertyValue instanceof ManagedObjectReference) {

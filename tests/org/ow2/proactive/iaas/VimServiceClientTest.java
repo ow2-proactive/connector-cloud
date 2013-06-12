@@ -67,27 +67,27 @@ public class VimServiceClientTest {
     static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
     static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
 
-    static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
-            "memory.actualfree" };
-    static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
-            "memory.actualfree" };
+    static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free", "memory.actualfree" };
+    static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free", "memory.actualfree" };
 
     static final String[] VM_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used", };
     static final String[] HOST_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used" };
 
-    static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
-            "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
-    static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
-            "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
+    static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx", "network.speed",
+            "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
+    static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx", "network.speed",
+            "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
 
     static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
     static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status" };
 
-
     static final String URL_KEY = "vmware.url";
     static final String USER_KEY = "vmware.user";
     static final String PASS_KEY = "vmware.pass";
-    static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
+    static final String ONLY_ONE_HOST_KEY = "vmware.test.onlyonehost";
+    static final String ONLY_ONE_VM_KEY = "vmware.test.onlyonevm";
+    static final String ONLY_ACTIVE_VMS_KEY = "vmware.test.onlyactivevms";
+    static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.test.maximum_not_contained_keys";
 
     private static int keysNotContainedMaximum = 0;
 
@@ -113,7 +113,8 @@ public class VimServiceClientTest {
             }
 
             if (url == null || user == null || pass == null) {
-                System.out.println("Error of the content of the tests configuration file. Test will be skipped.");
+                System.out
+                        .println("Error of the content of the tests configuration file. Test will be skipped.");
                 return;
             }
 
@@ -124,6 +125,10 @@ public class VimServiceClientTest {
                 return;
         }
 
+        Boolean useOnlyOneHost = Boolean.valueOf(prop.getProperty(ONLY_ONE_HOST_KEY));
+        Boolean useOnlyOneVm = Boolean.valueOf(prop.getProperty(ONLY_ONE_VM_KEY));
+        Boolean useOnlyActiveVms = Boolean.valueOf(prop.getProperty(ONLY_ACTIVE_VMS_KEY));
+
         if (allhosts == null) {
             System.out.println("Getting all Host properties (this will only happen once)...\n");
             allhosts = new HashMap<String, Object>();
@@ -132,6 +137,8 @@ public class VimServiceClientTest {
                 Map<String, String> props = v.getHostProperties(hostid);
 
                 allhosts.put(hostid, props);
+                if (useOnlyOneHost)
+                    break;
             }
             System.out.println("Host properties obtained.\n");
         } else {
@@ -144,7 +151,18 @@ public class VimServiceClientTest {
             for (String vmid : v.getVMs()) {
                 System.out.println("Getting properties of VM: " + vmid);
                 Map<String, String> props = v.getVMProperties(vmid);
-                allvms.put(vmid, props);
+                if (useOnlyActiveVms) {
+                    if ("up".equals(props.get("status"))) {
+                        allvms.put(vmid, props);
+                    } else {
+                        System.out.println("   Discarding because is down.");
+                    }
+                } else {
+                    allvms.put(vmid, props);
+                }
+                if (useOnlyOneVm)
+                    if (!allvms.isEmpty())
+                        break;
             }
             System.out.println("VM properties obtained.\n");
         } else {

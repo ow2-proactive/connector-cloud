@@ -81,6 +81,7 @@ public class VimServiceConstants {
     public static final String PROP_VM_NETWORK = "summary.config.numEthernetCards";
     public static final String PROP_VM_HOST = "summary.runtime.host";
     public static final String PROP_VM_DISK = "guest.disk";
+    public static final String PROP_VM_NET = "guest.net";
     public static final String PROP_VM_NAME = "name";
     public static final String PROP_VM_RESOURCE_POOL = "resourcePool";
     public static final String PROP_VM_RESOURCE_POOL_NAME = PROP_VM_RESOURCE_POOL + "-name";
@@ -105,7 +106,7 @@ public class VimServiceConstants {
             PROP_VM_NAME, PROP_VM_PARENT_VAPP, PROP_VM_RESOURCE_POOL, PROP_VM_HOST, PROP_VM_CPU_CORES, PROP_VM_CPU_FREQUENCY,
             PROP_VM_CPU_USAGE, PROP_VM_MEMEORY_TOTAL, PROP_VM_MEMORY_USAGE,
             PROP_VM_STORAGE_COMMITTED, PROP_VM_STORAGE_UNCOMMITTED,
-            PROP_VM_NETWORK, PROP_STATE, PROP_VM_DISK };
+            PROP_VM_NETWORK, PROP_STATE, PROP_VM_DISK, PROP_VM_NET};
 
     public static final String[] DS_STATIC_PROPERTIES = new String[] {
             PROP_DS_TYPE, PROP_DS_CAPACITY, PROP_DS_FREE_SPACE };

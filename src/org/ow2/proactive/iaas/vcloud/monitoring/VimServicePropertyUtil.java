@@ -45,7 +45,11 @@ public class VimServicePropertyUtil {
             setHostStorageUsageProperties(propertyMap);
             replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
                     "network.count", propertyMap);
+            replaceKeyIfPresent(VimServiceConstants.PROP_HOST_NETWORK_COUNT,
+                    "network.count", propertyMap);
             replaceKeyIfPresent(VimServiceConstants.PROP_HOST_SITE, "site",
+                    propertyMap);
+            replaceKeyIfPresent(VimServiceConstants.PROP_HOST_SITE_NAME, "site.name",
                     propertyMap);
             standardizeCommonProperties(propertyMap);
         }
@@ -154,16 +158,11 @@ public class VimServicePropertyUtil {
         String[] toRemove = new String[]{VimServiceConstants.PROP_VM_RESOURCE_POOL, 
                 VimServiceConstants.PROP_VM_RESOURCE_POOL_NAME,
                 VimServiceConstants.PROP_VM_PARENT_VAPP,
-                VimServiceConstants.PROP_VM_PARENT_VAPP_NAME,
-                VimServiceConstants.PROP_VM_NAME};
+                VimServiceConstants.PROP_VM_PARENT_VAPP_NAME};
         
         String vdcFullName = propertyMap.get(VimServiceConstants.PROP_VM_RESOURCE_POOL_NAME);
         String vAppFullName = propertyMap.get(VimServiceConstants.PROP_VM_PARENT_VAPP_NAME);
         String vmFullName = propertyMap.get(VimServiceConstants.PROP_VM_NAME);
-        
-        if (vmFullName != null) {
-            propertyMap.put("name", vmFullName);
-        }
         
         if (vdcFullName!= null && vAppFullName != null && vmFullName != null) {
             String vdc = VimServiceUtil.getHumanNameFromMorName(vdcFullName);

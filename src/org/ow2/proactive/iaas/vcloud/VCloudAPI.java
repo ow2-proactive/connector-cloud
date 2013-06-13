@@ -394,15 +394,17 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
-        if (vm.isDeployed()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(String
-                        .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
-                                instanceID));
-            }
+        boolean isDeployed = vm.isDeployed();
+        if (isDeployed) {
+            logger.debug(String
+                    .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
+                            instanceID));
             vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
         }
         guestCustomizationSection.setAdminPassword(password);
+        if (isDeployed) {
+            vm.deploy(true, 0, true);
+        }
     }
 
     public String getPassword(String instanceID) throws Exception {
@@ -411,7 +413,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
         return guestCustomizationSection.getAdminPassword();
     }
-    
+
     public List<String> getVmId(String instanceID) throws Exception {
         List<String> vmIDs = new ArrayList<String>();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
@@ -730,6 +732,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
             public static final String CORES = "cores";
             public static final String MEMORY = "memory";
             public static final String STORAGE = "storage";
+            public static final String PASSWORD = "vm.password";
         }
 
         public class MonitoringParameters {

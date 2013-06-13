@@ -34,8 +34,17 @@ public class Deploy extends IaasExecutable {
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
             System.out.println("[Deploy task] Deploying vApp " + vappId + "...");
 
+            String vmPassword = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.PASSWORD);
+            if (!vmPassword.isEmpty()) {
+                // To set password, vapp must be *undeployed*
+                api.setPassword(vappId, vmPassword);
+            }
             String ipAddress = api.deployInstance(vappId);
-            String vmPassword = api.getPassword(vappId);
+            
+            if (vmPassword.isEmpty()) {
+                // To retrieve password, vapp must be *deployed*
+                vmPassword = api.getPassword(vappId);
+            }
             List<String> vmIDs = api.getVmId(vappId);
             String vmId = vmIDs.get(0);
 
@@ -59,7 +68,7 @@ public class Deploy extends IaasExecutable {
             occiAttributes.put("occi.compute.error.description", e.getMessage());
 
         } finally {
-            if(api !=null) {
+            if (api != null) {
                 api.disconnect();
             }
         }

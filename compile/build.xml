@@ -7,6 +7,8 @@
 	<property name="base.dir" value="${basedir}/.."/>
 	<property name="src.dir" value="${base.dir}/src"/>
 	<property name="test.dir" value="${base.dir}/tests"/>
+	<property name="unit.test.dir" value="${test.dir}/unittests"/>
+	<property name="func.test.dir" value="${test.dir}/functionaltests"/>
 	<property name="build.dir" value="${base.dir}/build"/>
 	<property name="classes.dir" value="${build.dir}/classes"/>
 	<property name="classes.test.dir" value="${build.dir}/test-classes"/>
@@ -15,7 +17,7 @@
 	<property name="lib.dir" value="${base.dir}/lib"/>
 	<property name="test.tmp.dir" value="${base.dir}/tmp"/>
 	<property name="scheduling.lib.dir" value="${lib.dir}/scheduling"/>
-	<property name="junit.grant.all.policy" value="${test.dir}/grant-all-java.security.policy" />
+	<property name="unit.grant.all.policy" value="${test.dir}/grant-all-java.security.policy" />
 	<property name="main-class" value="Starter"/>
 
 	<import file="../doc/src/build.xml" optional="true"/>
@@ -58,7 +60,7 @@
 			   debuglevel="lines,vars,source" includeantruntime="false"/>
 	</target>
 
-	<target name="dist" depends="compile, test" description="Build jar">
+	<target name="dist" depends="compile, unit.test" description="Build jar">
 		<mkdir dir="${dist.dir}"/>
 		<jar destfile="${dist.dir}/cloud_service_provider_connectors-${version}.jar" basedir="${classes.dir}"/>
 	</target>
@@ -66,22 +68,46 @@
 	<target name="clean-build" depends="clean,dist" description="Clean and build jar"/>
 	<target name="jar" depends="dist"/>
 
-	<target name="test" depends="compile" description="Run unit tests">
+	<target name="test" depends="unit.test, func.test" description="Run tests"/>
+
+	<target name="unit.test" depends="compile" description="Run unit tests">
 		<mkdir dir="${classes.test.dir}"/>
-		<javac srcdir="${test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
+		<javac srcdir="${unit.test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
 			   includeantruntime="false"/>
 
 		<copy todir="${classes.test.dir}">
-			<fileset dir="${test.dir}" includes="**/*.policy,**/*.xml,**/*.properties,**/*.txt"/>
+			<fileset dir="${unit.test.dir}" includes="**/*.policy,**/*.xml,**/*.properties,**/*.txt"/>
 		</copy>
 
 		<junit haltonfailure="true">
-			<jvmarg value="-Djava.security.policy=${junit.grant.all.policy}"/>					
+			<jvmarg value="-Djava.security.policy=${unit.grant.all.policy}"/>					
 			<jvmarg value="-Dscheduling.project.dir=${scheduling.project.dir}"/>					
 			<classpath refid="classpath.test"/>
 			<formatter type="brief" usefile="false"/>
 			<batchtest fork="yes">
-				<fileset dir="${test.dir}">
+				<fileset dir="${unit.test.dir}">
+					<include name="**/*Test*" />
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="func.test" depends="compile" description="Run unit tests">
+		<mkdir dir="${classes.test.dir}"/>
+		<javac srcdir="${func.test.dir}" destdir="${classes.test.dir}" classpathref="classpath.test"
+			   includeantruntime="false"/>
+
+		<copy todir="${classes.test.dir}">
+			<fileset dir="${func.test.dir}" includes="**/*.policy,**/*.xml,**/*.properties,**/*.txt"/>
+		</copy>
+
+		<junit haltonfailure="true">
+			<jvmarg value="-Djava.security.policy=${unit.grant.all.policy}"/>					
+			<jvmarg value="-Dscheduling.project.dir=${scheduling.project.dir}"/>					
+			<classpath refid="classpath.test"/>
+			<formatter type="brief" usefile="false"/>
+			<batchtest fork="yes">
+				<fileset dir="${func.test.dir}">
 					<include name="**/*Test*" />
 				</fileset>
 			</batchtest>

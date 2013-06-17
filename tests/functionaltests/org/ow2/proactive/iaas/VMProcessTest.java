@@ -47,7 +47,6 @@ import org.hyperic.sigar.SigarProxy;
 import org.junit.Before;
 import org.junit.Test;
 
-@org.junit.Ignore
 public class VMProcessTest {
 
     private static final String INSTANCE = "instance-00000109";

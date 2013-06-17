@@ -46,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.junit.Ignore;
@@ -66,39 +67,42 @@ public class VimServiceClientTest {
     static final String[] VM_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
     static final String[] HOST_EXPECTED_KEYS_CPU = { "cpu.cores", "cpu.usage", "cpu.frequency" };
 
-    static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
-            "memory.actualfree" };
-    static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free",
-            "memory.actualfree" };
+    static final String[] VM_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free", "memory.actualfree" };
+    static final String[] HOST_EXPECTED_KEYS_MEMORY = { "memory.total", "memory.free", "memory.actualfree" };
 
     static final String[] VM_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used", };
     static final String[] HOST_EXPECTED_KEYS_STORAGE = { "storage.total", "storage.used" };
 
-    static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
-            "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
-    static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx",
-            "network.speed", "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
+    static final String[] VM_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx", "network.speed",
+            "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
+    static final String[] HOST_EXPECTED_KEYS_NETWORK = { "network.count", "network.tx", "network.speed",
+            "network.rx", "network.0.tx", "network.0.rx", "network.0.speed" };
 
     static final String[] VM_EXPECTED_KEYS_MISC = { "host", "status" };
     static final String[] HOST_EXPECTED_KEYS_MISC = { "site", "status" };
 
-
     static final String URL_KEY = "vmware.url";
     static final String USER_KEY = "vmware.user";
     static final String PASS_KEY = "vmware.pass";
-    static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.maximum_not_contained_keys";
+    static final String ONLY_ONE_HOST_KEY = "vmware.test.onlyonehost";
+    static final String ONLY_ONE_VM_KEY = "vmware.test.onlyonevm";
+    static final String ONLY_ACTIVE_VMS_KEY = "vmware.test.onlyactivevms";
+    static final String MAX_NOT_CONTAINED_KEYS_KEY = "vmware.test.maximum_not_contained_keys";
 
     private static int keysNotContainedMaximum = 0;
 
-    private static VimServiceClient v;
+    private static VimServiceClient v = new VimServiceClient();
     private static boolean testCorrectlyConfigured = false;
 
     private static Map<String, Object> allhosts;
     private static Map<String, Object> allvms;
+    
+    private static String[] hosts;
+    private static String[] vms;
+    private static Map<String, Object> vendorDetails;
 
     @Before
     public void setUp() throws Exception {
-        v = new VimServiceClient();
         IaasFuncTConfig prop = IaasFuncTConfig.getInstance();
         if (prop.isEmpty() == false) {
             String url = prop.getProperty(URL_KEY);
@@ -112,7 +116,8 @@ public class VimServiceClientTest {
             }
 
             if (url == null || user == null || pass == null) {
-                System.out.println("Error of the content of the tests configuration file. Test will be skipped.");
+                System.out
+                        .println("Error of the content of the tests configuration file. Test will be skipped.");
                 return;
             }
 
@@ -123,6 +128,10 @@ public class VimServiceClientTest {
                 return;
         }
 
+        Boolean useOnlyOneHost = Boolean.valueOf(prop.getProperty(ONLY_ONE_HOST_KEY));
+        Boolean useOnlyOneVm = Boolean.valueOf(prop.getProperty(ONLY_ONE_VM_KEY));
+        Boolean useOnlyActiveVms = Boolean.valueOf(prop.getProperty(ONLY_ACTIVE_VMS_KEY));
+
         if (allhosts == null) {
             System.out.println("Getting all Host properties (this will only happen once)...\n");
             allhosts = new HashMap<String, Object>();
@@ -131,11 +140,11 @@ public class VimServiceClientTest {
                 Map<String, String> props = v.getHostProperties(hostid);
 
                 allhosts.put(hostid, props);
+                if (useOnlyOneHost)
+                    break;
             }
             System.out.println("Host properties obtained.\n");
-        } else {
-            System.out.println("Host properties already obtained. ");
-        }
+        } 
 
         if (allvms == null) {
             System.out.println("Getting all VM properties (this will only happen once)...\n");
@@ -143,11 +152,32 @@ public class VimServiceClientTest {
             for (String vmid : v.getVMs()) {
                 System.out.println("Getting properties of VM: " + vmid);
                 Map<String, String> props = v.getVMProperties(vmid);
-                allvms.put(vmid, props);
+                if (useOnlyActiveVms) {
+                    if ("up".equals(props.get("status"))) {
+                        allvms.put(vmid, props);
+                    } else {
+                        System.out.println("   Discarding because is down.");
+                    }
+                } else {
+                    allvms.put(vmid, props);
+                }
+                if (useOnlyOneVm)
+                    if (!allvms.isEmpty())
+                        break;
             }
             System.out.println("VM properties obtained.\n");
-        } else {
-            System.out.println("VM properties already obtained. ");
+        }
+        
+        if (vms == null) {
+            vms = v.getVMs();
+        }
+        
+        if (hosts == null) {
+            hosts = v.getHosts();
+        }
+        
+        if (vendorDetails == null) {
+            vendorDetails = v.getVendorDetails();
         }
     }
 
@@ -156,7 +186,7 @@ public class VimServiceClientTest {
         if (testCorrectlyConfigured == false)
             return;
 
-        System.out.println("Vendor details: " + v.getVendorDetails());
+        System.out.println("Vendor details: " + vendorDetails);
     }
 
     @Test
@@ -164,7 +194,7 @@ public class VimServiceClientTest {
         if (testCorrectlyConfigured == false)
             return;
 
-        System.out.println("Hosts: " + Arrays.asList(v.getHosts()));
+        System.out.println("Hosts: " + Arrays.asList(hosts));
     }
 
     @Test
@@ -172,18 +202,7 @@ public class VimServiceClientTest {
         if (testCorrectlyConfigured == false)
             return;
 
-        System.out.println("VMs: " + Arrays.asList(v.getVMs()));
-    }
-
-    @Test
-    public void getVMsPerHost() throws Exception {
-        if (testCorrectlyConfigured == false)
-            return;
-
-        for (String hostid : v.getHosts()) {
-            System.out.println("Checking host: " + hostid);
-            System.out.println("VMs at " + hostid + ": " + Arrays.asList(v.getVMs(hostid)));
-        }
+        System.out.println("VMs: " + Arrays.asList(vms));
     }
 
     @Test
@@ -192,10 +211,9 @@ public class VimServiceClientTest {
             return;
 
         for (String hostid : allhosts.keySet()) {
-            System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
-            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_CPU);
+            checkMapProperties(hostid, "Host", map, HOST_EXPECTED_KEYS_CPU);
         }
     }
 
@@ -205,10 +223,9 @@ public class VimServiceClientTest {
             return;
 
         for (String vmid : allvms.keySet()) {
-            System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allvms.get(vmid);
-            checkMapProperties("VM", map, VM_EXPECTED_KEYS_CPU);
+            checkMapProperties(vmid, "VM", map, VM_EXPECTED_KEYS_CPU);
         }
     }
 
@@ -218,10 +235,9 @@ public class VimServiceClientTest {
             return;
 
         for (String hostid : allhosts.keySet()) {
-            System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
-            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_MEMORY);
+            checkMapProperties(hostid, "Host", map, HOST_EXPECTED_KEYS_MEMORY);
         }
     }
 
@@ -231,10 +247,9 @@ public class VimServiceClientTest {
             return;
 
         for (String vmid : allvms.keySet()) {
-            System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allvms.get(vmid);
-            checkMapProperties("VM", map, VM_EXPECTED_KEYS_MEMORY);
+            checkMapProperties(vmid, "VM", map, VM_EXPECTED_KEYS_MEMORY);
         }
     }
 
@@ -244,10 +259,9 @@ public class VimServiceClientTest {
             return;
 
         for (String hostid : allhosts.keySet()) {
-            System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
-            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_STORAGE);
+            checkMapProperties(hostid, "Host", map, HOST_EXPECTED_KEYS_STORAGE);
         }
     }
 
@@ -257,10 +271,9 @@ public class VimServiceClientTest {
             return;
 
         for (String vmid : allvms.keySet()) {
-            System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allvms.get(vmid);
-            checkMapProperties("VM", map, VM_EXPECTED_KEYS_STORAGE);
+            checkMapProperties(vmid, "VM", map, VM_EXPECTED_KEYS_STORAGE);
         }
     }
 
@@ -270,10 +283,9 @@ public class VimServiceClientTest {
             return;
 
         for (String hostid : allhosts.keySet()) {
-            System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
-            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_NETWORK);
+            checkMapProperties(hostid, "Host", map, HOST_EXPECTED_KEYS_NETWORK);
         }
     }
 
@@ -283,10 +295,9 @@ public class VimServiceClientTest {
             return;
 
         for (String vmid : allvms.keySet()) {
-            System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allvms.get(vmid);
-            checkMapProperties("VM", map, VM_EXPECTED_KEYS_NETWORK);
+            checkMapProperties(vmid, "VM", map, VM_EXPECTED_KEYS_NETWORK);
         }
     }
 
@@ -296,10 +307,9 @@ public class VimServiceClientTest {
             return;
 
         for (String hostid : allhosts.keySet()) {
-            System.out.println("Checking host: " + hostid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allhosts.get(hostid);
-            checkMapProperties("Host", map, HOST_EXPECTED_KEYS_MISC);
+            checkMapProperties(hostid, "Host", map, HOST_EXPECTED_KEYS_MISC);
         }
     }
 
@@ -309,14 +319,13 @@ public class VimServiceClientTest {
             return;
 
         for (String vmid : allvms.keySet()) {
-            System.out.println("Checking VM: " + vmid);
             @SuppressWarnings("unchecked")
             Map<String, String> map = (Map<String, String>) allvms.get(vmid);
-            checkMapProperties("VM", map, VM_EXPECTED_KEYS_MISC);
+            checkMapProperties(vmid, "VM", map, VM_EXPECTED_KEYS_MISC);
         }
     }
 
-    private void checkMapProperties(String entityType, Map<String, String> map, String[] expectedKeys)
+    private void checkMapProperties(String id, String entityType, Map<String, String> map, String[] expectedKeys)
             throws Exception {
         List<String> notContained = new ArrayList<String>();
         for (String key : expectedKeys)
@@ -325,7 +334,7 @@ public class VimServiceClientTest {
 
         if (notContained.size() > 0) {
             StringBuffer str = new StringBuffer();
-            str.append("\nSome keys were not found in a " + entityType + " properties map: " + map);
+            str.append("\nSome keys were not found in a " + entityType + " " + id + " properties map: " + map);
             for (String key : notContained) {
                 str.append("\n   KEY: '" + key + "' not present;");
             }
@@ -341,7 +350,7 @@ public class VimServiceClientTest {
     @After
     public void disconnect() throws Exception {
         if (v != null)
-            v.close();
+            v.disconnect();
     }
 
 }

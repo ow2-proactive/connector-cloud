@@ -59,7 +59,6 @@ import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 
-@org.junit.Ignore
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 /**
  * These tests check for the presence of certain monitoring information as it 

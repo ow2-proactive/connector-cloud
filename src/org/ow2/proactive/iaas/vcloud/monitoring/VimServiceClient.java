@@ -125,17 +125,6 @@ public class VimServiceClient {
 		isConnected = true;
 	}
 
-	private void disconnect() throws ViServiceClientException {
-		if (isConnected) {
-			try {
-				vimPort.logout(serviceContent.getSessionManager());
-			} catch (RuntimeFaultFaultMsg e) {
-				logger.error("Cannot logout:", e);
-				throw new ViServiceClientException(e);
-			}
-		}
-        isConnected = false;
-    }
 
 	/*
 	 * At the first attempt after 'LOGIN_INTERVAL' period, we explicitly
@@ -144,9 +133,10 @@ public class VimServiceClient {
 	 */
 	private void ensureConnected() throws ViServiceClientException {
 		if (System.currentTimeMillis() > nextLoginTime) {
+    		logger.debug("Ensuring connection with server.");
             synchronized (this) {
                 try {
-                    disconnect();
+                    disconnect(); // disconnect
                 } catch (ViServiceClientException e) {
     				logger.error("Ignoring exception while disconnecting: ", e);
                 }
@@ -156,6 +146,8 @@ public class VimServiceClient {
     }
 
     public Map<String, Object> getVendorDetails() throws ViServiceClientException {
+        ensureConnected();
+        
         Map<String, Object> output = new HashMap<String, Object>();
 
         Map<String, Object> hierarchy = getClusterComputeResources();
@@ -164,7 +156,7 @@ public class VimServiceClient {
         return output;
     }
 
-    public Map<String, Object> getClusterComputeResources() throws ViServiceClientException {
+    private Map<String, Object> getClusterComputeResources() throws ViServiceClientException {
         Map<String, Object> output = new HashMap<String, Object>();
 
         String[] domains = getmObjIds("ClusterComputeResource", getRootFolder());
@@ -195,8 +187,8 @@ public class VimServiceClient {
                     DynamicProperty hostName = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_NAME);
                     DynamicProperty hostIds = (DynamicProperty) propsOfHost.get(VimServiceConstants.PROP_HOST_SYSTEM_IDENTIFICATION);
 
-                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostName, hostMap);
-                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostIds, hostMap);
+                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostName, hostMap, serviceContent, vimPort, VimServiceUtil.VIM25_HOST_TYPE);
+                    VimServiceUtil.resloveAndAddDynamicPropertyToMap(hostIds, hostMap, serviceContent, vimPort, VimServiceUtil.VIM25_HOST_TYPE);
                     
                     hostMap.put("id", hostMor.getValue());
 
@@ -211,15 +203,18 @@ public class VimServiceClient {
     }
 
     public String[] getHosts() throws ViServiceClientException {
-        return getmObjIds("HostSystem", getRootFolder());
+		ensureConnected();
+        return getmObjIds(VimServiceUtil.VIM25_HOST_TYPE, getRootFolder());
     }
 
     public String[] getVMs() throws ViServiceClientException {
-        return getmObjIds("VirtualMachine", getRootFolder());
+		ensureConnected();
+        return getmObjIds(VimServiceUtil.VIM25_VM_TYPE, getRootFolder());
     }
 
 	public String[] getVMs(String hostId) throws ViServiceClientException {
-		return getmObjIds("VirtualMachine",
+		ensureConnected();
+		return getmObjIds(VimServiceUtil.VIM25_VM_TYPE,
 				VimServiceUtil.getmObjRefByHostId(hostId));
 	}
 
@@ -279,18 +274,20 @@ public class VimServiceClient {
         }
     }
 
-    public void close() throws ViServiceClientException {
-        if (isConnected) {
-            try {
-                vimPort.logout(serviceContent.getSessionManager());
-            } catch (RuntimeFaultFaultMsg e) {
-                logger.error("Cannot logout:", e);
-                throw new ViServiceClientException(e);
-            }
-            isConnected = false;
-        }
+	public void disconnect() throws ViServiceClientException {
+		if (isConnected) {
+			try {
+				vimPort.logout(serviceContent.getSessionManager());
+			} catch (RuntimeFaultFaultMsg e) {
+				logger.error("Cannot logout:", e);
+				throw new ViServiceClientException(e);
+			} finally {
+				isConnected = false;
+			}
+		}
+        isConnected = false;
     }
-
+	
     private void setNextLoginTime() {
         nextLoginTime = System.currentTimeMillis() + LOGIN_INTERVAL;
     }

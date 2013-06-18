@@ -279,10 +279,11 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     public void configureNetwork(Map<String, String> arguments) throws Exception {
         String instanceID = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
         String vdcName = arguments.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
-        configureNetwork(instanceID, vdcName);
+        configureNetwork(instanceID, vdcName, new ArrayList(), new ArrayList());
     }
 
-    public void configureNetwork(String instanceID, String vdcName) throws Exception {
+    public void configureNetwork(String instanceID, String vdcName, List<NatRule> natRules,
+            List<FirewallRule> firewallRules) throws Exception {
         checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         Vdc vdc = Vdc.getVdcByReference(vCloudClient, org.getVdcRefsByName().get(vdcName));
@@ -291,7 +292,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         VM vm = vapp.getChildrenVms().get(0);
         String id = vm.getResource().getVAppScopedLocalId();
 
-        NetworkConfigSectionType networkConfigSectionType = buildNetworkConfigSection(vdc, id, vappNet);
+        NetworkConfigSectionType networkConfigSectionType = buildNetworkConfigSection(vdc, id, vappNet,
+                natRules, firewallRules);
 
         InstantiationParamsType instantiationParamsType = new InstantiationParamsType();
         List<JAXBElement<? extends SectionType>> section = instantiationParamsType.getSection();
@@ -394,15 +396,17 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
-        if (vm.isDeployed()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug(String
-                        .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
-                                instanceID));
-            }
+        boolean isDeployed = vm.isDeployed();
+        if (isDeployed) {
+            logger.debug(String
+                    .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
+                            instanceID));
             vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
         }
         guestCustomizationSection.setAdminPassword(password);
+        if (isDeployed) {
+            vm.deploy(true, 0, true);
+        }
     }
 
     public String getPassword(String instanceID) throws Exception {
@@ -411,7 +415,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
         return guestCustomizationSection.getAdminPassword();
     }
-    
+
     public List<String> getVmId(String instanceID) throws Exception {
         List<String> vmIDs = new ArrayList<String>();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
@@ -730,6 +734,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
             public static final String CORES = "cores";
             public static final String MEMORY = "memory";
             public static final String STORAGE = "storage";
+            public static final String PASSWORD = "vm.password";
         }
 
         public class MonitoringParameters {
@@ -781,7 +786,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         return null;
     }
 
-    private NetworkConfigSectionType buildNetworkConfigSection(Vdc vdc, String vmId, String networkName) {
+    private NetworkConfigSectionType buildNetworkConfigSection(Vdc vdc, String vmId, String networkName,
+            List<NatRule> natRules, List<FirewallRule> firewallRules) {
         logger.debug("[" + vmId + "] Build network configuration");
         Collection<ReferenceType> availableNetworkRefs = vdc.getAvailableNetworkRefs();
 
@@ -799,8 +805,11 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         natServiceType.setNatType(NatTypeType.PORTFORWARDING.value());
         natServiceType.setPolicy(NatPolicyType.ALLOWTRAFFIC.value());
 
-        addNatRule(natServiceType.getNatRule(), "SSH", "TCP", 22, 22, vmId);
-        addNatRule(natServiceType.getNatRule(), "RDP", "TCP", 3389, 3389, vmId);
+        for (NatRule rule : natRules) {
+            addNatRule(natServiceType.getNatRule(), rule, vmId);
+        }
+        //        addNatRule(natServiceType.getNatRule(), "SSH", "TCP", 22, 22, vmId);
+        //        addNatRule(natServiceType.getNatRule(), "RDP", "TCP", 3389, 3389, vmId);
 
         JAXBElement<NetworkServiceType> networkServiceType = new ObjectFactory()
                 .createNetworkService(natServiceType);
@@ -813,11 +822,14 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         firewallServiceType.setDefaultAction(FirewallPolicyType.DROP.value());
         firewallServiceType.setLogDefaultAction(false);
 
-        List<FirewallRuleType> fwRules = firewallServiceType.getFirewallRule();
-        addFirewallRule(fwRules, "PING", "ICMP", "Any", "Any", "Any");
-        addFirewallRule(fwRules, "SSH", "TCP", "Any", "Any", "22");
-        addFirewallRule(fwRules, "RDP", "TCP", "Any", "Any", "3389");
-        addFirewallRule(fwRules, "In-Out", "ANY", "internal", "external", "Any");
+        for (FirewallRule rule : firewallRules) {
+            addFirewallRule(firewallServiceType.getFirewallRule(), rule);
+        }
+        //        List<FirewallRuleType> fwRules = firewallServiceType.getFirewallRule();
+        //        addFirewallRule(fwRules, "PING", "ICMP", "Any", "Any", "Any");
+        //        addFirewallRule(fwRules, "SSH", "TCP", "Any", "Any", "22");
+        //        addFirewallRule(fwRules, "RDP", "TCP", "Any", "Any", "3389");
+        //        addFirewallRule(fwRules, "In-Out", "ANY", "internal", "external", "Any");
 
         JAXBElement<FirewallServiceType> firewall = (new ObjectFactory())
                 .createFirewallService(firewallServiceType);
@@ -839,6 +851,10 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         return networkConfigSectionType;
     }
 
+    private void addNatRule(List<NatRuleType> natRules, NatRule rule, String vmId) {
+        addNatRule(natRules, rule.getName(), rule.getProtocol(), rule.getIntPort(), rule.getExtPort(), vmId);
+    }
+
     private void addNatRule(List<NatRuleType> natRules, String name, String protocol, int intPort,
             int extPort, String vmId) {
         NatVmRuleType natVmRuleType = new NatVmRuleType();
@@ -851,6 +867,11 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         natRuleType.setVmRule(natVmRuleType);
         natRuleType.setDescription(name);
         natRules.add(natRuleType);
+    }
+
+    private void addFirewallRule(List<FirewallRuleType> fwRules, FirewallRule rule) {
+        addFirewallRule(fwRules, rule.getName(), rule.getProtocol(), rule.getSrcIp(), rule.getDstIp(),
+                rule.getPortRange());
     }
 
     private void addFirewallRule(List<FirewallRuleType> fwRules, String name, String protocol, String srcIp,

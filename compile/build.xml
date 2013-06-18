@@ -5,6 +5,7 @@
 	<property file="${basedir}/build.properties"/>
 	<property name="version" value="1.0"/>
 	<property name="base.dir" value="${basedir}/.."/>
+	<property name="ant.library.dir" value="${base.dir}/compile/lib"/>
 	<property name="src.dir" value="${base.dir}/src"/>
 	<property name="test.dir" value="${base.dir}/tests"/>
 	<property name="unit.test.dir" value="${test.dir}/unittests"/>
@@ -30,18 +31,21 @@
 		<mkdir dir="${lib.dir}"/>
 		<mkdir dir="${scheduling.lib.dir}"/>
 		<copy todir="${scheduling.lib.dir}">
-			<fileset dir="${scheduling.project.lib.dir}" includes="**/*.jar,**/*.so" excludes="typica.jar,vim25.jar"/>
+			<fileset dir="${scheduling.project.lib.dir}" includes="**/*.jar,**/*.so,**/*.dylib,**/*.sl,**/*.dll,**/*.lib" excludes="typica.jar,vim25.jar"/>
 		</copy>
 	</target>
 
 	<path id="classpath">
 		<fileset dir="${lib.dir}" includes="**/*.jar" excludes="**/cxf*.jar"/>
+		<pathelement location="${classes.dir}" />
+		<fileset dir="${ant.library.dir}">
+			<include name="**/*.jar" />
+		</fileset>
 	</path>
 
 	<path id="classpath.test">
-		<path refid="classpath"/>
 		<pathelement location="${classes.test.dir}"/>
-		<pathelement location="${classes.dir}"/>
+		<path refid="classpath"/>
 	</path>
 
 	<target name="clean" description="Clean build folders" depends="doc.clean">
@@ -100,6 +104,14 @@
 		<copy todir="${classes.test.dir}">
 			<fileset dir="${func.test.dir}" includes="**/*.policy,**/*.xml,**/*.properties,**/*.txt"/>
 		</copy>
+
+		<taskdef name="stubGenerator" classname="ant.AntStubGenerator" classpathref="classpath.test" />
+		<typedef name="class" classname="ant.AntStubGeneratorClass" classpathref="classpath.test" />
+
+		<stubGenerator srcDir="${classes.dir}" refclasspath="classpath.test">
+			<class name="org.ow2.proactive.iaas.testsutils.RMEventListener" />
+		</stubGenerator>
+
 
 		<junit haltonfailure="true">
 			<jvmarg value="-Djava.security.policy=${unit.grant.all.policy}"/>					

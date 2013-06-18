@@ -51,6 +51,7 @@ import org.objectweb.proactive.api.PAFuture;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.ow2.proactive.authentication.crypto.Credentials;
+import org.ow2.proactive.iaas.nova.NovaAPI;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.core.properties.PAResourceManagerProperties;
@@ -80,7 +81,9 @@ public class IaasFuncTHelper {
             .getResource("config/schedHibernateConfig.xml");
 
     private static URL defaultPAConfigFile = IaasFuncTHelper.class.getResource("config/defaultPAConfig.xml");
-
+    
+    private static URL classesPath = IaasFuncTHelper.class.getResource("/os-vmprocesses.properties");
+    
     private static URL rmLog4jConfig = IaasFuncTHelper.class.getResource("config/rmLog4JConfig.properties");
 
     private static URL schedLog4JConfig = IaasFuncTHelper.class
@@ -320,6 +323,16 @@ public class IaasFuncTHelper {
         return (new File(rmLog4jConfig.toURI())).getAbsolutePath();
     }
 
+    private static String getClassesPathname() throws Exception {
+        File file = new File(classesPath.toURI());
+        return file.getParent();
+    }
+    
+    private static String getTestClassesPathname() throws Exception {
+        File file = new File(classesPath.toURI());
+        return file.getParentFile().getParent() + File.separator + "test-classes";
+    }
+    
     private static String getSchedLog4JConfigPathname() throws Exception {
         return (new File(schedLog4JConfig.toURI())).getAbsolutePath();
     }
@@ -352,6 +365,8 @@ public class IaasFuncTHelper {
         for (String jar : requiredJARs) {
             classpath.append(libPath).append(File.separator).append(jar).append(File.pathSeparatorChar);
         }
+        classpath.append(getClassesPathname()).append(File.pathSeparatorChar);
+        classpath.append(getTestClassesPathname()).append(File.pathSeparatorChar);
 
         return classpath.toString();
     }

@@ -396,17 +396,8 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
-        boolean isDeployed = vm.isDeployed();
-        if (isDeployed) {
-            logger.debug(String
-                    .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
-                            instanceID));
-            vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
-        }
         guestCustomizationSection.setAdminPassword(password);
-        if (isDeployed) {
-            vm.deploy(true, 0, true);
-        }
+        vm.deploy(true, 0, true);
     }
 
     public String getPassword(String instanceID) throws Exception {

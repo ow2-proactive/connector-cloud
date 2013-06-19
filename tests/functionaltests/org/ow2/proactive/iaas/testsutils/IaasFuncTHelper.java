@@ -1,4 +1,5 @@
 package org.ow2.proactive.iaas.testsutils;
+
 /*
  * ################################################################
  *
@@ -36,7 +37,6 @@ package org.ow2.proactive.iaas.testsutils;
  * $PROACTIVE_INITIAL_DEV$
  */
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -71,7 +71,7 @@ import org.ow2.proactive.scheduler.util.SchedulerStarter;
 public class IaasFuncTHelper {
 
     private static URL testConfigFilename = IaasFuncTHelper.class.getResource("config/test.properties");
-    
+
     private static URL serverJavaPolicy = IaasFuncTHelper.class
             .getResource("config/server-java.security.policy");
 
@@ -81,9 +81,9 @@ public class IaasFuncTHelper {
             .getResource("config/schedHibernateConfig.xml");
 
     private static URL defaultPAConfigFile = IaasFuncTHelper.class.getResource("config/defaultPAConfig.xml");
-    
+
     private static URL classesPath = IaasFuncTHelper.class.getResource("/os-vmprocesses.properties");
-    
+
     private static URL rmLog4jConfig = IaasFuncTHelper.class.getResource("config/rmLog4JConfig.properties");
 
     private static URL schedLog4JConfig = IaasFuncTHelper.class
@@ -112,7 +112,6 @@ public class IaasFuncTHelper {
 
     private static PublicKey schedulerPublicKey;
 
-
     private IaasFuncTHelper() {
     }
 
@@ -121,11 +120,11 @@ public class IaasFuncTHelper {
         String javaPath = IaasFuncTUtils.getJavaPathFromSystemProperties();
         commandList.add(javaPath);
         commandList.add("-Djava.security.manager");
-        
+
         commandList.add("-Djava.security.policy");
         commandList.add(CentralPAPropertyRepository.JAVA_SECURITY_POLICY.getCmdLine() +
             getServerSecurityPolicyPathname());
-        
+
         String dropDB = System.getProperty("rm.deploy.dropDB", "true");
         commandList.add(PAResourceManagerProperties.RM_DB_HIBERNATE_DROPDB.getCmdLine() + dropDB);
         commandList.add(PAResourceManagerProperties.RM_DB_HIBERNATE_CONFIG.getCmdLine() +
@@ -139,15 +138,15 @@ public class IaasFuncTHelper {
         commandList.add("-cp");
         commandList.add(getClassPath());
         commandList.add(RMStarter.class.getName());
-        
+
         System.out.println("Starting RM...");
         System.out.println("(RM START COMMAND: '");
-        for (String c: commandList){
+        for (String c : commandList) {
             System.out.print(c + " ");
         }
         System.out.println("')");
         System.out.println("Done.");
-        
+
         ProcessBuilder processBuilder = new ProcessBuilder(commandList);
         processBuilder.redirectErrorStream(true);
         rmProcess = processBuilder.start();
@@ -164,7 +163,7 @@ public class IaasFuncTHelper {
         System.out.println("Done.");
 
         Credentials rmCredentials = getRmCredentials();
-        
+
         System.out.println("Logging to RM...");
         ResourceManager rm = rmAuth.login(rmCredentials);
         System.out.println("Done.");
@@ -174,26 +173,26 @@ public class IaasFuncTHelper {
         RMInitialState state = rm.getMonitoring().addRMEventListener(eventListener);
         PAFuture.waitFor(state);
         state.getNodeSource().size();
-        
+
         System.out.println("Creating node source...");
         createNodeSource(rm, rmCredentials, rmEventMonitor, rmNodeJvmArgs);
         System.out.println("Done.");
-        
+
         System.out.println("Disconnecting...");
         rm.disconnect();
         System.out.println("Done.");
-        
+
         return url;
     }
 
-    public static void createNodeSource(ResourceManager rm, Credentials rmCred, RMEventMonitor rmEventMonitor, Map<String, String> jvmArgs)
-            throws Exception {
+    public static void createNodeSource(ResourceManager rm, Credentials rmCred,
+            RMEventMonitor rmEventMonitor, Map<String, String> jvmArgs) throws Exception {
         String nodeSourceName = defaultNodeSourceName + System.currentTimeMillis();
 
         RMEventMonitor.RMNodesDeployedWaitCondition waitCondition = new RMEventMonitor.RMNodesDeployedWaitCondition(
             nodeSourceName, defaultNumberOfNodes);
         rmEventMonitor.addWaitCondition(waitCondition);
-        
+
         Object[] infrastructureParams = new Object[] { "", rmCred.getBase64(), defaultNumberOfNodes,
                 defaultNodeTimeout, IaasFuncTUtils.buildJvmParameters(jvmArgs) };
         BooleanWrapper nodeSourceCreated = rm
@@ -327,12 +326,12 @@ public class IaasFuncTHelper {
         File file = new File(classesPath.toURI());
         return file.getParent();
     }
-    
+
     private static String getTestClassesPathname() throws Exception {
         File file = new File(classesPath.toURI());
         return file.getParentFile().getParent() + File.separator + "test-classes";
     }
-    
+
     private static String getSchedLog4JConfigPathname() throws Exception {
         return (new File(schedLog4JConfig.toURI())).getAbsolutePath();
     }
@@ -353,8 +352,7 @@ public class IaasFuncTHelper {
         File rmCredentails = new File(getRmHome(), "config/authentication/rm.cred");
         return Credentials.getCredentials(new FileInputStream(rmCredentails));
     }
-    
-    
+
     public static String getTestConfigPathname() throws Exception {
         return (new File(testConfigFilename.toURI())).getAbsolutePath();
     }

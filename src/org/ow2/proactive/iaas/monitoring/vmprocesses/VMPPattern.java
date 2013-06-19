@@ -134,13 +134,20 @@ public class VMPPattern {
 			String value = getValue(args, regexs.get(propname));
 			String factorStr = convers.get(propname);
 			try{
-			    if (!factorStr.equals("=")){
-			        Float f = Float.parseFloat(factorStr);
+			    
+			    if (factorStr.equals("=")){
+			        // Leave value as it is.
+			    } else if (factorStr.startsWith("i")) {
+			        Float v = Float.parseFloat(value);
+			        Float f = Float.parseFloat(factorStr.substring(1));
+			        value = String.format("%d", (int)(f*v));
+			    } else if (factorStr.startsWith("f")){
+			        Float f = Float.parseFloat(factorStr.substring(1));
 			        Float v = Float.parseFloat(value);
 			        value = String.format("%.1f", f*v);
 			    }
 			}catch(Exception e){
-			    logger.debug(String.format("Error parsing: '%s' '%s'. Leaving original value.", factorStr, value), e);
+			    logger.debug(String.format("Error parsing: factor='%s' value='%s'. Leaving original value.", factorStr, value), e);
 			}
 			vmp.setProperty(propname, value);
 			

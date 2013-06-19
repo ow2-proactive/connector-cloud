@@ -97,7 +97,7 @@ public class VMProcessTest {
 
         VMProcess vmp = vmps.get(0);
 
-        assertTrue(vmp.getProperty("uuid").equals(UUID));
+        assertTrue(vmp.getProperty("vendor.vm.uuid").equals(UUID));
         assertTrue(vmp.getProperty("mac").equals(MAC));
         assertTrue(vmp.getProperty("id").equals(INSTANCE));
         

@@ -397,6 +397,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
         guestCustomizationSection.setAdminPassword(password);
+        vm.updateSection(guestCustomizationSection);
         vm.deploy(true, 0, true);
     }
 

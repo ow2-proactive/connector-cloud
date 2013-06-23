@@ -38,11 +38,8 @@ import java.util.Map;
 import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map.Entry;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceLoader;
-
 
 public class VMsMerger {
 
@@ -54,36 +51,40 @@ public class VMsMerger {
      * really matches the already provided information. 
      * @param vmId 
      * @param vmProperties 
-     * @param hostsMap
      * @param sigarsMap
      * @return the set of new extra properties of the VM.
      */
     public static Map<String, String> getExtraVMPropertiesUsingMac(String vmId,
-            Map<String, String> vmProperties, Map<String, Object> hostsMap, Map<String, Object> sigarsMap) {
+            Map<String, String> vmProperties, Map<String, Object> sigarsMap) {
         Map<String, String> output = new HashMap<String, String>();
 
         // We assume sigar information is available. 
         List<String> vmMacs = getMacs(vmProperties);
 
-        logger.debug("MACs of the current VM: " + vmMacs);
+        if (vmMacs.size() > 0) {
+            logger.debug("MACs of the current VM: " + vmMacs);
+        } else {
+            logger.warn("No MACs found in VM " + vmId + ": " + vmProperties);
+        }
 
         if (vmMacs.isEmpty())
             return output;
 
-        logger.debug("Analysing hosts...");
-        for (String hostid : hostsMap.keySet()) {
-            logger.debug("   Host: " + hostid);
-            Map<String, Object> props = (Map<String, Object>) hostsMap.get(hostid);
+        logger.debug("Analysing sigars...");
+        for (Entry<String, Object> sigar : sigarsMap.entrySet()) {
+            logger.debug("   Sigar: " + sigar.getKey());
+            Map<String, Object> props = (Map<String, Object>) sigar.getValue();
             for (String key : props.keySet()) {
                 logger.debug("      Key: " + key);
                 if (isVMMacKey(key)) {
                     String mac = props.get(key).toString().toUpperCase();
                     if (vmMacs.contains(mac)) {
                         logger.debug("         Found!");
-                        return getProperties(vmId, key, props);
+                        //return getProperties(vmId, key, props);
+                        return Utils.convertToStringMap(props);
                     }
                 } else {
-                    logger.debug("                  Skipping property " + key + "...");
+                    logger.debug("                  No mac key (network.x.mac) " + key + "...");
                 }
             }
         }
@@ -111,7 +112,7 @@ public class VMsMerger {
                 logger.debug("      Key: " + key);
                 if (isVMKey(key, vmId)) {
                     logger.debug("         Found!");
-                    return getProperties(vmId, key, hostProps);
+                    return getVMPropertiesFromHostMap(vmId, key, hostProps);
                 } else {
                     logger.debug("                  Skipping property " + key + "...");
                 }
@@ -125,10 +126,11 @@ public class VMsMerger {
     }
 
     private static boolean isVMMacKey(String key) {
-        return (key.startsWith("vm.") && key.endsWith(".mac"));
+        return (key.startsWith("network.") && key.endsWith(".mac"));
     }
 
-    private static Map<String, String> getProperties(String vmId, String key, Map<String, Object> props) {
+    private static Map<String, String> getVMPropertiesFromHostMap(String vmId, String key,
+            Map<String, Object> props) {
         Map<String, String> output = new HashMap<String, String>();
 
         String prefix = "vm." + vmId + ".";
@@ -147,13 +149,10 @@ public class VMsMerger {
 
     private static List<String> getMacs(Map<String, String> vmProperties) {
         List<String> output = new ArrayList<String>();
-        String count = vmProperties.get("network.count");
-        if (count != null) {
-            int n = Integer.parseInt(count);
-            for (int i = 0; i < n; i++) {
-                String mac = vmProperties.get("network." + i + ".mac");
-                output.add(mac.toUpperCase());
-            }
+        String mac = null;
+        int i = 0;
+        while ((mac = vmProperties.get("network." + i++ + ".mac")) != null) {
+            output.add(mac.toUpperCase());
         }
         return output;
     }

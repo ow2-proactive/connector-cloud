@@ -126,6 +126,7 @@ public class VMPLister {
                 for (String key : props.keySet()) {
                     output.put("vm." + vmid + "." + key, props.get(key));
                 }
+                output.put("vm." + vmid + "." + "name", vmid);
             }
         }
 

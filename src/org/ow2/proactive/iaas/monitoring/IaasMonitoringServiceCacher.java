@@ -263,12 +263,12 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
 
     @Override
     public void registerNode(String nodeid, String jmxurl, NodeType type) {
-        registerNode(nodeid, jmxurl, type);
+        loader.registerNode(nodeid, jmxurl, type);
     }
 
     @Override
     public void unregisterNode(String nodeid, NodeType type) {
-        unregisterNode(nodeid, type);
+        loader.unregisterNode(nodeid, type);
     }
 
     @Override

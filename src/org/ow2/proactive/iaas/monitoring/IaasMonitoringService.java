@@ -46,17 +46,6 @@ import org.ow2.proactive.iaas.IaasMonitoringApi;
 
 public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNodesListener {
 
-    /** 
-     * Key used for referencing the URL of the Sigar MBean of the entity (host/vm). 
-     */
-    public static final String PROP_PA_SIGAR_JMX_URL = "proactive.sigar.jmx.url";
-
-    /** 
-     * Key that belongs to the host properties map. 
-     * Its value contains information about all its VMs. 
-     */
-    protected static final String VMS_INFO_KEY = "vmsinfo";
-
     /** Logger. */
     private static final Logger logger = Logger.getLogger(IaasMonitoringService.class);
 
@@ -140,7 +129,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
                         // Ignore it.
                     }
                 }
-                hostinfo.put(VMS_INFO_KEY, vmsinfo);
+                hostinfo.put(IaasMonitoringConst.VMS_INFO_KEY, vmsinfo);
 
                 summary.put(host, hostinfo);
 

@@ -231,7 +231,7 @@ public class FormattedSigarMBeanClient {
 
     private void addSigarProperties(Map<String, Object> properties) throws IaasMonitoringException {
         if (!properties.isEmpty()) {
-            properties.put(IaasMonitoringService.PROP_PA_SIGAR_JMX_URL, this.serviceurl);
+            properties.put(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL, this.serviceurl);
         }
     }
     private void addPFlagsProperties(Map<String, Object> properties) throws IaasMonitoringException {

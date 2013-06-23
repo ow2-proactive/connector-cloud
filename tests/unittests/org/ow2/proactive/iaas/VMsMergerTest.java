@@ -68,8 +68,10 @@ public class VMsMergerTest {
         Map<String, Object> host1 = new HashMap<String, Object>();
         host1.put("host1.cpu.usage", "0.1");
         host1.put("host1.memory.usage", "200");
+        host1.put("vm.vmid1.id", "vmid1");
         host1.put("vm.vmid1.network.0.mac", "00:00:00:00:00:00");
         host1.put("vm.vmid1.noadd1", "noadd1");
+        host1.put("vm.vmidx.id", "vmidx");
         host1.put("vm.vmidx.network.0.mac", "00:00:00:00:00:0a"); // Right VM info.
         host1.put("vm.vmidx.toadd1", "toadd1"); // Property to add.
         host1.put("vm.vmidx.toadd2", "toadd2"); // Property to add.
@@ -78,8 +80,10 @@ public class VMsMergerTest {
         Map<String, Object> host2 = new HashMap<String, Object>();
         host2.put("host2.cpu.usage", "0.1");
         host2.put("host2.memory.usage", "200");
+        host2.put("vm.vmid2.id", "vmid2");
         host2.put("vm.vmid2.network.0.mac", "00:00:00:00:00:02");
         host2.put("vm.vmid2.noadd1", "noadd1");
+        host2.put("vm.vmid3.id", "vmid3");
         host2.put("vm.vmid3.network.0.mac", "00:00:00:00:00:03");
         host2.put("vm.vmid3.noadd1", "noadd1");
 
@@ -112,86 +116,22 @@ public class VMsMergerTest {
 
         currentVMProperties = new HashMap<String, String>();
 
-        Map<String, String> fromVMP = VMsMerger
-                .getExtraVMPropertiesByVMId(vmId, currentVMProperties, hostsMap);
+        Map<String, String> fromVMP = VMsMerger.getExtraVMPropertiesFromHostRMNodes(vmId, currentVMProperties,
+                hostsMap);
         currentVMProperties.putAll(fromVMP);
-        Map<String, String> fromSigar = VMsMerger.getExtraVMPropertiesUsingMac(vmId, currentVMProperties,
+        Map<String, String> fromSigar = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, currentVMProperties,
                 sigarsMap);
         currentVMProperties.putAll(fromSigar);
-
 
         currentVMProperties.putAll(fromVMP);
         currentVMProperties.putAll(fromSigar);
 
         System.out.println("Result: " + currentVMProperties);
-        
+
         Assert.assertTrue(fromVMP.get("toadd1").equals("toadd1"));
         Assert.assertTrue(fromVMP.get("toadd2").equals("toadd2"));
         Assert.assertTrue(fromSigar.get("toadd3").equals("toadd3"));
         Assert.assertTrue(fromSigar.get("toadd4").equals("toadd4"));
-    }
-
-    public static void main(String[] args) throws Exception {
-        new VMsMergerTest().macResolution();
-    }
-    
-    @Test
-    public void noSigarTest() throws Exception {
-        // Scenario. 
-        // VM information obtained from IaaS Api (VM id 'vmidx') .
-        // VM has no RMNode.
-        // Hosts contain RMNode, from its processes lists the same VM can be
-        // identified so its VM information is extended.
-
-        // There is a VM. 
-        // Each VM has some properties coming from either IaaS Api or from 
-        // Sigar monitoring (so an RMNode is running in the VM).
-        String vmId;
-        Map<String, String> currentVMProperties;
-
-        // There are many hosts.
-        // Each host has a map with host properties, with keys vm.vmid.prop 
-        // containing properties identified through listing the host processes. 
-        Map<String, Object> hostsMap;
-
-        vmId = "vmidx";
-
-        currentVMProperties = new HashMap<String, String>();
-
-        // There is only this information available coming from the IaaS API 
-        // (since in the VM there is no RMNode).
-        currentVMProperties.put("status", "on");
-
-        // This host is where the VM is running.
-        Map<String, Object> host1 = new HashMap<String, Object>();
-        host1.put("cpu.usage", "0.1");
-        host1.put("memory.usage", "200");
-        host1.put("vm.vmid1.mac", "00:00:00:00:00:00");
-        host1.put("vm.vmid1.noadd1", "noadd1");
-        host1.put("vm.vmidx.mac", "00:00:00:00:00:0a"); // Right VM info.
-        host1.put("vm.vmidx.toadd1", "toadd1"); // Property to add.
-        host1.put("vm.vmidx.toadd2", "toadd2"); // Property to add.
-
-        // This host is NOT where the VM is running.
-        Map<String, Object> host2 = new HashMap<String, Object>();
-        host2.put("cpu.usage", "0.1");
-        host2.put("memory.usage", "200");
-        host2.put("vm.vmid2.mac", "00:00:00:00:00:02");
-        host2.put("vm.vmid2.noadd1", "noadd1");
-        host2.put("vm.vmid3.mac", "00:00:00:00:00:03");
-        host2.put("vm.vmid3.noadd1", "noadd1");
-
-        hostsMap = new HashMap<String, Object>();
-
-        hostsMap.put("host1", host1);
-        hostsMap.put("host2", host2);
-
-        Map<String, String> ex = VMsMerger.getExtraVMPropertiesByVMId(vmId, currentVMProperties, hostsMap);
-        System.out.println(ex);
-
-        Assert.assertTrue(ex.size() == 3);
-        Assert.assertTrue(ex.get("toadd1").equals("toadd1"));
-        Assert.assertTrue(ex.get("toadd2").equals("toadd2"));
     }
 
 }

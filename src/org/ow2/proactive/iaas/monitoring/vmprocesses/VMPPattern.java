@@ -108,7 +108,6 @@ public class VMPPattern {
 	
 	public VMProcess getVMP(long pid, String args) {
 		VMProcess process = null;
-		logger.info("### Extracting VM Process information...");
 		
 		if (isVMP(args) == false){
 			return null;
@@ -129,7 +128,6 @@ public class VMPPattern {
 	private VMProcess getVMProcessFromArgs(String args){
 		// apply my vmppattern rules to find out info about the process
 		VMProcess vmp = new VMProcess();
-		logger.debug("Arguments: '" + args + "'");
 		for (String propname: regexs.keySet()){
 			String value = getValue(args, regexs.get(propname));
 			String factorStr = convers.get(propname);
@@ -149,7 +147,11 @@ public class VMPPattern {
 			}catch(Exception e){
 			    logger.debug(String.format("Error parsing: factor='%s' value='%s'. Leaving original value.", factorStr, value), e);
 			}
-			vmp.setProperty(propname, value);
+			if (value != null) { 
+    			vmp.setProperty(propname, value);
+			} else {
+        		logger.warn("Problem parsing " + propname + " from '" + args + "'");
+			}
 			
 		}
 		return vmp;

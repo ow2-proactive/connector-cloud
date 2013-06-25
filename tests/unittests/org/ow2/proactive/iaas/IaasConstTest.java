@@ -1,11 +1,10 @@
 /*
- * ################################################################
- *
+ *  
  * ProActive Parallel Suite(TM): The Java(TM) library for
  *    Parallel, Distributed, Multi-Core Computing for
  *    Enterprise Grids & Clouds
  *
- * Copyright (C) 1997-2012 INRIA/University of
+ * Copyright (C) 1997-2011 INRIA/University of
  *                 Nice-Sophia Antipolis/ActiveEon
  * Contact: proactive@ow2.org or contact@activeeon.com
  *
@@ -31,28 +30,22 @@
  *                        http://proactive.inria.fr/team_members.htm
  *  Contributor(s):
  *
- * ################################################################
- * %$ACTIVEEON_INITIAL_DEV$
+ *  * $$PROACTIVE_INITIAL_DEV$$
  */
 
-package org.ow2.proactive.iaas.monitoring;
+package org.ow2.proactive.iaas;
 
-public class IaasMonitoringConst {
+import org.junit.Test;
+import junit.framework.Assert;
+import org.ow2.proactive.iaas.monitoring.IaasConst;
 
-    /** 
-     * Key used for referencing the URL of the Sigar MBean of the entity (host/vm). 
-     */
-    public static final String PROP_PA_SIGAR_JMX_URL = "proactive.sigar.jmx.url";
 
-    /** 
-     * Key used for referencing the host where the VM is running. 
-     */
-    public static final String PROP_VM_HOST = "host";
-    
-    /** 
-     * Key that belongs to the host properties map. 
-     * Its value contains information about all its VMs. 
-     */
-    protected static final String VMS_INFO_KEY = "vmsinfo";
+public class IaasConstTest {
+
+    @Test
+    public void test() throws Exception {
+        Assert.assertTrue(IaasConst.P_COMMON_NET_MAC.get(1).toString().equals("network.1.mac"));
+        Assert.assertTrue(IaasConst.P_HOST_VM_MAC.get("vm3", 4).toString().equals("vm.vm3.network.4.mac"));
+    }
 
 }

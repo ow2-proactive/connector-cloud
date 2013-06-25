@@ -18,6 +18,7 @@ import javax.management.remote.JMXConnector;
 import org.apache.log4j.Logger;
 import org.hyperic.sigar.SigarException;
 import org.hyperic.sigar.SigarProxy;
+import org.ow2.proactive.iaas.monitoring.IaasConst;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 import org.ow2.proactive.iaas.utils.Utils;
 
@@ -49,8 +50,8 @@ public class VMPLister {
                 if (pat != null) { // Valid VM process.
                     VMProcess proc = pat.getVMP(pid, args);
 
-                    proc.setProperty("cpu.usage", cpu);
-                    proc.setProperty("memory.virtualmemorybytes", mem);
+                    proc.setProperty(IaasConst.P_COMMON_CPU_USAGE.get(), cpu);
+                    proc.setProperty(IaasConst.P_VM_VMUSAGE.get(), mem);
 
                     vmps.add(proc);
                 }
@@ -92,10 +93,9 @@ public class VMPLister {
                     VMProcess proc = pat.getVMP(pid, args);
 
                     // http://www.hyperic.com/support/docs/sigar/
-                    proc.setProperty("cpu.usage", new Double(sigar.getProcCpu(pid).getPercent()));
-                    proc.setProperty("memory.virtualmemorybytes", new Double(sigar.getProcMem(pid).getSize()));
-                    proc.setProperty("host", sigar.getNetInfo().getHostName());
-
+                    proc.setProperty(IaasConst.P_COMMON_CPU_USAGE.get(), new Double(sigar.getProcCpu(pid).getPercent()));
+                    proc.setProperty(IaasConst.P_VM_VMUSAGE.get(), new Double(sigar.getProcMem(pid).getSize()));
+                    proc.setProperty(IaasConst.P_VM_HOST.get(), sigar.getNetInfo().getHostName());
                     vmps.add(proc);
                 }
             } catch (SigarException e) {
@@ -119,12 +119,12 @@ public class VMPLister {
         }
 
         for (VMProcess vmp : vmps) {
-            String vmid = vmp.getProperty("id").toString();
+            String vmid = vmp.getProperty(IaasConst.P_COMMON_ID.get()).toString();
             if (vmid != null) {
                 vmslist.add(vmid);
                 Map<String, Object> props = vmp.getProperties();
                 for (String key : props.keySet()) {
-                    output.put("vm." + vmid + "." + key, props.get(key));
+                    output.put(IaasConst.P_HOST_VM_PROP.get(vmid, key), props.get(key));
                 }
             }
         }

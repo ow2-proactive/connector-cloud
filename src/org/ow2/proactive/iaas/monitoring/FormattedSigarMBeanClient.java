@@ -67,20 +67,20 @@ public class FormattedSigarMBeanClient {
 
     private void addCpuCoresProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
-        properties.put("cpu.cores", (Integer) a);
+        properties.put(IaasConst.P_COMMON_CPU_CORES.get(), (Integer) a);
     }
 
     private void addCpuFrequencyProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
         int fmhz = (Integer) a;
         float fghz = (float) fmhz / 1000;
-        properties.put("cpu.frequency", fghz);
+        properties.put(IaasConst.P_COMMON_CPU_FREQUENCY.get(), fghz);
     }
 
     private void addCpuUsageProperty(Map<String, Object> properties) throws IaasMonitoringException {
         Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
         float usage = (float) (1.0 - a);
-        properties.put("cpu.usage", usage);
+        properties.put(IaasConst.P_COMMON_CPU_USAGE.get(), usage);
     }
 
     private void addMemoryProperties(Map<String, Object> properties) throws IaasMonitoringException {
@@ -88,9 +88,9 @@ public class FormattedSigarMBeanClient {
         Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
         Long actualFree = (Long) getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
 
-        properties.put("memory.total", total);
-        properties.put("memory.free", free);
-        properties.put("memory.actualfree", actualFree);
+        properties.put(IaasConst.P_COMMON_MEM_TOTAL.get(), total);
+        properties.put(IaasConst.P_COMMON_MEM_FREE.get(), free);
+        properties.put(IaasConst.P_COMMON_MEM_ACTUAL_FREE.get(), actualFree);
     }
 
     private void addNetworkProperties(Map<String, Object> properties) throws IaasMonitoringException {
@@ -113,12 +113,14 @@ public class FormattedSigarMBeanClient {
                     Long rx = (Long) connector.getMBeanServerConnection().getAttribute(on, "RxBytes");
                     String mac = (String) connector.getMBeanServerConnection().getAttribute(on, "Hwaddr");
                     Long speed = (Long) connector.getMBeanServerConnection().getAttribute(on, "Speed");
+                    String ip = (String) connector.getMBeanServerConnection().getAttribute(on, "Address");
 
-                    properties.put("network." + counter + ".name", name);
-                    properties.put("network." + counter + ".tx", tx);
-                    properties.put("network." + counter + ".rx", rx);
-                    properties.put("network." + counter + ".mac", mac);
-                    properties.put("network." + counter + ".speed", (speed < 0 ? 0 : speed));
+                    properties.put(IaasConst.P_COMMON_NET_NAME.get(counter), name);
+                    properties.put(IaasConst.P_COMMON_NET_TX.get(counter), tx);
+                    properties.put(IaasConst.P_COMMON_NET_RX.get(counter), rx);
+                    properties.put(IaasConst.P_COMMON_NET_MAC.get(counter), mac);
+                    properties.put(IaasConst.P_COMMON_NET_SPEED.get(counter), (speed < 0 ? 0 : speed));
+                    properties.put(IaasConst.P_COMMON_NET_IP.get(counter), ip);
 
                     ttx += tx;
                     trx += rx;
@@ -136,9 +138,9 @@ public class FormattedSigarMBeanClient {
                 }
             }
         }
-        properties.put("network.count", counter);
-        properties.put("network.tx", ttx);
-        properties.put("network.rx", trx);
+        properties.put(IaasConst.P_COMMON_NET_COUNT_TOTAL.get(), counter);
+        properties.put(IaasConst.P_COMMON_NET_TX_TOTAL.get(), ttx);
+        properties.put(IaasConst.P_COMMON_NET_RX_TOTAL.get(), trx);
     }
 
     private void addStorageProperties(Map<String, Object> properties) throws IaasMonitoringException {
@@ -160,9 +162,9 @@ public class FormattedSigarMBeanClient {
                     Long total = (Long) connector.getMBeanServerConnection().getAttribute(on, "Total");
                     Long used = (Long) connector.getMBeanServerConnection().getAttribute(on, "Used");
 
-                    properties.put("storage." + counter + ".name", name);
-                    properties.put("storage." + counter + ".total", total);
-                    properties.put("storage." + counter + ".used", used);
+                    properties.put(IaasConst.P_COMMON_STORAGE_NAME.get(counter), name);
+                    properties.put(IaasConst.P_COMMON_STORAGE_TOTAL.get(counter), total);
+                    properties.put(IaasConst.P_COMMON_STORAGE_USED.get(counter), used);
                     ttotal += total;
                     tused += used;
                     counter++;
@@ -179,9 +181,9 @@ public class FormattedSigarMBeanClient {
                 }
             }
         }
-        properties.put("storage.count", counter);
-        properties.put("storage.total", ttotal);
-        properties.put("storage.used", tused);
+        properties.put(IaasConst.P_COMMON_STORAGE_COUNT_TOTAL.get(), counter);
+        properties.put(IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.get(), ttotal);
+        properties.put(IaasConst.P_COMMON_STORAGE_NAME.get(), tused);
     }
 
     
@@ -205,9 +207,9 @@ public class FormattedSigarMBeanClient {
                         .append(',');
             }
             String ps = process.toString();
-            properties.put("system.process", ps.substring(0, ps.length() - 1));
+            properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS.get(), ps.substring(0, ps.length() - 1));
             String ps3 = process3.toString();
-            properties.put("system.process.3", ps3.substring(0, ps3.length() - 1));
+            properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS3.get(), ps3.substring(0, ps3.length() - 1));
         } catch (AttributeNotFoundException e) {
             throw new IaasMonitoringException(e);
         } catch (InstanceNotFoundException e) {
@@ -225,19 +227,19 @@ public class FormattedSigarMBeanClient {
 
     private void addStatusProperties(Map<String, Object> properties) throws IaasMonitoringException {
         if (!properties.isEmpty()) {
-            properties.put("status", "up");
+            properties.put(IaasConst.P_COMMON_STATUS.get(), "up");
         }
     }
 
     private void addSigarProperties(Map<String, Object> properties) throws IaasMonitoringException {
         if (!properties.isEmpty()) {
-            properties.put(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL, this.serviceurl);
+            properties.put(IaasConst.P_SIGAR_JMX_URL.get(), this.serviceurl);
         }
     }
     private void addPFlagsProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags", "PFlags");
         for (String key: pflags.keySet()) {
-            properties.put("pflags." + key, pflags.get(key));
+            properties.put(IaasConst.P_COMMON_PFLAGS.get(key), pflags.get(key));
         }
     }
 

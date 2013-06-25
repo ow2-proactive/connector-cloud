@@ -90,42 +90,42 @@ public class FormattedSigarMBean implements NodeAgentMXBean {
     private void addCpuCoresProperty(Map<String, String> properties,
             SigarProxy sigar) throws SigarException {
         int cpuCores = sigar.getCpuInfoList()[0].getTotalCores();
-        properties.put("cpu.cores", Integer.toString(cpuCores));
+        properties.put(IaasConst.P_COMMON_CPU_CORES.get(), Integer.toString(cpuCores));
     }
 
     private void addCpuFrequencyProperty(Map<String, String> properties,
             SigarProxy sigar) throws SigarException {
         int fmhz = sigar.getCpuInfoList()[0].getMhz();
         float fghz = (float) fmhz / 1000;
-        properties.put("cpu.frequency", Float.toString(fghz));
+        properties.put(IaasConst.P_COMMON_CPU_FREQUENCY.get(), Float.toString(fghz));
     }
 
     private void addCpuUsageProperty(Map<String, String> properties,
             SigarProxy sigar) throws SigarException {
         CpuPerc cpuPerc = sigar.getCpuPerc();
         float usage = (float) (1 - cpuPerc.getIdle());
-        properties.put("cpu.usage", Float.toString(usage));
+        properties.put(IaasConst.P_COMMON_CPU_USAGE.get(), Float.toString(usage));
     }
 
     private void addMemoryProperties(Map<String,String> properties,
             SigarProxy sigar) throws SigarException {
         Mem mem = sigar.getMem();
         long total = mem.getTotal();
-        properties.put("memory.total", Long.toString(total));
+        properties.put(IaasConst.P_COMMON_MEM_TOTAL.get(), Long.toString(total));
         long free = mem.getFree();
-        properties.put("memory.free", Long.toString(free));
+        properties.put(IaasConst.P_COMMON_MEM_FREE.get(), Long.toString(free));
         long actualFree = mem.getActualFree();
-        properties.put("memory.actualfree", Long.toString(actualFree));
+        properties.put(IaasConst.P_COMMON_MEM_ACTUAL_FREE.get(), Long.toString(actualFree));
     }
 
     private void addNetworkProperties(Map<String, String> properties,
             SigarProxy sigar) throws SigarException {
         int count = sigar.getNetInterfaceList().length;
-        properties.put("network.count", Integer.toString(count));
+        properties.put(IaasConst.P_COMMON_NET_COUNT_TOTAL.get(), Integer.toString(count));
         NetInterfaceConfig config = sigar.getNetInterfaceConfig();
         NetInterfaceStat stat = sigar.getNetInterfaceStat(config.getName());
-        properties.put("network.0.tx", Long.toString(stat.getTxBytes()));
-        properties.put("network.0.rx", Long.toString(stat.getRxBytes()));
+        properties.put(IaasConst.P_COMMON_NET_TX.get(0), Long.toString(stat.getTxBytes()));
+        properties.put(IaasConst.P_COMMON_NET_RX.get(0), Long.toString(stat.getRxBytes()));
     }
 
     private void addStorageProperties(Map<String, String> properties,
@@ -140,8 +140,8 @@ public class FormattedSigarMBean implements NodeAgentMXBean {
             }
         }
         // TODO: Add network file systems
-        properties.put("storage.used", Long.toString(used));
-        properties.put("storage.total", Long.toString(total));
+        properties.put(IaasConst.P_COMMON_STORAGE_USED_TOTAL.get(), Long.toString(used));
+        properties.put(IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.get(), Long.toString(total));
     }
 
     private void addProcessProperties(Map<String, String> properties,
@@ -162,9 +162,9 @@ public class FormattedSigarMBean implements NodeAgentMXBean {
                     .append(';').append(procMemSize).append(',');
         }
         String ps = process.toString();
-        properties.put("system.process", ps.substring(0, ps.length() - 1));
+        properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS.get(), ps.substring(0, ps.length() - 1));
         String ps3 = process3.toString();
-        properties.put("system.process.3", ps3.substring(0, ps3.length() - 1));
+        properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS3.get(), ps3.substring(0, ps3.length() - 1));
     }
     
 }

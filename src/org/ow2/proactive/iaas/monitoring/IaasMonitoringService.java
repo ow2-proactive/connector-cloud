@@ -129,7 +129,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
                         // Ignore it.
                     }
                 }
-                hostinfo.put(IaasMonitoringConst.VMS_INFO_KEY, vmsinfo);
+                hostinfo.put(IaasConst.P_HOST_VMS.get(), vmsinfo);
 
                 summary.put(host, hostinfo);
 

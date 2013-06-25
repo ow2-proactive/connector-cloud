@@ -140,7 +140,7 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
         Boolean useRMNodeOnHost = Utils.isPresentInParameters("useRMNodeOnHost", options);
         Boolean useRMNodeOnVM = Utils.isPresentInParameters("useRMNodeOnVM", options);
 
-        logger.debug(String.format(
+        logger.info(String.format(
                 "Monitoring params: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
                     + " hostsfile='%s', useApi='%b', showVMProcessesOnHost='%b'", useRMNodeOnHost,
                 useRMNodeOnVM, credentialsPath, hostsFile, useApi, showVMProcessesOnHost));
@@ -371,7 +371,7 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
                 if (jmxSupportedHosts.containsKey(hostId)) {
                     String jmxurl = jmxSupportedHosts.get(hostId);
-                    properties.put(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL, jmxurl);
+                    properties.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
                     Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
                     Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
                     properties.putAll(sigarProps);
@@ -406,8 +406,8 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
                 // Get VM properties coming from the Host processes about this VM.
                 newProps = VMsMerger.getExtraVMPropertiesFromHostRMNodes(vmId, properties, hostSummary);
-                if (newProps.containsKey(IaasMonitoringConst.PROP_VM_HOST)) {
-                    String host = newProps.get(IaasMonitoringConst.PROP_VM_HOST);
+                if (newProps.containsKey(IaasConst.P_VM_HOST.get())) {
+                    String host = newProps.get(IaasConst.P_VM_HOST.get());
                     vmId2hostId.put(vmId, host);
                     logger.debug("Added cache for: vm " + vmId + " <-> host " + host + "...");
                 } else {
@@ -426,8 +426,8 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
                     newProps = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, properties, sigarsMap);
 
-                    if (newProps.containsKey(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL)) {
-                        String jmxurl = newProps.get(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL);
+                    if (newProps.containsKey(IaasConst.P_SIGAR_JMX_URL.get())) {
+                        String jmxurl = newProps.get(IaasConst.P_SIGAR_JMX_URL.get());
                         vmId2SigarJmxUrl.put(vmId, jmxurl);
                         logger.debug("Added cache for: vm " + vmId + " <-> jmxurl " + jmxurl + "...");
                     } else {

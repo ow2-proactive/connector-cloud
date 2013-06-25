@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringConst;
+import org.ow2.proactive.iaas.monitoring.IaasConst;
 
 import com.google.common.collect.Maps;
 
@@ -75,7 +75,7 @@ public class VMsMerger {
             int i = 0;
             Map<String, Object> props = (Map<String, Object>) sigar.getValue();
 
-            while ((mac = (String) props.get("network." + i++ + ".mac")) != null) {
+            while ((mac = (String) props.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null) {
                 if (vmMacs.contains(mac.toUpperCase())) {
                     return Utils.convertToStringMap(props);
                 }
@@ -99,10 +99,10 @@ public class VMsMerger {
 
         for (Entry<String, Object> host : hostsMap.entrySet()) {
             Map<String, Object> hostProps = (Map<String, Object>) host.getValue();
-            if (hostProps.containsKey("vm." + vmId + ".id")) {
+            if (hostProps.containsKey(IaasConst.P_HOST_VM_ID.get(vmId))) {
                 Map<String, String> ret = new HashMap<String, String>();
                 ret.putAll(getVMPropertiesFromHostMap(vmId, hostProps));
-                ret.put(IaasMonitoringConst.PROP_VM_HOST, host.getKey());
+                ret.put(IaasConst.P_VM_HOST.get(), host.getKey());
                 return ret;
             }
         }
@@ -113,7 +113,7 @@ public class VMsMerger {
     private static Map<String, String> getVMPropertiesFromHostMap(String vmId, Map<String, Object> props) {
         Map<String, String> output = new HashMap<String, String>();
 
-        String prefix = "vm." + vmId + ".";
+        String prefix = IaasConst.P_HOST_VM_PREFIX.get(vmId);
         for (String k : props.keySet()) {
             if (k.startsWith(prefix)) {
                 try {
@@ -131,7 +131,7 @@ public class VMsMerger {
         List<String> output = new ArrayList<String>();
         String mac = null;
         int i = 0;
-        while ((mac = vmProperties.get("network." + i++ + ".mac")) != null) {
+        while ((mac = vmProperties.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null) {
             output.add(mac.toUpperCase());
         }
         return output;

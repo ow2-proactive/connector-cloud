@@ -54,20 +54,22 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSessionContext;
 import javax.net.ssl.TrustManager;
-import javax.xml.ws.soap.SOAPFaultException;
 
 import org.apache.log4j.Logger;
 
 import com.vmware.vim25.ArrayOfGuestDiskInfo;
 import com.vmware.vim25.ArrayOfGuestNicInfo;
 import com.vmware.vim25.ArrayOfHostSystemIdentificationInfo;
+import com.vmware.vim25.ArrayOfHostVirtualNic;
 import com.vmware.vim25.ArrayOfManagedObjectReference;
 import com.vmware.vim25.ArrayOfPerfCounterInfo;
 import com.vmware.vim25.ArrayOfPhysicalNic;
 import com.vmware.vim25.DynamicProperty;
 import com.vmware.vim25.GuestDiskInfo;
 import com.vmware.vim25.GuestNicInfo;
+import com.vmware.vim25.HostIpConfig;
 import com.vmware.vim25.HostSystemIdentificationInfo;
+import com.vmware.vim25.HostVirtualNic;
 import com.vmware.vim25.InvalidPropertyFaultMsg;
 import com.vmware.vim25.ManagedObjectReference;
 import com.vmware.vim25.ObjectContent;
@@ -388,7 +390,22 @@ public class VimServiceUtil {
                     propertyMap.put(String.format("network.%s.speed", index), speed);
                 }
             }
-        } else if (propertyValue instanceof ManagedObjectReference) {
+        } else if (propertyValue instanceof ArrayOfHostVirtualNic) {
+            List<HostVirtualNic> hostVirtualNicList = ((ArrayOfHostVirtualNic) propertyValue)
+                    .getHostVirtualNic();
+            if (hostVirtualNicList != null) {
+                for (int index = 0; index < hostVirtualNicList.size(); index++) {
+                    HostVirtualNic hostVirtualNic = hostVirtualNicList
+                            .get(index);
+                    String ip = hostVirtualNic.getSpec().getIp().getIpAddress();
+                    String mac = hostVirtualNic.getSpec().getMac();
+                    propertyMap.put(String.format("network.vnic.%s.ip", index),
+                            ip);
+                    propertyMap.put(
+                            String.format("network.vnic.%s.mac", index), mac);
+                }
+            }
+        }else if (propertyValue instanceof ManagedObjectReference) {
             if (dp.getName().equals(VimServiceConstants.PROP_VM_RESOURCE_POOL)) {
                 ManagedObjectReference resp = getEntityByTypeAndId("ResourcePool",
                         ((ManagedObjectReference) propertyValue).getValue());

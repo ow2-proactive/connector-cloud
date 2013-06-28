@@ -35,32 +35,19 @@
 
 package org.ow2.proactive.iaas;
 
-import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
-import java.util.Arrays;
-import java.util.ArrayList;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
-import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+
 
 @Ignore
 public class VimServiceClientTest {
@@ -96,7 +83,7 @@ public class VimServiceClientTest {
 
     private static Map<String, Object> allhosts;
     private static Map<String, Object> allvms;
-    
+
     private static String[] hosts;
     private static String[] vms;
     private static Map<String, Object> vendorDetails;
@@ -144,7 +131,7 @@ public class VimServiceClientTest {
                     break;
             }
             System.out.println("Host properties obtained.\n");
-        } 
+        }
 
         if (allvms == null) {
             System.out.println("Getting all VM properties (this will only happen once)...\n");
@@ -167,15 +154,15 @@ public class VimServiceClientTest {
             }
             System.out.println("VM properties obtained.\n");
         }
-        
+
         if (vms == null) {
             vms = v.getVMs();
         }
-        
+
         if (hosts == null) {
             hosts = v.getHosts();
         }
-        
+
         if (vendorDetails == null) {
             vendorDetails = v.getVendorDetails();
         }
@@ -325,8 +312,8 @@ public class VimServiceClientTest {
         }
     }
 
-    private void checkMapProperties(String id, String entityType, Map<String, String> map, String[] expectedKeys)
-            throws Exception {
+    private void checkMapProperties(String id, String entityType, Map<String, String> map,
+            String[] expectedKeys) throws Exception {
         List<String> notContained = new ArrayList<String>();
         for (String key : expectedKeys)
             if (map.containsKey(key) == false)

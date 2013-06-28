@@ -228,12 +228,12 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
 
     public Map<String, String> getHostPropertiesLoad(final String hostId)
             throws IaasMonitoringException {
-        logger.debug("[" + nsname + "] " + "API, loading host properties: " + hostId);
+        logger.debug("[" + nsname + "] " + "Loader, loading host properties: " + hostId);
         return loader.getHostProperties(hostId);
     }
 
     public Map<String, String> getVMPropertiesLoad(final String vmId) throws IaasMonitoringException {
-        logger.debug("[" + nsname + "] " + "API, loading VM properties: " + vmId);
+        logger.debug("[" + nsname + "] " + "Loader, loading VM properties: " + vmId);
         return loader.getVMProperties(vmId);
     }
 
@@ -263,12 +263,12 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
 
     @Override
     public void registerNode(String nodeid, String jmxurl, NodeType type) {
-        registerNode(nodeid, jmxurl, type);
+        loader.registerNode(nodeid, jmxurl, type);
     }
 
     @Override
     public void unregisterNode(String nodeid, NodeType type) {
-        unregisterNode(nodeid, type);
+        loader.unregisterNode(nodeid, type);
     }
 
     @Override

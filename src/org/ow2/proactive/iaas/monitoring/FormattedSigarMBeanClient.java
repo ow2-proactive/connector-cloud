@@ -50,6 +50,7 @@ public class FormattedSigarMBeanClient {
             addStorageProperties(propertyMap);
             addStatusProperties(propertyMap);
             addPFlagsProperties(propertyMap);
+            addSigarProperties(propertyMap);
             if (showVMProcesses)
                 addVMProcessesProperties(propertyMap);
 
@@ -183,6 +184,7 @@ public class FormattedSigarMBeanClient {
         properties.put("storage.used", tused);
     }
 
+    
     private void addProcessProperties(Map<String, Object> properties) throws IaasMonitoringException {
         StringBuilder process = new StringBuilder();
         StringBuilder process3 = new StringBuilder();
@@ -227,6 +229,11 @@ public class FormattedSigarMBeanClient {
         }
     }
 
+    private void addSigarProperties(Map<String, Object> properties) throws IaasMonitoringException {
+        if (!properties.isEmpty()) {
+            properties.put(IaasMonitoringConst.PROP_PA_SIGAR_JMX_URL, this.serviceurl);
+        }
+    }
     private void addPFlagsProperties(Map<String, Object> properties) throws IaasMonitoringException {
         Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags", "PFlags");
         for (String key: pflags.keySet()) {

@@ -39,8 +39,11 @@ import org.ow2.proactive.iaas.monitoring.vmprocesses.VMProcess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import junit.framework.Assert;
 
 import org.hyperic.sigar.Sigar;
 import org.hyperic.sigar.SigarProxy;
@@ -93,16 +96,16 @@ public class VMProcessTest {
         } else {
             System.out.println("### ### No VMP found...");
         }
-        assertTrue(vmps.size() >= 1);
+        Assert.assertTrue(vmps.size() >= 1);
 
         VMProcess vmp = vmps.get(0);
 
-        assertTrue(vmp.getProperty("uuid").equals(UUID));
-        assertTrue(vmp.getProperty("mac").equals(MAC));
-        assertTrue(vmp.getProperty("id").equals(INSTANCE));
+        Assert.assertTrue(vmp.getProperty("vendor.vm.uuid").equals(UUID));
+        Assert.assertTrue(vmp.getProperty("network.0.mac").equals(MAC));
+        Assert.assertTrue(vmp.getProperty("id").equals(INSTANCE));
         
     }
-
+    
     public static void startSecondJVM(Class<?> clazz) throws Exception {
         String separator = System.getProperty("file.separator");
         String pwd = clazz.getClassLoader().getResource("").getFile();
@@ -119,11 +122,5 @@ public class VMProcessTest {
         new ProcessBuilder(array).start();
         
         System.out.println("Done.");
-    }
-
-    private void assertTrue(boolean b) throws Exception {
-        if (!b) {
-            throw new Exception("Test failed.");
-        }
     }
 }

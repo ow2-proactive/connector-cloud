@@ -170,7 +170,7 @@ public class VimServicePropertyUtil {
             String vmid = VimServiceUtil.getIdFromMorName(vmFullName);
             String fullVmId = "urn:vcloud:vm:" + vmid;
             String fullvAppId = "urn:vcloud:vapp:" + vappid;
-            String vendorid = fullvAppId + "," + fullVmId;
+            String vendorid = fullvAppId + "/" + fullVmId;
             
             propertyMap.put("vendor.vm.site.name", vdc);
             propertyMap.put("vendor.vm.id", vendorid);

@@ -35,19 +35,22 @@ public class Deploy extends IaasExecutable {
             System.out.println("[Deploy task] Deploying vApp " + vappId + "...");
 
             String vmPassword = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.PASSWORD);
-            if (!vmPassword.isEmpty()) {
-                // To set password, vapp must be *undeployed*
-                api.setPassword(vappId, vmPassword);
+            if (vmPassword != null) {
+                if (!vmPassword.isEmpty()) {
+                    api.setPassword(vappId, vmPassword);
+                } else {
+                    api.generatePassword(vappId);
+                }
             }
+
             String ipAddress = api.deployInstance(vappId);
+
+            if (vmPassword != null && vmPassword.isEmpty()) {
+                vmPassword = api.getPassword(vappId);
+            }
 
             List<String> vmIDs = api.getVmId(vappId);
             String vmId = vmIDs.get(0);
-
-            if (vmPassword.isEmpty()) {
-                // To retrieve password, vapp must be *deployed*
-                vmPassword = api.getPassword(vappId);
-            }
 
             System.setProperty("vcloud.instance.ipaddress", ipAddress);
             PropertyUtils.propagateProperty("vcloud.instance.ipaddress");

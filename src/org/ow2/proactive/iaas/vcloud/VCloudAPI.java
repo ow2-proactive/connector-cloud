@@ -396,17 +396,23 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         VM vm = vapp.getChildrenVms().get(0);
         GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
-        boolean isDeployed = vm.isDeployed();
-        if (isDeployed) {
-            logger.debug(String
-                    .format("Virtual machine instance [%s] is already deployed. Undeploying it before customization.",
-                            instanceID));
-            vm.undeploy(UndeployPowerActionType.FORCE).waitForTask(0);
-        }
         guestCustomizationSection.setAdminPassword(password);
-        if (isDeployed) {
-            vm.deploy(true, 0, true);
-        }
+        guestCustomizationSection.setAdminPasswordAuto(false);
+        guestCustomizationSection.setAdminPasswordEnabled(true);
+        guestCustomizationSection.setEnabled(true);
+        vm.updateSection(guestCustomizationSection).waitForTask(0);
+        vm.deploy(true, 0, true).waitForTask(0);
+    }
+
+    public void generatePassword(String instanceID) throws Exception {
+        Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
+        VM vm = vapp.getChildrenVms().get(0);
+        GuestCustomizationSectionType guestCustomizationSection = vm.getGuestCustomizationSection();
+        guestCustomizationSection.setAdminPasswordAuto(true);
+        guestCustomizationSection.setAdminPasswordEnabled(true);
+        guestCustomizationSection.setEnabled(true);
+        vm.updateSection(guestCustomizationSection).waitForTask(0);
+        vm.deploy(true, 0, true).waitForTask(0);
     }
 
     public String getPassword(String instanceID) throws Exception {
@@ -483,8 +489,14 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         checkConnection();
         Vapp vapp = Vapp.getVappById(vCloudClient, instanceID);
         if (vapp.isDeployed()) {
-            VM vm = vapp.getChildrenVms().iterator().next();
-            vm.powerOn().waitForTask(0);
+            try {
+                VM vm = vapp.getChildrenVms().iterator().next();
+                vm.powerOn().waitForTask(0);
+            } catch (VCloudException e) {
+                logger.debug("[" + instanceID +
+                    "] Failed to power on the VM. Trying to power on the vApp");
+                vapp.powerOn().waitForTask(0);
+            }
         }
         logger.debug("[" + instanceID + "] VM started");
     }

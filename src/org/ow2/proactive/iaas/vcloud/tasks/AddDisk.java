@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import org.ow2.proactive.iaas.IaasExecutable;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
+import org.ow2.proactive.iaas.vcloud.VCloudAPI.VCloudAPIConstants;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
 import org.ow2.proactive.scripting.PropertyUtils;
 
@@ -17,6 +18,11 @@ public class AddDisk extends IaasExecutable {
         VCloudAPI api = null;
 
         try {
+            if (System.getProperty("occi.compute.organization.name") != null) {
+                args.put(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME,
+                        System.getProperty("occi.compute.organization.name"));
+                PropertyUtils.propagateProperty("occi.compute.organization.name");
+            }
             api = (VCloudAPI) createApi(args);
             String vappId = null;
             if (args.get("vappid") != null) {

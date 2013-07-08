@@ -37,24 +37,30 @@
 
 package org.ow2.proactive.iaas.vcloud.monitoring;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import javax.xml.datatype.XMLGregorianCalendar;
+import javax.xml.ws.BindingProvider;
+
+import com.vmware.vim25.ArrayOfManagedObjectReference;
+import com.vmware.vim25.DynamicProperty;
+import com.vmware.vim25.Event;
+import com.vmware.vim25.EventFilterSpec;
+import com.vmware.vim25.EventFilterSpecByTime;
+import com.vmware.vim25.ManagedObjectReference;
+import com.vmware.vim25.RuntimeFaultFaultMsg;
+import com.vmware.vim25.ServiceContent;
+import com.vmware.vim25.VimPortType;
+import com.vmware.vim25.VimService;
+import org.apache.log4j.Logger;
+
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.DYNAMIC_PROPERTIES;
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.HOST_STATIC_PROPERTIES;
 import static org.ow2.proactive.iaas.vcloud.monitoring.VimServiceConstants.VM_STATIC_PROPERTIES;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.List;
-import java.util.HashMap;
-import org.apache.log4j.Logger;
-import com.vmware.vim25.VimService;
-import com.vmware.vim25.VimPortType;
-import javax.xml.ws.BindingProvider;
-import java.util.concurrent.TimeUnit;
-import com.vmware.vim25.ServiceContent;
-import com.vmware.vim25.DynamicProperty;
-import com.vmware.vim25.RuntimeFaultFaultMsg;
-import com.vmware.vim25.ManagedObjectReference;
-import com.vmware.vim25.ArrayOfManagedObjectReference;
 
 public class VimServiceClient {
 
@@ -64,9 +70,8 @@ public class VimServiceClient {
     /** 20 minutes session renewal interval. */
     private static final long LOGIN_INTERVAL = TimeUnit.MINUTES.toMillis(20);
 
+    private static final String MOBJ_NAME = "ServiceInstance";
     private final ManagedObjectReference mobjRef = new ManagedObjectReference();
-    private final String mobjName = "ServiceInstance";
-    private VimService vimService;
     private VimPortType vimPort;
     private ServiceContent serviceContent;
 
@@ -88,8 +93,8 @@ public class VimServiceClient {
             VimServiceUtil.disableHttpsCertificateVerification();
             VimServiceUtil.disableHostNameVarifier();
 
-            mobjRef.setType(mobjName);
-            mobjRef.setValue(mobjName);
+            mobjRef.setType(MOBJ_NAME);
+            mobjRef.setValue(MOBJ_NAME);
 
             ensureConnected();
         } catch (Exception error) {
@@ -102,7 +107,7 @@ public class VimServiceClient {
     private void connect() throws ViServiceClientException {
         if (!isConnected) {
             try {
-                vimService = new VimService();
+                VimService vimService = new VimService();
                 vimPort = vimService.getVimPort();
 
                 Map<String, Object> reqCtx = ((BindingProvider) vimPort)
@@ -322,6 +327,35 @@ public class VimServiceClient {
             }
         }
         isConnected = false;
+    }
+
+    public ManagedObjectReference createEventCollectorFromNow(
+            EventFilterSpec eventFilter) throws ViServiceClientException {
+        try {
+            filterEventsStartingFromNow(eventFilter);
+            return vimPort.createCollectorForEvents(serviceContent.getEventManager(), eventFilter);
+        } catch (Exception e) {
+            logger.error("Cannot create collector:", e);
+            throw new ViServiceClientException(e);
+        }
+    }
+
+    private void filterEventsStartingFromNow(EventFilterSpec eventFilter) throws RuntimeFaultFaultMsg {
+        EventFilterSpecByTime eventFilterSpecByTime = new EventFilterSpecByTime();
+        // retrieve current server time (might be different from the client time)
+        XMLGregorianCalendar now = vimPort.currentTime(mobjRef);
+        eventFilterSpecByTime.setBeginTime(now);
+        eventFilter.setTime(eventFilterSpecByTime);
+    }
+
+    public List<Event> readNextEvents(ManagedObjectReference eventCollector,
+            int pagingSize) throws ViServiceClientException {
+        try {
+            return vimPort.readNextEvents(eventCollector, pagingSize);
+        } catch (RuntimeFaultFaultMsg e) {
+            logger.error("Cannot read next events:", e);
+            throw new ViServiceClientException(e);
+        }
     }
 
     private void setNextLoginTime() {

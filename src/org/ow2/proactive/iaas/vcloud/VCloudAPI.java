@@ -58,6 +58,8 @@ import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
 import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
 import com.vmware.vcloud.api.rest.schema.CaptureVAppParamsType;
@@ -919,39 +921,62 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     }
 
     @Override
-    public String[] getHosts() throws Exception {
-        return vimServiceClient.getHosts();
+    public String[] getHosts() throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getHosts();
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
-    public String[] getVMs() throws Exception {
-        return vimServiceClient.getVMs();
+    public String[] getVMs() throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getVMs();
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
-    public String[] getVMs(String hostId) throws Exception {
-        return vimServiceClient.getVMs(hostId);
+    public String[] getVMs(String hostId) throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getVMs(hostId);
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
-    public Map<String, String> getHostProperties(String hostId) throws Exception {
-        return vimServiceClient.getHostProperties(hostId);
+    public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getHostProperties(hostId);
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
-    public Map<String, String> getVMProperties(String vmId) throws Exception {
-        return vimServiceClient.getVMProperties(vmId);
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getVMProperties(vmId);
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
-    public Map<String, Object> getVendorDetails() throws Exception {
-        return vimServiceClient.getVendorDetails();
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException {
+        try {
+            return vimServiceClient.getVendorDetails();
+        } catch (ViServiceClientException e) {
+            throw new IaasMonitoringException(e);
+        }
     }
 
     @Override
     public void stopInstance(IaasInstance instance) throws Exception {
         stopInstance(instance.getInstanceId());
-
     }
 
     @Override

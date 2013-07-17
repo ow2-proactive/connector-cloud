@@ -52,12 +52,17 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
     /**
      * Loader for monitoring information.
      */
-    protected IaasMonitoringServiceCacher loader;
-    
+    protected IaasMonitoringChainable loader;
+
     /**
      * Name of the Node Source being monitored.
      */
     protected String nsname;
+
+    /**
+     * Monitoring API of the infrastructure (if any). 
+     */
+    protected IaasMonitoringApi monitoringApi;
 
     /**
      * Constructor.
@@ -65,12 +70,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
      * @throws IaasMonitoringException
      */
     public IaasMonitoringService(IaasMonitoringApi iaaSMonitoringApi) throws IaasMonitoringException {
-        try {
-            loader = new IaasMonitoringServiceCacher(new IaasMonitoringServiceLoader(iaaSMonitoringApi));
-        } catch (Exception e) {
-            logger.error("Cannot instantiate IasSClientApi:", e);
-            throw new IaasMonitoringException(e);
-        }
+        monitoringApi = iaaSMonitoringApi;
     }
 
     /**
@@ -78,9 +78,9 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
      * @param nsName Node Source name. 
      * @param options 
      */
-    public void configure(String nsName, String options) {
+    public void configure(String nsName, String options) throws IaasMonitoringException {
         this.nsname = nsName;
-        loader.configure(nsName, options);
+        loader = IaasMonitoringServiceFactory.getMonitoringService(monitoringApi, nsName, options);
     }
 
     @Override
@@ -174,7 +174,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
     }
 
     @Override
-    public Map<String, Object> getVendorDetails() throws Exception {
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException {
         return loader.getVendorDetails();
     }
 
@@ -187,7 +187,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
     public void unregisterNode(String nodeid, NodeType type) {
         loader.unregisterNode(nodeid, type);
     }
-    
+
     public void shutDown() {
         loader.shutDown();
     }

@@ -94,7 +94,7 @@ public class VMsMerger {
      * @param hostsMap
      * @return the set of new extra properties of the VM.
      */
-    public static Map<String, String> getExtraVMPropertiesFromHostRMNodes(String vmId,
+    public static Map<String, String> getExtraVMProperties(String vmId,
             Map<String, String> vmProperties, Map<String, Object> hostsMap) {
 
         for (Entry<String, Object> host : hostsMap.entrySet()) {

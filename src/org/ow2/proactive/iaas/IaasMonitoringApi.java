@@ -39,52 +39,54 @@ package org.ow2.proactive.iaas;
 
 import java.util.Map;
 
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
+
 public interface IaasMonitoringApi {
 	
     /**
      * Get a list of all the hosts/hypervisors of this Infrastructure.
      * @return list of host ids.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public String[] getHosts() throws Exception;
+    public String[] getHosts() throws IaasMonitoringException;
 
     /**
      * Get a list of all the VMs of this Infrastructure.
      * @return list of VM ids.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public String[] getVMs() throws Exception;
+    public String[] getVMs() throws IaasMonitoringException;
 
     /**
      * Get a list of all the VMs of this host.
      * @param hostId
      * @return list of VM ids.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public String[] getVMs(String hostId) throws Exception;
+    public String[] getVMs(String hostId) throws IaasMonitoringException;
 
     /**
      * Get a map of all the properties of the host.
      * @param hostId
      * @return the list of properties.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public Map<String, String> getHostProperties(String hostId) throws Exception;
+    public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException;
 
     /**
      * Get a map of all the properties of the VM.
      * @param vmId
      * @return the list of properties.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public Map<String, String> getVMProperties(String vmId) throws Exception;
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException;
     
     /**
      * Get a map with information regarding the specific cloud services provider.
      * This method returns information provider-dependent. 
      * @return the map.
-     * @throws Exception
+     * @throws IaasMonitoringException
      */
-    public Map<String, Object> getVendorDetails() throws Exception; 
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException; 
 
 }

@@ -48,10 +48,18 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import java.util.concurrent.ExecutionException;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
 
-
-public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodesListener  {
+public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
+    
+    /**
+     * Flags in the options.
+     */
+    public static final String SHOW_VMPROCESSES_ON_HOST_FLAG = "showVMProcessesOnHost";
+    public static final String CREDENTIALS_FLAG = "cred";
+    public static final String HOSTSFILE_FLAG = "hostsfile";
+    public static final String USE_RMNODE_ON_HOST_FLAG = "useRMNodeOnHost";
+    public static final String USE_RMNODE_ON_VM_FLAG = "useRMNodeOnVM";
+    
     /** Logger. */
     private static final Logger logger = Logger.getLogger(IaasMonitoringServiceCacher.class);
 
@@ -90,31 +98,29 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
     /**
      * Loader of values. This loader will directly contact the API.
      */
-    private IaasMonitoringServiceLoader loader;
-    
+    private IaasMonitoringChainable loader;
+
     /**
      * Timer to execute regularly the refresh task. 
      */
     private Timer timer;
-    
+
     /**
      * Name of the Node Source being monitored.
      */
     protected String nsname;
 
-    public IaasMonitoringServiceCacher(IaasMonitoringServiceLoader loader)
-            throws IaasMonitoringException {
-        
+    public IaasMonitoringServiceCacher(IaasMonitoringChainable loader) throws IaasMonitoringException {
+
         this.loader = loader;
 
     }
 
     public void configure(String nsName, String options) {
-        
+
         this.nsname = nsName;
-        
+
         loader.configure(nsName, options);
-        
 
         String refreshPeriodStr = Utils.getValueFromParameters("refreshPeriodSeconds", options);
         if (refreshPeriodStr != null) {
@@ -147,7 +153,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
 
         logger.debug(String
                 .format("[" + nsname + "] " +
-                    "Monitoring params: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
+                    "Monitoring params for cacher: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
                         refreshPeriod, maximumCacheEntries, expirationTime, autoUpdate));
 
         createCaches();
@@ -226,8 +232,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
         return loader.getVMs(hostId);
     }
 
-    public Map<String, String> getHostPropertiesLoad(final String hostId)
-            throws IaasMonitoringException {
+    public Map<String, String> getHostPropertiesLoad(final String hostId) throws IaasMonitoringException {
         logger.debug("[" + nsname + "] " + "Loader, loading host properties: " + hostId);
         return loader.getHostProperties(hostId);
     }
@@ -272,7 +277,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringApi, IaasNodes
     }
 
     @Override
-    public Map<String, Object> getVendorDetails() throws Exception {
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException {
         // Not cached.
         return loader.getVendorDetails();
     }

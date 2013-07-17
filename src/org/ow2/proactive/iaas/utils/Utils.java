@@ -8,6 +8,9 @@ import java.util.Map;
 
 public class Utils {
 
+    public static final String OPTIONS_SEP = ",";
+    public static final String KEY_VALUE_SEP = "=";
+    
     public static String argsToString(List<String> args) {
         return argsToString(args, " ");
     }
@@ -47,10 +50,10 @@ public class Utils {
     }
 
     public static String getValueFromParameters(String flag, String options) {
-        String[] allpairs = options.split(",");
+        String[] allpairs = options.split(OPTIONS_SEP);
         for (String pair : allpairs) {
-            if (pair.startsWith(flag + "=")) {
-                String[] keyvalue = pair.split("=");
+            if (pair.startsWith(flag + KEY_VALUE_SEP)) {
+                String[] keyvalue = pair.split(KEY_VALUE_SEP);
                 if (keyvalue.length != 2) {
                     throw new RuntimeException("Could not retrieve value for parameter '" + flag + "'.");
                 }
@@ -61,8 +64,10 @@ public class Utils {
     }
 
     public static boolean isPresentInParameters(String flag, String options) {
-        if (options.contains(flag)) {
-            return true;
+        String[] allprops = options.split(OPTIONS_SEP);
+        for (String prop: allprops){
+            if (prop.equals(flag))
+                return true;
         }
         return false;
     }

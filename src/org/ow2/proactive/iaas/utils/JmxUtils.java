@@ -61,7 +61,7 @@ public class JmxUtils {
 
     public static Map<String, Object> getSigarProperties(
             String jmxurl, Map<String, Object> jmxenv, 
-            Boolean showVMProcesses) 
+            int mask) 
                     throws IaasMonitoringException {
         FormattedSigarMBeanClient a;
         Map<String, Object> map = new HashMap<String, Object>();
@@ -73,7 +73,7 @@ public class JmxUtils {
             throw new IaasMonitoringException(e);
         }
         
-        map = a.getPropertyMap(showVMProcesses);
+        map = a.getPropertyMap(mask);
         
         try {
             a.disconnect();

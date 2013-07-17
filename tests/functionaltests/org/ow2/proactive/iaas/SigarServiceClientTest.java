@@ -40,16 +40,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.PFlags;
-import org.junit.FixMethodOrder;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Before;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runners.MethodSorters;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTHelper;
 import org.ow2.proactive.authentication.crypto.Credentials;
@@ -59,7 +60,7 @@ import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+
 /**
  * These tests check for the presence of certain monitoring information as it 
  * is retrieved from a sigar mbean in an RMNode.
@@ -86,23 +87,23 @@ public class SigarServiceClientTest {
     static final String[] HOST_EXPECTED_KEYS_MISC = VimServiceClientTest.HOST_EXPECTED_KEYS_MISC;
 
     static final String MAX_NOT_CONTAINED_KEYS_KEY = "sigar.maximum_not_contained_keys";
-    
+
     /**
      * Maximum allowed amount of keys not present (per test) before considered the 
      * test as failed.
      */
     private static int keysNotContainedMaximum = 0;
-    
+
     /**
      * Url of the RM.
      */
     private static String rmurl;
-    
+
     /**
      * Properties obtained from querying the RMNode (using Sigar's MBeans)
      */
     private static Map<String, String> rmNodeProps;
-    
+
     /**
      * Flag to tell if the test was correctly configured and can continue.
      */
@@ -115,58 +116,51 @@ public class SigarServiceClientTest {
     private static String pflagValue;
     private static TemporaryFolder tmpFold;
 
-    @Before
-    public void startRM() throws Exception {
+    @BeforeClass
+    public static void startRM() throws Exception {
 
-        if (rmurl == null) {
+        // Initialize some environment variables needed for tests.
 
-            // Initialize some environment variables needed for tests.
-            
-            // INITIALIZATION FOR PFLAGS TEST
-            // PFlags files will be stored in a temporary folder.
-            tmpFold = new TemporaryFolder();
-            tmpFold.create();
-            String tmpFoldPath = tmpFold.getRoot().getAbsolutePath();
+        // INITIALIZATION FOR PFLAGS TEST
+        // PFlags files will be stored in a temporary folder.
+        tmpFold = new TemporaryFolder();
+        tmpFold.create();
+        String tmpFoldPath = tmpFold.getRoot().getAbsolutePath();
 
-            // The PFlag name is as follows.
-            pflagName = "tomcat-process";
-            File f = tmpFold.newFile(pflagName);
-            f.deleteOnExit();
+        // The PFlag name is as follows.
+        pflagName = "tomcat-process";
+        File f = tmpFold.newFile(pflagName);
+        f.deleteOnExit();
 
-            // The PFlag value is as follows.
-            pflagValue = "pid:3030,port:8081,prop:" + (new Random()).nextInt(1024);
-            FileUtils.writeStringToFile(f, pflagValue);
-            // END OF INITIALIZATION FOR PFLAGS TEST
+        // The PFlag value is as follows.
+        pflagValue = "pid:3030,port:8081,prop:" + (new Random()).nextInt(1024);
+        FileUtils.writeStringToFile(f, pflagValue);
+        // END OF INITIALIZATION FOR PFLAGS TEST
 
-            
-            // Get some test parameters.
-            String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);
-            System.out.println(k);
-            try {
-                keysNotContainedMaximum = Integer.parseInt(k);
-            } catch (Exception e) {
-                // Ignore, use default.
-            }
-
-            // Start the RM. 
-
-            try {
-                System.out.println("Starting RM (make sure no other RM is running)...");
-                Map<String, String> rmNodeJvmArgs = new HashMap<String, String>();
-                rmNodeJvmArgs.put(PFlags.PFLAGS_DIR_KEY, tmpFoldPath);
-                rmurl = IaasFuncTHelper.startResourceManager(rmNodeJvmArgs);
-                testConfigured = true;
-            } catch (Exception e) {
-                System.out.println("Error while launching the RM...");
-                e.printStackTrace();
-                testConfigured = false;
-                rmurl = "<error>";
-            }
+        // Get some test parameters.
+        String k = IaasFuncTConfig.getInstance().getProperty(MAX_NOT_CONTAINED_KEYS_KEY);
+        System.out.println(k);
+        try {
+            keysNotContainedMaximum = Integer.parseInt(k);
+        } catch (Exception e) {
+            // Ignore, use default.
         }
-    }
 
-    @Test
-    public void a01_getRMNodeSigarProperties_Test() throws Exception {
+        // Start the RM. 
+
+        try {
+            System.out.println("Starting RM (make sure no other RM is running)...");
+            Map<String, String> rmNodeJvmArgs = new HashMap<String, String>();
+            rmNodeJvmArgs.put(PFlags.PFLAGS_DIR_KEY, tmpFoldPath);
+            rmurl = IaasFuncTHelper.startResourceManager(rmNodeJvmArgs);
+            testConfigured = true;
+        } catch (Exception e) {
+            System.out.println("Error while launching the RM...");
+            e.printStackTrace();
+            testConfigured = false;
+            rmurl = "<error>";
+        }
+
         System.out.println("Connecting and login to existing RM to '" + rmurl + "'...");
 
         RMAuthentication auth = RMConnection.join(rmurl);
@@ -174,7 +168,7 @@ public class SigarServiceClientTest {
         ResourceManager rm = auth.login(c);
 
         System.out.println("Done.");
-        
+
         RMInitialState state = rm.getMonitoring().getState();
         List<RMNodeEvent> events = state.getNodesEvents();
         String jmxurl = null;
@@ -187,14 +181,15 @@ public class SigarServiceClientTest {
         System.out.println("RMNode JMX URL: " + jmxurl);
 
         Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(c);
-        rmNodeProps = Utils.convertToStringMap(JmxUtils.getSigarProperties(jmxurl, jmxenv, true));
+        rmNodeProps = Utils.convertToStringMap(JmxUtils.getSigarProperties(jmxurl, jmxenv,
+                FormattedSigarMBeanClient.MASK_ALL));
         System.out.println("Map properties: '\n" + rmNodeProps + "\n'");
-        
+
         StringBuffer str = new StringBuffer();
-        for (String key: rmNodeProps.keySet()){
-            str.append("\n - " + key);
+        for (Entry<String, String> entry : rmNodeProps.entrySet()) {
+            str.append("\n - " + entry.getKey() + " - " + entry.getValue());
         }
-        
+
         System.out.println("Map keys: '\n" + str.toString() + "\n'");
 
         System.out.println("Disconnecting...");
@@ -323,8 +318,8 @@ public class SigarServiceClientTest {
         }
     }
 
-    @Test
-    public void zz_shutDownScheduler() throws Exception {
+    @AfterClass
+    public static void shutdownRM() throws Exception {
         System.out.println("RM not needed anymore. Shutting it down...");
         rmurl = null;
         IaasFuncTHelper.stopRm();

@@ -38,6 +38,6 @@ import org.junit.Ignore;
 @Ignore
 public class VMProcessHelperTest {
     public static void main(String[] args) throws Exception {
-        Thread.sleep(500);
+        Thread.sleep(2000);
     }
 }

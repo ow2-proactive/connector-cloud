@@ -52,10 +52,10 @@ import org.junit.Test;
 
 public class VMProcessTest {
 
-    private static final String INSTANCE = "instance-00000109";
-    private static final String UUID = "7de378fc-5f62-4961-a6a7-f3ffc812ad2b";
-    private static final String MAC = "fa:16:3e:41:17:68";
-    private static final String KVM_COMMAND_LINE_SAMPLE = 
+    public static final String INSTANCE = "instance-00000109";
+    public static final String UUID = "7de378fc-5f62-4961-a6a7-f3ffc812ad2b";
+    public static final String MAC = "fa:16:3e:41:17:68";
+    public static final String KVM_COMMAND_LINE_SAMPLE = 
             "/usr/bin/kvm -S -M pc-1.0 -enable-kvm -m 4096 -smp 2,sockets=2,cores=1,threads=1" + 
             " -name " + INSTANCE + " -uuid " + UUID + " -nodefconfig -nodefaults " + 
             "-chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000109.monitor,server,nowait " + 
@@ -70,6 +70,8 @@ public class VMProcessTest {
 
     @Before
     public void before() throws Exception {
+        // This class sleeps for a while and exits, so
+        // no need to kill it.
         startSecondJVM(VMProcessHelperTest.class);
     }
 
@@ -107,6 +109,10 @@ public class VMProcessTest {
     }
     
     public static void startSecondJVM(Class<?> clazz) throws Exception {
+        startSecondJVM(clazz, KVM_COMMAND_LINE_SAMPLE);
+    }
+    
+    public static void startSecondJVM(Class<?> clazz, String cline) throws Exception {
         String separator = System.getProperty("file.separator");
         String pwd = clazz.getClassLoader().getResource("").getFile();
         String path = System.getProperty("java.home") + separator + "bin" + separator + "java";
@@ -116,11 +122,11 @@ public class VMProcessTest {
         array.add("-cp");
         array.add(pwd);
         array.add(clazz.getCanonicalName());
-        array.addAll(Arrays.asList(KVM_COMMAND_LINE_SAMPLE.split(" ")));
+        array.addAll(Arrays.asList(cline.split(" ")));
         System.out.println("Starting JVM: " + array);
 
         new ProcessBuilder(array).start();
-        
+      
         System.out.println("Done.");
     }
 }

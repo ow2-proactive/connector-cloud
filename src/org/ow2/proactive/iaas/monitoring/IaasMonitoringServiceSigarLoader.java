@@ -42,6 +42,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -51,25 +52,28 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.ArrayList;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.VMsMerger;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
+import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 
-public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodesListener {
+public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable {
+
+    /**
+     * Flags in the options.
+     */
+    public static final String SHOW_VMPROCESSES_ON_HOST_FLAG = "showVMProcessesOnHost";
+    public static final String CREDENTIALS_FLAG = "cred";
+    public static final String HOSTSFILE_FLAG = "hostsfile";
+    public static final String USE_RMNODE_ON_HOST_FLAG = "useRMNodeOnHost";
+    public static final String USE_RMNODE_ON_VM_FLAG = "useRMNodeOnVM";
 
     /** 
      * Logger. 
      */
-    private static final Logger logger = Logger.getLogger(IaasMonitoringServiceLoader.class);
-
-    /**
-     * Monitoring API.
-     */
-    private IaasMonitoringApi iaaSMonitoringApi;
+    private static final Logger logger = Logger.getLogger(IaasMonitoringServiceSigarLoader.class);
 
     /** 
      * Map to save JMX urls per host.
@@ -87,11 +91,6 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
      * Credentials to get connected to the RMNodes (information obtained from JMX Sigar MBeans).
      */
     protected Credentials credentialsSigar = null;
-
-    /**
-     * Use the Infrastructure API to get monitoring information.
-     */
-    protected Boolean useApi = false;
 
     /**
      * Show VM Processes information when getting host properties.
@@ -123,27 +122,28 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
      */
     private Map<String, String> vmId2hostId = new HashMap<String, String>();
 
-    public IaasMonitoringServiceLoader(IaasMonitoringApi iaaSMonitoringApi) throws IaasMonitoringException {
-        this.iaaSMonitoringApi = iaaSMonitoringApi;
+    /** 
+     * Constants to filter sigar properties.
+     */
+    private static int MASK_ALL = FormattedSigarMBeanClient.MASK_ALL;
+    private static int MASK_VMPROC = FormattedSigarMBeanClient.MASK_VMPROC;
+    private static int MASK_ALL_BUT_VMPROC = MASK_ALL & ~MASK_VMPROC;
+
+    IaasMonitoringServiceSigarLoader() throws IaasMonitoringException {
     }
 
-    /**
-     * Configure the monitoring module.
-     * @param nsName Node Source name. 
-     * @param options 
-     */
+    @Override
     public void configure(String nsName, String options) {
-        Boolean useApi = Utils.isPresentInParameters("useApi", options);
-        Boolean showVMProcessesOnHost = Utils.isPresentInParameters("showVMProcessesOnHost", options);
-        String credentialsPath = Utils.getValueFromParameters("cred", options);
-        String hostsFile = Utils.getValueFromParameters("hostsfile", options);
-        Boolean useRMNodeOnHost = Utils.isPresentInParameters("useRMNodeOnHost", options);
-        Boolean useRMNodeOnVM = Utils.isPresentInParameters("useRMNodeOnVM", options);
+        Boolean showVMProcessesOnHost = Utils.isPresentInParameters(SHOW_VMPROCESSES_ON_HOST_FLAG, options);
+        String credentialsPath = Utils.getValueFromParameters(CREDENTIALS_FLAG, options);
+        String hostsFile = Utils.getValueFromParameters(HOSTSFILE_FLAG, options);
+        Boolean useRMNodeOnHost = Utils.isPresentInParameters(USE_RMNODE_ON_HOST_FLAG, options);
+        Boolean useRMNodeOnVM = Utils.isPresentInParameters(USE_RMNODE_ON_VM_FLAG, options);
 
         logger.info(String.format(
-                "Monitoring params: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
-                    + " hostsfile='%s', useApi='%b', showVMProcessesOnHost='%b'", useRMNodeOnHost,
-                useRMNodeOnVM, credentialsPath, hostsFile, useApi, showVMProcessesOnHost));
+                "Monitoring params for SigarLoader: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
+                    + " hostsfile='%s', showVMProcessesOnHost='%b'", useRMNodeOnHost, useRMNodeOnVM,
+                credentialsPath, hostsFile, showVMProcessesOnHost));
 
         // Use Sigar monitoring? 
         // Set up credentials file path.
@@ -159,9 +159,6 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
         this.nsname = nsName;
 
-        // Use API monitoring?
-        this.useApi = useApi;
-
         // Show VM Processes information when getting host properties?
         this.showVMProcessesOnHost = showVMProcessesOnHost;
 
@@ -173,13 +170,13 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
         // Set up hosts file path.
         if (hostsFile != null) {
-            setHosts(hostsFile);
+            setHostsToMonitor(hostsFile);
         } else {
             logger.warn("Hosts monitoring file not provided.");
         }
     }
 
-    private void setHosts(String filepath) {
+    private void setHostsToMonitor(String filepath) {
         Properties prop = new Properties();
         try {
             prop.load(new FileInputStream(filepath));
@@ -250,21 +247,9 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
     }
 
     @Override
-    /**
-     * Get the list of host IDs from:
-     * - Infrastructure API.
-     * - JMX table of registered hosts.
-     * @return the list of host Ids in the infrastructure.
-     */
     public String[] getHosts() throws IaasMonitoringException {
-        logger.debug("[" + nsname + "]" + "Retrieving list of hosts for IaaS node source: " + nsname);
+        logger.debug("[" + nsname + "]" + "Retrieving list of hosts...");
         HashSet<String> hosts = new HashSet<String>();
-        if (useApi)
-            try {
-                hosts.addAll(Arrays.asList(iaaSMonitoringApi.getHosts())); // From API.
-            } catch (Exception e) {
-                logger.error("[" + nsname + "]" + "Cannot retrieve the list of hosts from API.", e);
-            }
 
         if (credentialsSigar != null)
             try {
@@ -277,62 +262,40 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
     }
 
     @Override
-    /**
-     * Get the list of Ids of each VM in the infrastructure.
-     * It collects the VMs as listed by these sources:
-     * - The method getVM(host) for each host listed by getHosts(), 
-     * - All the VMs registered in the JMX table for VMs.
-     * @return the list of VM Ids in the infrastructure.
-     */
     public String[] getVMs() throws IaasMonitoringException {
-        logger.debug("[" + nsname + "]" + "Retrieving list of VMs from IaaS node source: " + nsname);
+        logger.debug("[" + nsname + "]" + "Retrieving list of VMs...");
         HashSet<String> vms = new HashSet<String>();
 
         String[] hosts = getHosts();
         for (String hostid : hosts) {
             try {
-                Set<String> vmsAtHost = new HashSet<String>(Arrays.asList(getVMs(hostid)));
+                String[] vmsList = getVMs(hostid);
+
+                Set<String> vmsAtHost = new HashSet<String>(Arrays.asList(vmsList));
+
                 vms.addAll(vmsAtHost);
             } catch (Exception e) {
                 logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs from host: " + hostid, e);
             }
         }
 
-        if (credentialsSigar != null)
-            vms.addAll(jmxSupportedVMs.keySet()); // From RM.
+        // VMs from the jmxSupportedVMs will not be listed.
+        //if (credentialsSigar != null)
+        //    vms.addAll(jmxSupportedVMs.keySet()); // From RM.
 
         return vms.toArray(new String[] {});
     }
 
     @Override
-    /**
-     * Get the list of VMs in the host provided.
-     * The list of VMs is obtained from the following sources:
-     * - Infrastructure API.
-     * - Parsing of processes running in the host.
-     * NOTE: we assume that the RMNode running in each VM has the same name as the ID of the VM
-     * as shown by the infrastructure API and the id identified by means of the VM process running
-     * in the host. This way, every VM listed in jmxSupportedVMs will be already included in the 
-     * VMProcesses list.
-     */
     public String[] getVMs(String hostId) throws IaasMonitoringException {
-        logger.debug("[" + nsname + "]" + "Retrieving list of VMs in host " + hostId +
-            " from IaaS node source " + nsname);
+        logger.debug("[" + nsname + "]" + "Retrieving list of VMs in host '" + hostId + "'...");
 
         Set<String> vms = new HashSet<String>();
 
-        if (useApi)
-            try {
-                List<String> fromApi = Arrays.asList(iaaSMonitoringApi.getVMs(hostId));
-                vms.addAll(fromApi);
-            } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs from API of the host: " +
-                    hostId, e);
-            }
-
         if (useRMNodeOnHost)
             try {
-                List<String> fromHostProc = Arrays.asList(getVMsFromHostProcesses(hostId));
+                String[] vmsList = getVMProcesses(hostId);
+                List<String> fromHostProc = Arrays.asList(vmsList);
                 vms.addAll(fromHostProc);
             } catch (Exception e) {
                 logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs of the host: " + hostId, e);
@@ -341,48 +304,11 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
         return (new ArrayList<String>(vms)).toArray(new String[] {});
     }
 
-    private String[] getVMsFromHostProcesses(String hostId) throws IaasMonitoringException {
-        Map<String, String> props = getHostProperties(hostId);
-        String vms = props.get(VMPLister.VMS_KEY);
-        if (vms != null) {
-            return vms.split(VMPLister.VMS_SEPARATOR);
-        } else {
-            return new String[] {};
-        }
-    }
-
     @Override
     public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
-        logger.debug("[" + nsname + "]" + "Retrieving properties from host " + hostId +
-            " from IaaS node source " + nsname);
-        Map<String, String> properties = new HashMap<String, String>();
-
-        if (useApi)
-            try {
-                Map<String, String> apiprops = iaaSMonitoringApi.getHostProperties(hostId);
-                properties.putAll(apiprops);
-            } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve IaaS API properties from host: " + hostId,
-                        e);
-            }
-
-        if (credentialsSigar != null)
-            try {
-
-                if (jmxSupportedHosts.containsKey(hostId)) {
-                    String jmxurl = jmxSupportedHosts.get(hostId);
-                    properties.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
-                    Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                    Map<String, String> sigarProps = queryProps(jmxurl, jmxenv);
-                    properties.putAll(sigarProps);
-                } else {
-                    logger.debug("[" + nsname + "]" + "No RMNode running on the host '" + hostId + "'.");
-                }
-            } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve Sigar properties from host: " + hostId, e);
-            }
-
-        return properties;
+        logger.debug("[" + nsname + "]" + "Retrieving properties from host " + hostId + "'...");
+        int mask = (showVMProcessesOnHost ? MASK_ALL : MASK_ALL_BUT_VMPROC);
+        return getHostPropertiesSelective(hostId, mask);
     }
 
     @Override
@@ -390,22 +316,14 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
         logger.debug("[" + nsname + "]" + "Retrieving properties for VM " + vmId);
         Map<String, String> properties = new HashMap<String, String>();
 
-        if (useApi)
-            try {
-                Map<String, String> apiprops = iaaSMonitoringApi.getVMProperties(vmId);
-                properties.putAll(apiprops);
-            } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve IaaS API properties for VM: " + vmId, e);
-            }
-
         if (useRMNodeOnHost) {
             try {
 
-                Map<String, Object> hostSummary = getRMNodeHostsMaps(vmId, vmId2hostId);
+                Map<String, Object> hostSummary = getHostsMaps(vmId, vmId2hostId);
                 Map<String, String> newProps;
 
                 // Get VM properties coming from the Host processes about this VM.
-                newProps = VMsMerger.getExtraVMPropertiesFromHostRMNodes(vmId, properties, hostSummary);
+                newProps = VMsMerger.getExtraVMProperties(vmId, properties, hostSummary);
                 if (newProps.containsKey(IaasConst.P_VM_HOST.get())) {
                     String host = newProps.get(IaasConst.P_VM_HOST.get());
                     vmId2hostId.put(vmId, host);
@@ -421,7 +339,7 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
                  * address is obtainable from the parameters of the VM process, in the host).
                  */
                 if (useRMNodeOnVM) {
-                    // Get properties of all VMs (from Sigar of each).
+                    // Get properties of all VMs (from Sigar of each) unless cache exists.
                     Map<String, Object> sigarsMap = getRMNodeVMsMaps(vmId, vmId2SigarJmxUrl);
 
                     newProps = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, properties, sigarsMap);
@@ -433,9 +351,10 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
                     } else {
                         logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrl + ")");
                     }
+                    
+                    properties.putAll(newProps);
                 }
 
-                properties.putAll(newProps);
             } catch (Exception e) {
                 logger.warn("[" + nsname + "]" + "Cannot retrieve VMProcesses info for VM: " + vmId, e);
             }
@@ -444,14 +363,48 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
         return properties;
     }
 
-    private Map<String, Object> getRMNodeHostsMaps(String vmIdTarget, Map<String, String> cache)
+    private String[] getVMProcesses(String hostId) throws IaasMonitoringException {
+        Map<String, String> props = getHostPropertiesSelective(hostId, MASK_VMPROC);
+        String vms = props.get(VMPLister.VMS_KEY);
+        if (vms != null) {
+            return vms.split(VMPLister.VMS_SEPARATOR);
+        } else {
+            return new String[] {};
+        }
+    }
+
+    public Map<String, String> getHostPropertiesSelective(String hostId, int mask)
+            throws IaasMonitoringException {
+
+        Map<String, String> properties = new HashMap<String, String>();
+
+        if (credentialsSigar != null)
+            try {
+
+                if (jmxSupportedHosts.containsKey(hostId)) {
+                    String jmxurl = jmxSupportedHosts.get(hostId);
+                    properties.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
+                    Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
+                    Map<String, String> sigarProps = queryProps(jmxurl, jmxenv, mask);
+                    properties.putAll(sigarProps);
+                } else {
+                    logger.debug("[" + nsname + "]" + "No RMNode running on the host '" + hostId + "'.");
+                }
+            } catch (Exception e) {
+                logger.warn("[" + nsname + "]" + "Cannot retrieve Sigar properties from host: " + hostId, e);
+            }
+
+        return properties;
+    }
+
+    private Map<String, Object> getHostsMaps(String vmIdTarget, Map<String, String> cache)
             throws IaasMonitoringException {
 
         Map<String, Object> hostsMap = new HashMap<String, Object>();
         String host = null;
 
         /*
-         * Cached hostid for this vmIdTarget.
+         * Cached hostid for this vmIdTarget?
          */
         host = cache.get(vmIdTarget);
 
@@ -480,7 +433,6 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
         }
 
         return hostsMap;
-
     }
 
     /**
@@ -502,7 +454,7 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
 
         if (jmxurl != null) {
             Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-            sigarsMap.put(vmIdTarget, queryProps(jmxurl, jmxenv, false));
+            sigarsMap.put(vmIdTarget, queryProps(jmxurl, jmxenv, MASK_ALL_BUT_VMPROC));
         } else {
             /*
              * No cached Sigar jmxurl for this vmIdTarget. Retrieve all.
@@ -513,7 +465,7 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
                 logger.debug("Querying props of: " + sigar + " at " + j);
                 Map<String, String> sigarProps = null;
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                sigarProps = queryProps(j, jmxenv);
+                sigarProps = queryProps(j, jmxenv, MASK_ALL_BUT_VMPROC);
                 logger.debug("Properties: " + sigarProps);
                 if (sigarProps != null) {
                     sigarsMap.put(sigar, sigarProps);
@@ -527,44 +479,26 @@ public class IaasMonitoringServiceLoader implements IaasMonitoringApi, IaasNodes
     }
 
     /**
-     * @see #queryProps(String, Map)  
-     */
-    private Map<String, String> queryProps(String jmxurl, Map<String, Object> env) {
-        return queryProps(jmxurl, env, showVMProcessesOnHost);
-    }
-
-    /**
      * Query all the monitoring properties of a target RMNode using 
      * the remote Sigar MBean.
      * @param jmxurl URL of the RM JMX Server.
      * @param env Jmx initialization map.
      * @return a map of properties of the target RMNode.
      */
-    private Map<String, String> queryProps(String jmxurl, Map<String, Object> env,
-            boolean showVMProcessesOnHost) {
+    private Map<String, String> queryProps(String jmxurl, Map<String, Object> env, int mask) {
         Map<String, Object> outp = new HashMap<String, Object>();
         try {
-            outp = JmxUtils.getSigarProperties(jmxurl, env, showVMProcessesOnHost);
+            outp = JmxUtils.getSigarProperties(jmxurl, env, mask);
         } catch (Exception e) {
             logger.warn("[" + nsname + "]" + "Could not get sigar properties for '" + jmxurl + "'.", e);
         }
         return Utils.convertToStringMap(outp);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Object> getVendorDetails() throws Exception {
-        logger.debug("[" + nsname + "] Retrieving provider details.");
-        Map<String, Object> properties = new HashMap<String, Object>();
-
-        if (useApi)
-            try {
-                Map<String, Object> apiprops = iaaSMonitoringApi.getVendorDetails();
-                properties.putAll(apiprops);
-            } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve IaaS API properties. ", e);
-            }
-
-        return properties;
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException {
+        return (Map<String, Object>) Collections.EMPTY_MAP;
     }
 
     public void shutDown() {

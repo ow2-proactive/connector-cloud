@@ -340,11 +340,11 @@ public class IaasFuncTHelper {
         return (new File(forkedTaskLog4JConfig.toURI())).getAbsolutePath();
     }
 
-    private static String getRmHome() throws Exception {
+    public static String getRmHome() throws Exception {
         return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 
-    private static String getSchedHome() throws Exception {
+    public static String getSchedHome() throws Exception {
         return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 

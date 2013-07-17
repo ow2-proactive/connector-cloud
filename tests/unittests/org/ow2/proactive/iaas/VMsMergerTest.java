@@ -116,7 +116,7 @@ public class VMsMergerTest {
 
         currentVMProperties = new HashMap<String, String>();
 
-        Map<String, String> fromVMP = VMsMerger.getExtraVMPropertiesFromHostRMNodes(vmId, currentVMProperties,
+        Map<String, String> fromVMP = VMsMerger.getExtraVMProperties(vmId, currentVMProperties,
                 hostsMap);
         currentVMProperties.putAll(fromVMP);
         Map<String, String> fromSigar = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, currentVMProperties,

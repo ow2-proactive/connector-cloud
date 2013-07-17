@@ -21,6 +21,18 @@ import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 public class FormattedSigarMBeanClient {
 
+    // Masks to get specific properties.
+    public static final int MASK_CPU = 0x0001;
+    public static final int MASK_MEMORY = 0x0002;
+    public static final int MASK_PROCESS = 0x0004;
+    public static final int MASK_STORAGE = 0x0008;
+    public static final int MASK_STATUS = 0x0010;
+    public static final int MASK_PFLAGS = 0x0020;
+    public static final int MASK_SIGAR = 0x0040;
+    public static final int MASK_NETWORK = 0x0080;
+    public static final int MASK_VMPROC = 0x0100;
+    public static final int MASK_ALL = 0xFFFF;
+
     private static final Logger logger = Logger.getLogger(FormattedSigarMBeanClient.class);
 
     private String serviceurl;
@@ -32,74 +44,122 @@ public class FormattedSigarMBeanClient {
         connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), jmxenv);
     }
 
+    public FormattedSigarMBeanClient(JMXConnector connector) {
+        this.connector = connector;
+    }
+
     public void disconnect() throws IOException {
         if (connector != null) {
             connector.close();
         }
     }
 
-    public Map<String, Object> getPropertyMap(Boolean showVMProcesses) {
+    public Map<String, Object> getPropertyMap(int mask) {
+
+        // Can use: 
+        //          getPropertyMap(MASK_CPU | MASK_MEMORY);
+        // or also: 
+        //          getPropertyMap(MASK_ALL);
+
+        // TODO optimize addVMProcessesProperties to use processes already
+        //      obtained 
+
         Map<String, Object> propertyMap = new HashMap<String, Object>();
-        try {
+
+        if ((mask & MASK_CPU) == MASK_CPU) {
             addCpuCoresProperty(propertyMap);
             addCpuFrequencyProperty(propertyMap);
             addCpuUsageProperty(propertyMap);
-            addMemoryProperties(propertyMap);
-            addNetworkProperties(propertyMap);
-            addProcessProperties(propertyMap);
-            addStorageProperties(propertyMap);
-            addStatusProperties(propertyMap);
-            addPFlagsProperties(propertyMap);
-            addSigarProperties(propertyMap);
-            if (showVMProcesses)
-                addVMProcessesProperties(propertyMap);
-
-        } catch (Exception se) {
-            logger.error("Error getting some properties.", se);
         }
+
+        if ((mask & MASK_MEMORY) == MASK_MEMORY)
+            addMemoryProperties(propertyMap);
+
+        if ((mask & MASK_NETWORK) == MASK_NETWORK)
+            addNetworkProperties(propertyMap);
+
+        if ((mask & MASK_PROCESS) == MASK_PROCESS)
+            addProcessProperties(propertyMap);
+
+        if ((mask & MASK_STORAGE) == MASK_STORAGE)
+            addStorageProperties(propertyMap);
+
+        if ((mask & MASK_STATUS) == MASK_STATUS)
+            addStatusProperties(propertyMap);
+
+        if ((mask & MASK_PFLAGS) == MASK_PFLAGS)
+            addPFlagsProperties(propertyMap);
+
+        if ((mask & MASK_SIGAR) == MASK_SIGAR)
+            addSigarProperties(propertyMap);
+
+        if ((mask & MASK_VMPROC) == MASK_VMPROC)
+            addVMProcessesProperties(propertyMap);
+
         return propertyMap;
     }
 
-    private void addVMProcessesProperties(Map<String, Object> properties) throws IaasMonitoringException {
-        Map<String, Object> props = VMPLister.getVMPsAsMap((Object) connector);
-        properties.putAll(props);
+    private void addVMProcessesProperties(Map<String, Object> properties) {
+        try {
+            Map<String, Object> props = VMPLister.getVMPsAsMap((Object) connector);
+            properties.putAll(props);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
+        }
     }
 
-    private void addCpuCoresProperty(Map<String, Object> properties) throws IaasMonitoringException {
-        Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
-        properties.put(IaasConst.P_COMMON_CPU_CORES.get(), (Integer) a);
+    private void addCpuCoresProperty(Map<String, Object> properties) {
+        try {
+            Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
+            properties.put(IaasConst.P_COMMON_CPU_CORES.get(), (Integer) a);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
+        }
     }
 
-    private void addCpuFrequencyProperty(Map<String, Object> properties) throws IaasMonitoringException {
-        Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
-        int fmhz = (Integer) a;
-        float fghz = (float) fmhz / 1000;
-        properties.put(IaasConst.P_COMMON_CPU_FREQUENCY.get(), fghz);
+    private void addCpuFrequencyProperty(Map<String, Object> properties) {
+        try {
+            Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
+            int fmhz = (Integer) a;
+            float fghz = (float) fmhz / 1000;
+            properties.put(IaasConst.P_COMMON_CPU_FREQUENCY.get(), fghz);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
+        }
     }
 
-    private void addCpuUsageProperty(Map<String, Object> properties) throws IaasMonitoringException {
-        Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
-        float usage = (float) (1.0 - a);
-        properties.put(IaasConst.P_COMMON_CPU_USAGE.get(), usage);
+    private void addCpuUsageProperty(Map<String, Object> properties) {
+        try {
+            Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
+            float usage = (float) (1.0 - a);
+            properties.put(IaasConst.P_COMMON_CPU_USAGE.get(), usage);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
+        }
     }
 
-    private void addMemoryProperties(Map<String, Object> properties) throws IaasMonitoringException {
-        Long total = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Total");
-        Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
-        Long actualFree = (Long) getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
+    private void addMemoryProperties(Map<String, Object> properties) {
+        try {
+            Long total = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Total");
+            Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
+            Long actualFree = (Long) getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
 
-        properties.put(IaasConst.P_COMMON_MEM_TOTAL.get(), total);
-        properties.put(IaasConst.P_COMMON_MEM_FREE.get(), free);
-        properties.put(IaasConst.P_COMMON_MEM_ACTUAL_FREE.get(), actualFree);
+            properties.put(IaasConst.P_COMMON_MEM_TOTAL.get(), total);
+            properties.put(IaasConst.P_COMMON_MEM_FREE.get(), free);
+            properties.put(IaasConst.P_COMMON_MEM_ACTUAL_FREE.get(), actualFree);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
+        }
     }
 
-    private void addNetworkProperties(Map<String, Object> properties) throws IaasMonitoringException {
+    private void addNetworkProperties(Map<String, Object> properties) {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
-            throw new IaasMonitoringException(e);
+            logger.error("Error getting some properties.", e);
+            return;
         }
 
         int counter = 0;
@@ -125,16 +185,8 @@ public class FormattedSigarMBeanClient {
                     ttx += tx;
                     trx += rx;
                     counter++;
-                } catch (AttributeNotFoundException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (InstanceNotFoundException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (MBeanException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (ReflectionException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (IOException e) {
-                    throw new IaasMonitoringException(e);
+                } catch (Exception e) {
+                    logger.error("Error getting some properties.", e);
                 }
             }
         }
@@ -143,13 +195,14 @@ public class FormattedSigarMBeanClient {
         properties.put(IaasConst.P_COMMON_NET_RX_TOTAL.get(), trx);
     }
 
-    private void addStorageProperties(Map<String, Object> properties) throws IaasMonitoringException {
+    private void addStorageProperties(Map<String, Object> properties) {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
-            throw new IaasMonitoringException(e);
+            logger.error("Error getting some properties.", e);
+            return;
         }
 
         int counter = 0;
@@ -168,26 +221,17 @@ public class FormattedSigarMBeanClient {
                     ttotal += total;
                     tused += used;
                     counter++;
-                } catch (AttributeNotFoundException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (InstanceNotFoundException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (MBeanException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (ReflectionException e) {
-                    throw new IaasMonitoringException(e);
-                } catch (IOException e) {
-                    throw new IaasMonitoringException(e);
+                } catch (Exception e) {
+                    logger.error("Error getting some properties.", e);
                 }
             }
         }
         properties.put(IaasConst.P_COMMON_STORAGE_COUNT_TOTAL.get(), counter);
         properties.put(IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.get(), ttotal);
-        properties.put(IaasConst.P_COMMON_STORAGE_NAME.get(), tused);
+        properties.put(IaasConst.P_COMMON_STORAGE_USED_TOTAL.get(), tused);
     }
 
-    
-    private void addProcessProperties(Map<String, Object> properties) throws IaasMonitoringException {
+    private void addProcessProperties(Map<String, Object> properties) {
         StringBuilder process = new StringBuilder();
         StringBuilder process3 = new StringBuilder();
 
@@ -210,36 +254,40 @@ public class FormattedSigarMBeanClient {
             properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS.get(), ps.substring(0, ps.length() - 1));
             String ps3 = process3.toString();
             properties.put(IaasConst.P_COMMON_SYSTEM_PROCESS3.get(), ps3.substring(0, ps3.length() - 1));
-        } catch (AttributeNotFoundException e) {
-            throw new IaasMonitoringException(e);
-        } catch (InstanceNotFoundException e) {
-            throw new IaasMonitoringException(e);
-        } catch (MBeanException e) {
-            throw new IaasMonitoringException(e);
-        } catch (ReflectionException e) {
-            throw new IaasMonitoringException(e);
-        } catch (IOException e) {
-            throw new IaasMonitoringException(e);
-        } catch (MalformedObjectNameException e) {
-            throw new IaasMonitoringException(e);
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
         }
     }
 
-    private void addStatusProperties(Map<String, Object> properties) throws IaasMonitoringException {
-        if (!properties.isEmpty()) {
-            properties.put(IaasConst.P_COMMON_STATUS.get(), "up");
+    private void addStatusProperties(Map<String, Object> properties) {
+        try {
+            if (!properties.isEmpty()) {
+                properties.put(IaasConst.P_COMMON_STATUS.get(), "up");
+            }
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
         }
     }
 
-    private void addSigarProperties(Map<String, Object> properties) throws IaasMonitoringException {
-        if (!properties.isEmpty()) {
-            properties.put(IaasConst.P_SIGAR_JMX_URL.get(), this.serviceurl);
+    private void addSigarProperties(Map<String, Object> properties) {
+        try {
+            if (!properties.isEmpty()) {
+                properties.put(IaasConst.P_SIGAR_JMX_URL.get(), this.serviceurl);
+            }
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
         }
     }
-    private void addPFlagsProperties(Map<String, Object> properties) throws IaasMonitoringException {
-        Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags", "PFlags");
-        for (String key: pflags.keySet()) {
-            properties.put(IaasConst.P_COMMON_PFLAGS.get(key), pflags.get(key));
+
+    private void addPFlagsProperties(Map<String, Object> properties) {
+        try {
+            Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags",
+                    "PFlags");
+            for (String key : pflags.keySet()) {
+                properties.put(IaasConst.P_COMMON_PFLAGS.get(key), pflags.get(key));
+            }
+        } catch (Exception e) {
+            logger.error("Error getting some properties.", e);
         }
     }
 
@@ -249,23 +297,27 @@ public class FormattedSigarMBeanClient {
             ObjectName name = new ObjectName(objname);
             a = connector.getMBeanServerConnection().getAttribute(name, attribute);
         } catch (MalformedObjectNameException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         } catch (AttributeNotFoundException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         } catch (InstanceNotFoundException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         } catch (MBeanException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         } catch (ReflectionException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         } catch (IOException e) {
-            logger.error(e);
+            throw new IaasMonitoringException(dump(objname, attribute), e);
         }
 
         if (a == null) {
-            throw new IaasMonitoringException();
+            throw new IaasMonitoringException("Failed to get attribute" + dump(objname, attribute));
         }
+
         return a;
     }
 
+    private String dump(String objname, String att) {
+        return " (obj '" + objname + "' att '" + att + "')";
+    }
 }

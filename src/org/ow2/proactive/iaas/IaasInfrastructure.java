@@ -43,8 +43,6 @@ import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringService;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceCacher;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceLoader;
 import org.ow2.proactive.iaas.monitoring.MBeanExposer;
 import org.ow2.proactive.iaas.monitoring.NodeType;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;

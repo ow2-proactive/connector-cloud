@@ -56,6 +56,7 @@ public enum IaasConst {
     P_COMMON_NET_RX("network.%x%.rx"),
     P_COMMON_NET_TX_TOTAL("network.tx"),
     P_COMMON_NET_RX_TOTAL("network.rx"),
+    P_COMMON_NET_SPEED_TOTAL("network.speed"), 
     P_COMMON_NET_COUNT_TOTAL("network.count"), 
         
     P_COMMON_STORAGE_NAME("storage.%x%.name"),
@@ -77,6 +78,7 @@ public enum IaasConst {
     P_VM_VMUSAGE("memory.virtualmemorybytes"),
     P_VM_HOST("host"), 
     
+    P_HOST_SITE("site"), 
     P_HOST_VMS("vmsinfo"), 
     P_HOST_VM_PREFIX("vm.%x%."), 
     P_HOST_VM_PROP("vm.%x%.%y%"), 

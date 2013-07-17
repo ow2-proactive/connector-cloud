@@ -18,10 +18,10 @@ public class ComposeVapp extends IaasExecutable {
             api = (VCloudAPI) createApi(args);
 
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
-            String vappTemplateId = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_ID);
+            String vappTemplate = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME);
             String vappName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME);
 
-            return api.cloneVapp(vdcName, vappTemplateId, vappName);
+            return api.cloneVapp(vdcName, vappTemplate, vappName);
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {

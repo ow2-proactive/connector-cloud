@@ -66,6 +66,8 @@ public class VimServiceConstants {
     public static final String PROP_HOST_SITE = "parent";
     public static final String PROP_HOST_SITE_NAME = PROP_HOST_SITE + "-name";
     public static final String PROP_HOST_DS = "datastore";
+    // Physical network interface
+    public static final String PROP_HOST_PNIC = "config.network.pnic";
 
     // Static properties of datastores
     public static final String PROP_DS_TYPE = "summary.type";

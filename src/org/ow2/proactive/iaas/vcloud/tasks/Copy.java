@@ -19,9 +19,17 @@ public class Copy extends IaasExecutable {
 
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
             String vappName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.INSTANCE_NAME);
+            String toVappName = args.get("toVappName");
             String from = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.TEMPLATE_NAME);
-            String to = args.get("newInstanceName") + getIterationIndex();
-            return api.copy(vdcName, vappName, from, to);
+
+            // ugly hack to retrieve vm id
+            String suffix = System.getProperty("latest");
+            if (suffix == null) {
+                suffix = String.valueOf(getIterationIndex());
+            }
+            String to = args.get("newInstanceName") + suffix;
+
+            return api.copy(vdcName, vappName, toVappName, from, to);
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {

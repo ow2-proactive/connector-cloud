@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.ow2.proactive.iaas.IaasExecutable;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
+import org.ow2.proactive.iaas.vcloud.VCloudAPI.VCloudAPIConstants;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
 import org.ow2.proactive.scripting.PropertyUtils;
 
@@ -18,6 +19,11 @@ public class Deploy extends IaasExecutable {
         VCloudAPI api = null;
 
         try {
+            if (System.getProperty("occi.compute.organization.name") != null) {
+                args.put(VCloudAPIConstants.ApiParameters.ORGANIZATION_NAME,
+                        System.getProperty("occi.compute.organization.name"));
+                PropertyUtils.propagateProperty("occi.compute.organization.name");
+            }
             api = (VCloudAPI) createApi(args);
             String vappId = null;
             if (args.get("vappid") != null) {
@@ -34,17 +40,22 @@ public class Deploy extends IaasExecutable {
             String vdcName = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.VDC_NAME);
             System.out.println("[Deploy task] Deploying vApp " + vappId + "...");
 
-            String vmPassword = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.PASSWORD);
-            if (!vmPassword.isEmpty()) {
-                // To set password, vapp must be *undeployed*
-                api.setPassword(vappId, vmPassword);
-            }
+            //            String vmPassword = args.get(VCloudAPI.VCloudAPIConstants.InstanceParameters.PASSWORD);
+            //            if (vmPassword != null) {
+            //                if (!vmPassword.isEmpty()) {
+            //                    api.setPassword(vappId, vmPassword);
+            //                } else {
+            //                    api.generatePassword(vappId);
+            //                }
+            //            }
+
             String ipAddress = api.deployInstance(vappId);
-            
-            if (vmPassword.isEmpty()) {
-                // To retrieve password, vapp must be *deployed*
+
+            String vmPassword = System.getProperty("occi.compute.password");
+            if (vmPassword == null) {
                 vmPassword = api.getPassword(vappId);
             }
+
             List<String> vmIDs = api.getVmId(vappId);
             String vmId = vmIDs.get(0);
 

@@ -19,7 +19,7 @@ import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 
-public class FormattedSigarMBeanClient {
+public class FormattedSigarMBeanClient implements MonitoringFormattedClient {
 
     // Masks to get specific properties.
     public static final int MASK_CPU = 0x0001;
@@ -38,16 +38,13 @@ public class FormattedSigarMBeanClient {
     private String serviceurl;
     private JMXConnector connector;
 
-    public FormattedSigarMBeanClient(String url, Map<String, Object> jmxenv) throws MalformedURLException,
-            IOException {
-        this.serviceurl = url;
-        connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), jmxenv);
-    }
+    public FormattedSigarMBeanClient() {}
 
-    public FormattedSigarMBeanClient(JMXConnector connector) {
-        this.connector = connector;
+    public void configure(String target, Map<String, Object> env) throws IOException {
+        this.serviceurl = target;
+        connector = JMXConnectorFactory.connect(new JMXServiceURL(serviceurl), env);
     }
-
+    
     public void disconnect() throws IOException {
         if (connector != null) {
             connector.close();

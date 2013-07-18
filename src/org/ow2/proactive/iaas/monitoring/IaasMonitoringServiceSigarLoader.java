@@ -64,6 +64,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     /**
      * Flags in the options.
      */
+    public static final String USE_SIGAR_FLAG = "useSigar";
     public static final String SHOW_VMPROCESSES_ON_HOST_FLAG = "showVMProcessesOnHost";
     public static final String CREDENTIALS_FLAG = "cred";
     public static final String HOSTSFILE_FLAG = "hostsfile";
@@ -87,6 +88,11 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
      */
     protected Map<String, String> jmxSupportedVMs = new HashMap<String, String>();
 
+    /**
+     * Use sigar monitoring.
+     */
+    protected Boolean useSigar = false;
+    
     /**
      * Credentials to get connected to the RMNodes (information obtained from JMX Sigar MBeans).
      */
@@ -133,7 +139,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     @Override
-    public void configure(String nsName, String options) {
+    public void configure(String nsName, String options) throws IaasMonitoringException {
+        Boolean useSigar = Utils.isPresentInParameters(USE_SIGAR_FLAG, options);
         Boolean showVMProcessesOnHost = Utils.isPresentInParameters(SHOW_VMPROCESSES_ON_HOST_FLAG, options);
         String credentialsPath = Utils.getValueFromParameters(CREDENTIALS_FLAG, options);
         String hostsFile = Utils.getValueFromParameters(HOSTSFILE_FLAG, options);
@@ -142,23 +149,26 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         logger.info(String.format(
                 "Monitoring params for SigarLoader: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
-                    + " hostsfile='%s', showVMProcessesOnHost='%b'", useRMNodeOnHost, useRMNodeOnVM,
-                credentialsPath, hostsFile, showVMProcessesOnHost));
+                    + " hostsfile='%s', showVMProcessesOnHost='%b', useSigar='%b'", useRMNodeOnHost, useRMNodeOnVM,
+                credentialsPath, hostsFile, showVMProcessesOnHost, useSigar));
 
         // Use Sigar monitoring? 
         // Set up credentials file path.
-        if (credentialsPath != null) {
+        if (useSigar && credentialsPath != null) {
             try {
                 setCredentials(new File(credentialsPath));
             } catch (KeyException e) {
-                logger.warn("Credentials file did not load successfully. No JMX Sigar monitoring will take place.");
+                throw new IaasMonitoringException("Credentials file did not load successfully: " + credentialsPath, e);
             }
         } else {
-            logger.warn("Credentials file not provided. No JMX Sigar monitoring will take place.");
+            logger.warn("No credentials file for monitoring will be used.");
         }
 
         this.nsname = nsName;
 
+        // Use Sigar monitoring.
+        this.useSigar = useSigar;
+        
         // Show VM Processes information when getting host properties?
         this.showVMProcessesOnHost = showVMProcessesOnHost;
 
@@ -167,7 +177,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         // Assume RMNodes are running on VMs.
         this.useRMNodeOnVM = useRMNodeOnVM;
-
+        
         // Set up hosts file path.
         if (hostsFile != null) {
             setHostsToMonitor(hostsFile);
@@ -217,7 +227,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     @Override
     public void registerNode(String nodeId, String jmxUrl, NodeType type) {
-        if (credentialsSigar == null)
+        if (!useSigar)
             return;
 
         logger.info("Registered node '" + nodeId + "' with jmxUrl '" + jmxUrl + "' of type '" + type + "'.");
@@ -232,7 +242,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     @Override
     public void unregisterNode(String nodeId, NodeType type) {
-        if (credentialsSigar == null)
+        if (!useSigar)
             return;
 
         if (type.equals(NodeType.HOST)) {
@@ -251,7 +261,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         logger.debug("[" + nsname + "]" + "Retrieving list of hosts...");
         HashSet<String> hosts = new HashSet<String>();
 
-        if (credentialsSigar != null)
+        if (useSigar)
             try {
                 hosts.addAll(jmxSupportedHosts.keySet()); // From RM.
             } catch (Exception e) {
@@ -278,10 +288,6 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs from host: " + hostid, e);
             }
         }
-
-        // VMs from the jmxSupportedVMs will not be listed.
-        //if (credentialsSigar != null)
-        //    vms.addAll(jmxSupportedVMs.keySet()); // From RM.
 
         return vms.toArray(new String[] {});
     }
@@ -378,7 +384,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         Map<String, String> properties = new HashMap<String, String>();
 
-        if (credentialsSigar != null)
+        if (useSigar)
             try {
 
                 if (jmxSupportedHosts.containsKey(hostId)) {

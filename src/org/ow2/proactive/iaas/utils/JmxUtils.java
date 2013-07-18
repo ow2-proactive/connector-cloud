@@ -77,7 +77,7 @@ public class JmxUtils {
         }
     }
 
-    public static void setMBeanClient(Class<MonitoringClient> clz) {
+    public static void setMBeanClient(Class clz) {
         JmxUtils.mbeanClient = clz;
     }
 

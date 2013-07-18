@@ -41,6 +41,9 @@ import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
 
+import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceApiLoader.USE_API_FLAG;
+import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader.USE_SIGAR_FLAG;
+
 
 public class IaasMonitoringServiceFactory {
 
@@ -57,25 +60,29 @@ public class IaasMonitoringServiceFactory {
 
     public static IaasMonitoringChainable getMonitoringService(IaasMonitoringApi api, String nsname,
             String options) throws IaasMonitoringException {
-        IaasMonitoringChainable loader;
+        IaasMonitoringChainable loader = null;
 
         if (Utils.isPresentInParameters(SKIP_CACHE_FLAG, options)) {
-            if (Utils.isPresentInParameters(IaasMonitoringServiceApiLoader.USE_API_FLAG, options)) {
+            if (Utils.isPresentInParameters(USE_API_FLAG, options)) {
                 loader = (new IaasMonitoringServiceApiLoader(api));
                 logger.debug("[" + nsname + "] Created ApiLoader (no cache).");
-            } else {
+            } else if (Utils.isPresentInParameters(USE_SIGAR_FLAG, options)) {
                 loader = (new IaasMonitoringServiceSigarLoader());
                 logger.debug("[" + nsname + "] Created SigarLoader (no cache).");
             }
         } else {
-            if (Utils.isPresentInParameters(IaasMonitoringServiceApiLoader.USE_API_FLAG, options)) {
+            if (Utils.isPresentInParameters(USE_API_FLAG, options)) {
                 loader = new IaasMonitoringServiceCacher(new IaasMonitoringServiceApiLoader(api));
                 logger.debug("[" + nsname + "] Created cacher with ApiLoader.");
-            } else {
+            } else if (Utils.isPresentInParameters(USE_SIGAR_FLAG, options)) {
                 loader = new IaasMonitoringServiceCacher(new IaasMonitoringServiceSigarLoader());
                 logger.debug("[" + nsname + "] Created cacher with SigarLoader.");
             }
 
+        }
+
+        if (loader == null) {
+            throw new IaasMonitoringException("Monitoring configuration not valid: " + options);
         }
 
         loader.configure(nsname, options);

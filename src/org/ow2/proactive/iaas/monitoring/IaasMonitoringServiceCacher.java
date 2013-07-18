@@ -116,7 +116,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
 
     }
 
-    public void configure(String nsName, String options) {
+    public void configure(String nsName, String options) throws IaasMonitoringException {
 
         this.nsname = nsName;
 

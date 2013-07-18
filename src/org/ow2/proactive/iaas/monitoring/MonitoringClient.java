@@ -42,6 +42,20 @@ import java.util.Map;
 public interface MonitoringClient {
 
     /**
+     *  Masks to get specific properties from the target.
+     */
+    public static final int MASK_CPU = 0x0001;
+    public static final int MASK_MEMORY = 0x0002;
+    public static final int MASK_PROCESS = 0x0004;
+    public static final int MASK_STORAGE = 0x0008;
+    public static final int MASK_STATUS = 0x0010;
+    public static final int MASK_PFLAGS = 0x0020;
+    public static final int MASK_SIGAR = 0x0040;
+    public static final int MASK_NETWORK = 0x0080;
+    public static final int MASK_VMPROC = 0x0100;
+    public static final int MASK_ALL = 0xFFFF;
+
+    /**
      * Return the properties as key:value for a given entity (host X, or VM Y).
      * @param mask to be used to choose among all possible properties to be obtained.
      * @return map with all required properties.

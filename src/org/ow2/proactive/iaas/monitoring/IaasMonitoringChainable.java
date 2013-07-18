@@ -18,7 +18,7 @@ public interface IaasMonitoringChainable extends IaasMonitoringApi, IaasNodesLis
     /**
      * Configure the block.
      */
-    public void configure(String nsname, String options);
+    public void configure(String nsname, String options) throws IaasMonitoringException;
 
     /**
      * ShutDown the block.

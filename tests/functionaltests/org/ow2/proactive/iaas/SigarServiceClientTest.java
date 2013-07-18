@@ -50,7 +50,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
+import org.ow2.proactive.iaas.monitoring.SigarClient;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTHelper;
 import org.ow2.proactive.authentication.crypto.Credentials;
@@ -182,7 +182,7 @@ public class SigarServiceClientTest {
 
         Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(c);
         rmNodeProps = Utils.convertToStringMap(JmxUtils.getSigarProperties(jmxurl, jmxenv,
-                FormattedSigarMBeanClient.MASK_ALL));
+                SigarClient.MASK_ALL));
         System.out.println("Map properties: '\n" + rmNodeProps + "\n'");
 
         StringBuffer str = new StringBuffer();

@@ -125,8 +125,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     /** 
      * Constants to filter sigar properties.
      */
-    private static int MASK_ALL = FormattedSigarMBeanClient.MASK_ALL;
-    private static int MASK_VMPROC = FormattedSigarMBeanClient.MASK_VMPROC;
+    private static int MASK_ALL = SigarClient.MASK_ALL;
+    private static int MASK_VMPROC = SigarClient.MASK_VMPROC;
     private static int MASK_ALL_BUT_VMPROC = MASK_ALL & ~MASK_VMPROC;
 
     IaasMonitoringServiceSigarLoader() throws IaasMonitoringException {

@@ -57,7 +57,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
+import org.ow2.proactive.iaas.monitoring.SigarClient;
 import org.ow2.proactive.iaas.monitoring.IaasConst;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringChainable;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringService;

@@ -1,25 +1,24 @@
 package org.ow2.proactive.iaas.monitoring;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanException;
-import javax.management.MalformedObjectNameException;
-import javax.management.ObjectName;
-import javax.management.ReflectionException;
-import javax.management.openmbean.CompositeData;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
+import java.util.HashMap;
+import java.io.IOException;
 import org.apache.log4j.Logger;
+import javax.management.ObjectName;
+import javax.management.MBeanException;
+import javax.management.remote.JMXConnector;
+import javax.management.ReflectionException;
+import javax.management.remote.JMXServiceURL;
+import javax.management.openmbean.CompositeData;
+import javax.management.InstanceNotFoundException;
+import javax.management.AttributeNotFoundException;
+import javax.management.remote.JMXConnectorFactory;
+import javax.management.MalformedObjectNameException;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 
-public class FormattedSigarMBeanClient implements MonitoringFormattedClient {
+public class SigarClient implements MonitoringClient {
 
     // Masks to get specific properties.
     public static final int MASK_CPU = 0x0001;
@@ -33,12 +32,12 @@ public class FormattedSigarMBeanClient implements MonitoringFormattedClient {
     public static final int MASK_VMPROC = 0x0100;
     public static final int MASK_ALL = 0xFFFF;
 
-    private static final Logger logger = Logger.getLogger(FormattedSigarMBeanClient.class);
+    private static final Logger logger = Logger.getLogger(SigarClient.class);
 
     private String serviceurl;
     private JMXConnector connector;
 
-    public FormattedSigarMBeanClient() {}
+    public SigarClient() {}
 
     public void configure(String target, Map<String, Object> env) throws IOException {
         this.serviceurl = target;

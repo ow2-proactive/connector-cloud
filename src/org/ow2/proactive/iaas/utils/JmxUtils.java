@@ -48,8 +48,8 @@ import javax.management.remote.JMXServiceURL;
 import javax.management.remote.JMXConnectorFactory;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
-import org.ow2.proactive.iaas.monitoring.FormattedSigarMBeanClient;
-import org.ow2.proactive.iaas.monitoring.MonitoringFormattedClient;
+import org.ow2.proactive.iaas.monitoring.SigarClient;
+import org.ow2.proactive.iaas.monitoring.MonitoringClient;
 
 
 public class JmxUtils {
@@ -62,10 +62,10 @@ public class JmxUtils {
     /**
      * Class to be used as monitoring info getter.
      */
-    private static Class mbeanClient = MonitoringFormattedClient.class;
+    private static Class mbeanClient = MonitoringClient.class;
 
     static {
-        mbeanClient = FormattedSigarMBeanClient.class;
+        mbeanClient = SigarClient.class;
     }
 
     public static final String getHostName(String jmxServiceUrl) {
@@ -77,7 +77,7 @@ public class JmxUtils {
         }
     }
 
-    public static void setMBeanClient(Class<MonitoringFormattedClient> clz) {
+    public static void setMBeanClient(Class<MonitoringClient> clz) {
         JmxUtils.mbeanClient = clz;
     }
 
@@ -87,9 +87,9 @@ public class JmxUtils {
         @SuppressWarnings("unchecked")
         Map<String, Object> map = (Map<String, Object>) Collections.EMPTY_MAP;
 
-        MonitoringFormattedClient a = null;
+        MonitoringClient a = null;
         try {
-            a = (MonitoringFormattedClient) Class.forName(mbeanClient.getName()).newInstance();
+            a = (MonitoringClient) Class.forName(mbeanClient.getName()).newInstance();
         } catch (InstantiationException e1) {
             logger.error(e1);
             return map;

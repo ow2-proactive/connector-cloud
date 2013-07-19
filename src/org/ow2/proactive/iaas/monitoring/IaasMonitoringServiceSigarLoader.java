@@ -52,12 +52,15 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.ArrayList;
 import org.apache.log4j.Logger;
+import org.apache.ws.security.conversation.dkalgo.P_SHA1;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.VMsMerger;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
+
+import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
 
 public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable {
 
@@ -84,16 +87,15 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     protected Map<String, String> jmxSupportedHosts = new HashMap<String, String>();
 
     /** 
-     * Map to save JMX urls per VM.
+     * List saving all JMX urls for VMs.
      */
-    protected Map<String, String> jmxSupportedVMs = new HashMap<String, String>();
+    protected List<String> jmxSupportedVMs = new ArrayList<String>();
 
     /**
      * Use sigar monitoring.
      */
     protected Boolean useSigar = false;
-    
-    /**
+/**
      * Credentials to get connected to the RMNodes (information obtained from JMX Sigar MBeans).
      */
     protected Credentials credentialsSigar = null;
@@ -134,6 +136,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     private static int MASK_ALL = SigarClient.MASK_ALL;
     private static int MASK_VMPROC = SigarClient.MASK_VMPROC;
     private static int MASK_ALL_BUT_VMPROC = MASK_ALL & ~MASK_VMPROC;
+    
+    public static final Integer ERRORS_ALLOWED = 3;
 
     IaasMonitoringServiceSigarLoader() throws IaasMonitoringException {
     }
@@ -149,8 +153,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         logger.info(String.format(
                 "Monitoring params for SigarLoader: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
-                    + " hostsfile='%s', showVMProcessesOnHost='%b', useSigar='%b'", useRMNodeOnHost, useRMNodeOnVM,
-                credentialsPath, hostsFile, showVMProcessesOnHost, useSigar));
+                    + " hostsfile='%s', showVMProcessesOnHost='%b', useSigar='%b'", useRMNodeOnHost,
+                useRMNodeOnVM, credentialsPath, hostsFile, showVMProcessesOnHost, useSigar));
 
         // Use Sigar monitoring? 
         // Set up credentials file path.
@@ -158,7 +162,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
             try {
                 setCredentials(new File(credentialsPath));
             } catch (KeyException e) {
-                throw new IaasMonitoringException("Credentials file did not load successfully: " + credentialsPath, e);
+                throw new IaasMonitoringException("Credentials file did not load successfully: " +
+                    credentialsPath, e);
             }
         } else {
             logger.warn("No credentials file for monitoring will be used.");
@@ -168,7 +173,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         // Use Sigar monitoring.
         this.useSigar = useSigar;
-        
+
         // Show VM Processes information when getting host properties?
         this.showVMProcessesOnHost = showVMProcessesOnHost;
 
@@ -177,7 +182,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         // Assume RMNodes are running on VMs.
         this.useRMNodeOnVM = useRMNodeOnVM;
-        
+
         // Set up hosts file path.
         if (hostsFile != null) {
             setHostsToMonitor(hostsFile);
@@ -234,21 +239,21 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         if (type.equals(NodeType.HOST)) {
             jmxSupportedHosts.put(nodeId, jmxUrl);
         } else if (type.equals(NodeType.VM)) {
-            jmxSupportedVMs.put(nodeId, jmxUrl);
+            jmxSupportedVMs.add(jmxUrl);
         } else {
             logger.error("Node '" + nodeId + "' has an incorrect type. Its JMX URL will not be registered.");
         }
     }
 
     @Override
-    public void unregisterNode(String nodeId, NodeType type) {
+    public void unregisterNode(String nodeId, String jmxUrl, NodeType type) {
         if (!useSigar)
             return;
 
         if (type.equals(NodeType.HOST)) {
             jmxSupportedHosts.remove(nodeId);
         } else if (type.equals(NodeType.VM)) {
-            jmxSupportedVMs.remove(nodeId);
+            jmxSupportedVMs.remove(jmxUrl);
         } else {
             throw new RuntimeException("Invalid node type.");
         }
@@ -312,7 +317,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     @Override
     public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
-        logger.debug("[" + nsname + "]" + "Retrieving properties from host " + hostId + "'...");
+        logger.debug("[" + nsname + "]" + " Retrieving properties from host '" + hostId + "'...");
         int mask = (showVMProcessesOnHost ? MASK_ALL : MASK_ALL_BUT_VMPROC);
         return getHostPropertiesSelective(hostId, mask);
     }
@@ -357,7 +362,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                     } else {
                         logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrl + ")");
                     }
-                    
+
                     properties.putAll(newProps);
                 }
 
@@ -452,6 +457,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     private Map<String, Object> getRMNodeVMsMaps(String vmIdTarget, Map<String, String> cache) {
         Map<String, Object> sigarsMap = new HashMap<String, Object>();
         String jmxurl = null;
+        Boolean doraw = false;
 
         /*
          * Cached Sigar jmxurl for this vmIdTarget.
@@ -460,23 +466,35 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         if (jmxurl != null) {
             Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-            sigarsMap.put(vmIdTarget, queryProps(jmxurl, jmxenv, MASK_ALL_BUT_VMPROC));
+            Map<String, String> p = queryProps(jmxurl, jmxenv, MASK_ALL_BUT_VMPROC);
+            Integer err = Integer.getInteger(p.get(P_DEBUG_NUMBER_OF_ERRORS.get()));
+                    
+            if (p.isEmpty()) {
+                logger.info("Sigar VM properties empty, node reconnected? " + vmIdTarget + ": " + jmxurl);
+                doraw = true;
+            } else if (err == null || err > ERRORS_ALLOWED ) {
+                logger.info("Sigar VM properties: too many fails, node reconnected? " + vmIdTarget + ": " + jmxurl);
+                doraw = true;
+            } else{
+                sigarsMap.put(vmIdTarget, p);
+            }
         } else {
-            /*
-             * No cached Sigar jmxurl for this vmIdTarget. Retrieve all.
-             */
             logger.info("vm<->jmxurl cache miss for VM " + vmIdTarget + ": " + jmxurl);
-            for (String sigar : jmxSupportedVMs.keySet()) {
-                String j = jmxSupportedVMs.get(sigar);
-                logger.debug("Querying props of: " + sigar + " at " + j);
+            doraw = true;
+        }
+
+        if (doraw) {
+            for (String j : jmxSupportedVMs) {
+                //String j = jmxSupportedVMs.get(sigar);
+                logger.debug("Querying props of sigar VM at: " + j);
                 Map<String, String> sigarProps = null;
                 Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
                 sigarProps = queryProps(j, jmxenv, MASK_ALL_BUT_VMPROC);
                 logger.debug("Properties: " + sigarProps);
                 if (sigarProps != null) {
-                    sigarsMap.put(sigar, sigarProps);
+                    sigarsMap.put(j, sigarProps);
                 } else {
-                    logger.warn("Could not get properties for RMNode@VM " + sigar + ":" + j);
+                    logger.warn("Could not get properties for RMNode@VM:" + j);
                 }
             }
         }

@@ -97,7 +97,7 @@ public class IaasMonitoringServiceApiLoader implements IaasMonitoringChainable {
     }
 
     @Override
-    public void unregisterNode(String nodeId, NodeType type) {
+    public void unregisterNode(String nodeId, String jmxUrl, NodeType type) {
         // Ignore.
     }
 

@@ -85,8 +85,21 @@ public enum IaasConst {
     P_HOST_VM_ID("vm.%x%.id"), 
     P_HOST_VM_MAC("vm.%x%.network.%y%.mac"), 
     
-    P_SIGAR_JMX_URL("proactive.sigar.jmx.url");
+    P_SIGAR_JMX_URL("proactive.sigar.jmx.url"),
 
+    /**
+     * DEBUG constants.
+     */
+    P_DEBUG_SIGAR_USED("debug.sigar.used"),
+    P_DEBUG_NUMBER_OF_ERRORS("debug.sigar.errors"),
+    
+    /**
+     * Test constants.
+     */
+    
+    P_TEST_PROP_FROM_API("property.from.api"),
+    P_TEST_PROP_FROM_HOST_PROC("property.from.host.processes"),
+    P_TEST_PROP_FROM_VM_SIGAR("property.from.vm.sigar");
 
     protected String pattern;
 

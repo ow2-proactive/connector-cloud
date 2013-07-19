@@ -249,13 +249,14 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
      */
     private void registerWithIaaSMonitoringService(Node node) {
         if (iaaSMonitoringService != null) {
+
+            String nodeid = node.getNodeInformation().getName();
+
             try {
                 String jmxurlro = node.getProperty(RMNodeStarter.JMX_URL + JMXTransportProtocol.RO);
-                iaaSMonitoringService
-                        .registerNode(node.getNodeInformation().getName(), jmxurlro, NodeType.VM);
-
+                iaaSMonitoringService.registerNode(nodeid, jmxurlro, NodeType.VM);
             } catch (ProActiveException e) {
-                logger.error("Error while getting node properties.", e);
+                logger.error("Error while trying to register node.", e);
             }
         }
     }
@@ -266,7 +267,16 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
      */
     private void unregisterWithIaaSMonitoringService(Node node, NodeType type) {
         if (iaaSMonitoringService != null) {
-            iaaSMonitoringService.unregisterNode(node.getNodeInformation().getName(), type);
+
+            String nodeid = node.getNodeInformation().getName();
+            String jmxurlro = null;
+
+            try {
+                jmxurlro = node.getProperty(RMNodeStarter.JMX_URL + JMXTransportProtocol.RO);
+                iaaSMonitoringService.unregisterNode(nodeid, jmxurlro, type);
+            } catch (ProActiveException e) {
+                logger.error("Error while trying to unregister node.", e);
+            }
         }
     }
 
@@ -279,7 +289,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 logger.warn("Error while stopping mbeanExposer.", e);
             }
         }
-        
+
         if (iaaSMonitoringService != null) {
             try {
                 iaaSMonitoringService.shutDown();

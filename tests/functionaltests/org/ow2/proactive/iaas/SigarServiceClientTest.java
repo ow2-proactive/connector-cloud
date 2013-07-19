@@ -36,12 +36,8 @@
 package org.ow2.proactive.iaas;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
 import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.PFlags;
 import org.junit.AfterClass;
@@ -60,6 +56,10 @@ import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 
+/**
+ * Set of keys that are expected to be present in the response. 
+ */
+import static org.ow2.proactive.iaas.VimServiceClientTest.*;
 
 /**
  * These tests check for the presence of certain monitoring information as it 
@@ -67,24 +67,6 @@ import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
  * @author mjost
  */
 public class SigarServiceClientTest {
-
-    /**
-     * Set of keys that are expected to be present in the response. 
-     */
-    static final String[] VM_EXPECTED_KEYS_CPU = VimServiceClientTest.VM_EXPECTED_KEYS_CPU;
-    static final String[] HOST_EXPECTED_KEYS_CPU = VimServiceClientTest.HOST_EXPECTED_KEYS_CPU;
-
-    static final String[] VM_EXPECTED_KEYS_MEMORY = VimServiceClientTest.VM_EXPECTED_KEYS_MEMORY;
-    static final String[] HOST_EXPECTED_KEYS_MEMORY = VimServiceClientTest.HOST_EXPECTED_KEYS_MEMORY;
-
-    static final String[] VM_EXPECTED_KEYS_STORAGE = VimServiceClientTest.VM_EXPECTED_KEYS_STORAGE;
-    static final String[] HOST_EXPECTED_KEYS_STORAGE = VimServiceClientTest.HOST_EXPECTED_KEYS_STORAGE;
-
-    static final String[] VM_EXPECTED_KEYS_NETWORK = VimServiceClientTest.VM_EXPECTED_KEYS_NETWORK;
-    static final String[] HOST_EXPECTED_KEYS_NETWORK = VimServiceClientTest.HOST_EXPECTED_KEYS_NETWORK;
-
-    static final String[] VM_EXPECTED_KEYS_MISC = VimServiceClientTest.VM_EXPECTED_KEYS_MISC;
-    static final String[] HOST_EXPECTED_KEYS_MISC = VimServiceClientTest.HOST_EXPECTED_KEYS_MISC;
 
     static final String MAX_NOT_CONTAINED_KEYS_KEY = "sigar.maximum_not_contained_keys";
 

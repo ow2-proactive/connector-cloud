@@ -184,8 +184,8 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
     }
 
     @Override
-    public void unregisterNode(String nodeid, NodeType type) {
-        loader.unregisterNode(nodeid, type);
+    public void unregisterNode(String nodeid, String jmxurl, NodeType type) {
+        loader.unregisterNode(nodeid, jmxurl, type);
     }
 
     public void shutDown() {

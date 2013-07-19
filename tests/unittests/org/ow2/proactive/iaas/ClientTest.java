@@ -1,5 +1,6 @@
 package org.ow2.proactive.iaas;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.IOException;
@@ -16,12 +17,15 @@ import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 public class ClientTest implements MonitoringClient {
 
     private static Map<String, Map<String, Object>> results;
+    static {
+        restore();
+    }
 
     /**
      * In host1 -> vm1 and vm2
      * In host2 -> vm3 and vm4
      */
-    static {
+    public static void restore() {
         results = new HashMap<String, Map<String, Object>>();
 
         {
@@ -50,7 +54,7 @@ public class ClientTest implements MonitoringClient {
             Map<String, Object> vm1 = new HashMap<String, Object>();
             results.put(VM1_URL, vm1);
             vm1.put(P_COMMON_ID.get(), VM1_ID);
-            vm1.put(P_COMMON_CPU_CORES.get(), VM1_CORES);
+            vm1.put(P_TEST_PROP_FROM_VM_SIGAR.get(), VM1_PROP_VM_SIGAR);
             vm1.put(P_COMMON_NET_MAC.get(0), VM1_MAC);
             vm1.put(P_SIGAR_JMX_URL.get(), VM1_URL);
         }
@@ -59,11 +63,11 @@ public class ClientTest implements MonitoringClient {
             Map<String, Object> vm2 = new HashMap<String, Object>();
             results.put(VM2_URL, vm2);
             vm2.put(P_COMMON_ID.get(), VM2_ID);
-            vm2.put(P_COMMON_CPU_CORES.get(), VM2_CORES);
+            vm2.put(P_TEST_PROP_FROM_VM_SIGAR.get(), VM2_PROP_VM_SIGAR);
             vm2.put(P_COMMON_NET_MAC.get(0), VM2_MAC);
             vm2.put(P_SIGAR_JMX_URL.get(), VM2_URL);
         }
-        
+
         {
             Map<String, Object> vm3 = new HashMap<String, Object>();
             results.put(VM3_URL, vm3);
@@ -71,7 +75,7 @@ public class ClientTest implements MonitoringClient {
             vm3.put(P_COMMON_NET_MAC.get(0), VM3_MAC);
             vm3.put(P_SIGAR_JMX_URL.get(), VM3_URL);
         }
-        
+
         {
             Map<String, Object> vm4 = new HashMap<String, Object>();
             results.put(VM4_URL, vm4);
@@ -82,6 +86,10 @@ public class ClientTest implements MonitoringClient {
     }
 
     private String target;
+
+    public static Map<String, Map<String, Object>> getResults() {
+        return results;
+    }
 
     @Override
     public void configure(String target, Map<String, Object> env) throws IOException {
@@ -96,5 +104,12 @@ public class ClientTest implements MonitoringClient {
     @Override
     public void disconnect() throws IOException {
         // Do nothing.
+    }
+    
+    public static Map<String, Object> getSigarFailureMap(String jmxurl) {
+        Map<String, Object> r = new HashMap<String, Object>();
+        r.put(P_DEBUG_NUMBER_OF_ERRORS.get(), 4);
+        r.put(P_SIGAR_JMX_URL.get(), jmxurl);
+        return r;
     }
 }

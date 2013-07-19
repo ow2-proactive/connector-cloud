@@ -40,11 +40,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.BufferedWriter;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -77,22 +77,28 @@ public class SigarLoaderTest {
 
     static final int VMN = 4;
     static final String VM1_ID = "vm1-id";
+    static final String VM1_NODE = "vm1-node";
     static final String VM1_URL = "vm1-url";
     static final String VM1_MAC = "vm1-mac";
-    static final String VM1_CORES = "vm1-cores";
+    static final String VM1_PROP_VM_SIGAR = "vm1-prop";
 
     static final String VM2_ID = "vm2-id";
+    static final String VM2_NODE = "vm2-node";
     static final String VM2_URL = "vm2-url";
     static final String VM2_MAC = "vm2-mac";
-    static final String VM2_CORES = "vm2-cores";
+    static final String VM2_PROP_VM_SIGAR = "vm2-prop";
 
     static final String VM3_ID = "vm3-id";
+    static final String VM3_NODE = "vm3-node";
     static final String VM3_URL = "vm3-url";
     static final String VM3_MAC = "vm3-mac";
+    static final String VM3_PROP_VM_SIGAR = "vm3-prop";
 
     static final String VM4_ID = "vm4-id";
+    static final String VM4_NODE = "vm4-node";
     static final String VM4_URL = "vm4-url";
     static final String VM4_MAC = "vm4-mac";
+    static final String VM4_PROP_VM_SIGAR = "vm4-prop";
 
     @BeforeClass
     public static void start() throws Exception {
@@ -159,62 +165,113 @@ public class SigarLoaderTest {
 
         {
             // Test vm1
-            monit.registerNode(VM1_ID + "-panode", VM1_URL, NodeType.VM); // VM registered.
+            monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM); // VM registered.
 
             vm1 = monit.getVMProperties(VM1_ID);
             Assert.assertTrue(vm1 != null);
-            Assert.assertTrue(vm1.containsKey(P_COMMON_CPU_CORES.get()));
-            Assert.assertTrue(VM1_CORES.equals(vm1.get(P_COMMON_CPU_CORES.get())));
+            Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
+            Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
 
-            monit.unregisterNode(VM1_ID + "-panode", NodeType.VM); // VM unregistered.
+            monit.unregisterNode(VM1_NODE, VM1_URL, NodeType.VM); // VM unregistered.
         }
 
         {
             // Test vm2 (VM RMNode not registered yet)
             vm2 = monit.getVMProperties(VM2_ID);
             Assert.assertTrue(vm2 != null);
-            Assert.assertTrue(vm2.containsKey(P_COMMON_CPU_CORES.get()) == false);
+            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()) == false);
         }
 
         {
             // Test vm2 (registered)
-            monit.registerNode(VM2_ID + "-panode", VM2_URL, NodeType.VM); // VM registered.
+            monit.registerNode(VM2_NODE, VM2_URL, NodeType.VM); // VM registered.
 
             vm2 = monit.getVMProperties(VM2_ID);
             Assert.assertTrue(vm2 != null);
-            Assert.assertTrue(vm2.containsKey(P_COMMON_CPU_CORES.get()));
-            Assert.assertTrue(VM2_CORES.equals(vm2.get(P_COMMON_CPU_CORES.get())));
+            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
+            Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
 
-            monit.unregisterNode(VM2_ID + "-panode", NodeType.VM); // VM unregistered.
+            monit.unregisterNode(VM2_NODE, VM2_URL, NodeType.VM); // VM unregistered.
         }
 
     }
 
     @Test
-    @Ignore
     public void getVMPropertiesSameRMNodeName_Test() throws Exception {
         IaasMonitoringChainable monit = getMonitor();
 
         Map<String, String> vm1;
         Map<String, String> vm2;
 
-        final String name = "panode";
+        final String name = VM1_NODE + "same";
 
-        monit.registerNode(name, VM1_URL, NodeType.VM); 
-        monit.registerNode(name, VM2_URL, NodeType.VM); 
+        monit.registerNode(name, VM1_URL, NodeType.VM);
+        monit.registerNode(name, VM2_URL, NodeType.VM);
 
         vm1 = monit.getVMProperties(VM1_ID);
         vm2 = monit.getVMProperties(VM2_ID);
-        
+
         Assert.assertTrue(vm1 != null);
         Assert.assertTrue(vm2 != null);
-        
-        Assert.assertTrue(vm1.containsKey(P_COMMON_CPU_CORES.get()));
-        Assert.assertTrue(vm2.containsKey(P_COMMON_CPU_CORES.get()));
-        
-        Assert.assertTrue(VM1_CORES.equals(vm1.get(P_COMMON_CPU_CORES.get())));
-        Assert.assertTrue(VM2_CORES.equals(vm2.get(P_COMMON_CPU_CORES.get())));
 
+        Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
+        Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
+
+        Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
+        Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
+
+    }
+
+    @Test
+    public void getVMPropertiesVMDisconnection_Test() throws Exception {
+        IaasMonitoringChainable monit = getMonitor();
+
+        Map<String, String> vm1a;
+        Map<String, String> vm1b;
+
+        monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM);
+
+        vm1a = monit.getVMProperties(VM1_ID);
+
+        System.out.println(vm1a.get(P_SIGAR_JMX_URL.get()));
+
+        // make vm1 disconnect
+        Map<String, Object> backup;
+        backup = ClientTest.getResults().remove(VM1_URL);
+        ClientTest.getResults().put(VM1_URL, ClientTest.getSigarFailureMap(VM1_URL));
+
+        // make vm1 reconnect (different URL)
+        backup.put(P_SIGAR_JMX_URL.get(), VM1_URL + "D");
+        ClientTest.getResults().put(VM1_URL + "D", backup); // Different url now.
+        monit.registerNode(VM1_NODE, VM1_URL + "D", NodeType.VM);
+
+        vm1b = monit.getVMProperties(VM1_ID);
+
+        Assert.assertTrue(vm1a != null);
+        Assert.assertTrue(vm1b != null);
+
+        Assert.assertTrue(vm1a.containsKey(P_COMMON_ID.get()));
+        Assert.assertTrue(vm1b.containsKey(P_COMMON_ID.get()));
+
+        Assert.assertEquals(vm1a.get(P_COMMON_ID.get()), vm1b.get(P_COMMON_ID.get()));
+
+        Assert.assertTrue(vm1a.containsKey(P_SIGAR_JMX_URL.get()));
+        Assert.assertTrue(vm1b.containsKey(P_SIGAR_JMX_URL.get()));
+        Assert.assertFalse(vm1a.get(P_SIGAR_JMX_URL.get()).equals(vm1b.get(P_SIGAR_JMX_URL.get())));
+        
+        ClientTest.restore(); // Restore original status.
+
+    }
+
+    @Test
+    public void getVMPropertiesVMCache_Test() throws Exception {
+        IaasMonitoringChainable monit = getMonitor();
+        Map<String, String> vm1;
+        monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM);
+        vm1 = monit.getVMProperties(VM1_ID);
+        Assert.assertTrue(vm1 != null);
+        vm1 = monit.getVMProperties(VM1_ID);
+        Assert.assertTrue(vm1 != null);
     }
 
     @AfterClass

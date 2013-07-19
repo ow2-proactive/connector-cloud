@@ -39,34 +39,18 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Random;
-
 import junit.framework.Assert;
-
-import org.apache.commons.io.FileUtils;
-import org.hyperic.sigar.PFlags;
 import org.hyperic.sigar.Sigar;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.ow2.proactive.iaas.utils.JmxUtils;
-import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.monitoring.SigarClient;
-import org.ow2.proactive.iaas.monitoring.IaasConst;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringChainable;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringService;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceApiLoader;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceCacher;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceFactory;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader;
 import org.ow2.proactive.iaas.monitoring.NodeType;
-import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTHelper;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.resourcemanager.frontend.RMConnection;
@@ -74,6 +58,11 @@ import org.ow2.proactive.resourcemanager.frontend.ResourceManager;
 import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
+
+import static org.ow2.proactive.iaas.utils.Utils.*;
+import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
+import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceFactory.*;
+import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader.*;
 
 
 /**
@@ -148,11 +137,12 @@ public class SigarMonitoringTest {
         IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(
                 null,
                 "nsname",
-                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.CREDENTIALS_FLAG + Utils.KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.USE_RMNODE_ON_HOST_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.HOSTSFILE_FLAG + Utils.KEY_VALUE_SEP +
+                USE_SIGAR_FLAG + OPTIONS_SEP +
+                SKIP_CACHE_FLAG + OPTIONS_SEP +
+                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
                     monitHosts.getAbsolutePath());
 
         // Check outputs...
@@ -166,9 +156,9 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : props.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(props.containsKey(IaasConst.P_COMMON_CPU_CORES.get()));
-        Assert.assertTrue(props.containsKey(IaasConst.P_COMMON_MEM_TOTAL.get()));
-        Assert.assertTrue(props.containsKey(IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.get()));
+        Assert.assertTrue(props.containsKey(P_COMMON_CPU_CORES.get()));
+        Assert.assertTrue(props.containsKey(P_COMMON_MEM_TOTAL.get()));
+        Assert.assertTrue(props.containsKey(P_COMMON_STORAGE_TOTAL_TOTAL.get()));
 
     }
 
@@ -181,12 +171,13 @@ public class SigarMonitoringTest {
         IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(
                 null,
                 "nsname",
-                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.CREDENTIALS_FLAG + Utils.KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.USE_RMNODE_ON_HOST_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.SHOW_VMPROCESSES_ON_HOST_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.HOSTSFILE_FLAG + Utils.KEY_VALUE_SEP +
+                USE_SIGAR_FLAG + OPTIONS_SEP +
+                SKIP_CACHE_FLAG + OPTIONS_SEP +
+                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                    SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
+                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
                     monitHosts.getAbsolutePath());
 
         // Check outputs...
@@ -194,7 +185,7 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : props.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(props.containsKey(IaasConst.P_HOST_VM_ID.get(VMProcessTest.INSTANCE)));
+        Assert.assertTrue(props.containsKey(P_HOST_VM_ID.get(VMProcessTest.INSTANCE)));
 
     }
 
@@ -210,13 +201,14 @@ public class SigarMonitoringTest {
         IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(
                 null,
                 "nsname",
-                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.CREDENTIALS_FLAG + Utils.KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.USE_RMNODE_ON_HOST_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.USE_RMNODE_ON_VM_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.SHOW_VMPROCESSES_ON_HOST_FLAG + Utils.OPTIONS_SEP +
-                    IaasMonitoringServiceSigarLoader.HOSTSFILE_FLAG + Utils.KEY_VALUE_SEP +
+                USE_SIGAR_FLAG + OPTIONS_SEP +
+                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP +
+                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                    USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
+                    SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
+                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
                     monitHosts.getAbsolutePath());
 
         monit.registerNode(VM_NAME, jmxUrl, NodeType.VM);
@@ -226,14 +218,14 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : hprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(hprops.containsKey(IaasConst.P_HOST_VM_ID.get(VM_INSTANCE_NAME)));
+        Assert.assertTrue(hprops.containsKey(P_HOST_VM_ID.get(VM_INSTANCE_NAME)));
         
         Map<String, String> vprops = monit.getVMProperties(VM_INSTANCE_NAME);
         for (Entry<String, String> entry : vprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(vprops.containsKey(IaasConst.P_COMMON_CPU_CORES.get()));
-        Assert.assertTrue(vprops.containsKey(IaasConst.P_COMMON_STORAGE_COUNT_TOTAL.get()));
+        Assert.assertTrue(vprops.containsKey(P_COMMON_CPU_CORES.get()));
+        Assert.assertTrue(vprops.containsKey(P_COMMON_STORAGE_COUNT_TOTAL.get()));
 
     }
 

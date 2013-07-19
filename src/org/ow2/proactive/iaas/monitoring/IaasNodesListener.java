@@ -53,6 +53,6 @@ public interface IaasNodesListener {
      * @param nodeId id of the node.
      * @param type of the entity, either host or vm.
      */
-    public void unregisterNode(String nodeid, NodeType type);
+    public void unregisterNode(String nodeid, String jmxurl, NodeType type);
 
 }

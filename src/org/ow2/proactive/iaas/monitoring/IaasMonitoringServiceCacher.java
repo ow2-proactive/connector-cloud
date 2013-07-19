@@ -49,8 +49,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
 import java.util.concurrent.ExecutionException;
 
+
 public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
-    
+
     /**
      * Flags in the options.
      */
@@ -59,7 +60,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
     public static final String HOSTSFILE_FLAG = "hostsfile";
     public static final String USE_RMNODE_ON_HOST_FLAG = "useRMNodeOnHost";
     public static final String USE_RMNODE_ON_VM_FLAG = "useRMNodeOnVM";
-    
+
     /** Logger. */
     private static final Logger logger = Logger.getLogger(IaasMonitoringServiceCacher.class);
 
@@ -152,7 +153,9 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
         autoUpdate = Utils.isPresentInParameters("autoUpdateCache", options);
 
         logger.debug(String
-                .format("[" + nsname + "] " +
+                .format("[" +
+                    nsname +
+                    "] " +
                     "Monitoring params for cacher: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
                         refreshPeriod, maximumCacheEntries, expirationTime, autoUpdate));
 
@@ -272,8 +275,8 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
     }
 
     @Override
-    public void unregisterNode(String nodeid, NodeType type) {
-        loader.unregisterNode(nodeid, type);
+    public void unregisterNode(String nodeid, String jmxurl, NodeType type) {
+        loader.unregisterNode(nodeid, jmxurl, type);
     }
 
     @Override

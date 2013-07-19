@@ -22,6 +22,9 @@ import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
 
 public class SigarClient implements MonitoringClient {
 
+    private static final int NO_ERROR = 0;
+    private static final int ERROR = 1;
+
     private static final Logger logger = Logger.getLogger(SigarClient.class);
 
     private String serviceurl;
@@ -53,58 +56,71 @@ public class SigarClient implements MonitoringClient {
 
         Map<String, Object> propertyMap = new HashMap<String, Object>();
 
+        int errors = 0;
+
         if ((mask & MASK_CPU) == MASK_CPU) {
-            addCpuCoresProperty(propertyMap);
-            addCpuFrequencyProperty(propertyMap);
-            addCpuUsageProperty(propertyMap);
+            errors += addCpuCoresProperty(propertyMap);
+            errors += addCpuFrequencyProperty(propertyMap);
+            errors += addCpuUsageProperty(propertyMap);
         }
 
         if ((mask & MASK_MEMORY) == MASK_MEMORY)
-            addMemoryProperties(propertyMap);
+            errors += addMemoryProperties(propertyMap);
 
         if ((mask & MASK_NETWORK) == MASK_NETWORK)
-            addNetworkProperties(propertyMap);
+            errors += addNetworkProperties(propertyMap);
 
         if ((mask & MASK_PROCESS) == MASK_PROCESS)
-            addProcessProperties(propertyMap);
+            errors += addProcessProperties(propertyMap);
 
         if ((mask & MASK_STORAGE) == MASK_STORAGE)
-            addStorageProperties(propertyMap);
+            errors += addStorageProperties(propertyMap);
 
         if ((mask & MASK_STATUS) == MASK_STATUS)
-            addStatusProperties(propertyMap);
+            errors += addStatusProperties(propertyMap);
 
         if ((mask & MASK_PFLAGS) == MASK_PFLAGS)
-            addPFlagsProperties(propertyMap);
+            errors += addPFlagsProperties(propertyMap);
 
         if ((mask & MASK_SIGAR) == MASK_SIGAR)
-            addSigarProperties(propertyMap);
+            errors += addSigarProperties(propertyMap);
 
         if ((mask & MASK_VMPROC) == MASK_VMPROC)
-            addVMProcessesProperties(propertyMap);
+            errors += addVMProcessesProperties(propertyMap);
+
+        addDebugProperties(propertyMap, errors);
 
         return propertyMap;
     }
 
-    private void addVMProcessesProperties(Map<String, Object> properties) {
+    private void addDebugProperties(Map<String, Object> properties, int errors) {
+        properties.put(P_DEBUG_SIGAR_USED.get(), "yes");
+        properties.put(P_DEBUG_NUMBER_OF_ERRORS.get(), (Integer) errors);
+    }
+
+    private int addVMProcessesProperties(Map<String, Object> properties) {
         try {
             Map<String, Object> props = VMPLister.getVMPsAsMap((Object) connector);
             properties.putAll(props);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addCpuCoresProperty(Map<String, Object> properties) {
+    private int addCpuCoresProperty(Map<String, Object> properties) {
         try {
             Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
             properties.put(P_COMMON_CPU_CORES.get(), (Integer) a);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addCpuFrequencyProperty(Map<String, Object> properties) {
+    private int addCpuFrequencyProperty(Map<String, Object> properties) {
         try {
             Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
             int fmhz = (Integer) a;
@@ -112,20 +128,24 @@ public class SigarClient implements MonitoringClient {
             properties.put(P_COMMON_CPU_FREQUENCY.get(), fghz);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addCpuUsageProperty(Map<String, Object> properties) {
+    private int addCpuUsageProperty(Map<String, Object> properties) {
         try {
             Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
             float usage = (float) (1.0 - a);
             properties.put(P_COMMON_CPU_USAGE.get(), usage);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addMemoryProperties(Map<String, Object> properties) {
+    private int addMemoryProperties(Map<String, Object> properties) {
         try {
             Long total = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Total");
             Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
@@ -136,17 +156,19 @@ public class SigarClient implements MonitoringClient {
             properties.put(P_COMMON_MEM_ACTUAL_FREE.get(), actualFree);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addNetworkProperties(Map<String, Object> properties) {
+    private int addNetworkProperties(Map<String, Object> properties) {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
             logger.error("Error getting some properties.", e);
-            return;
+            return ERROR;
         }
 
         int counter = 0;
@@ -174,22 +196,24 @@ public class SigarClient implements MonitoringClient {
                     counter++;
                 } catch (Exception e) {
                     logger.error("Error getting some properties.", e);
+                    return ERROR;
                 }
             }
         }
         properties.put(P_COMMON_NET_COUNT_TOTAL.get(), counter);
         properties.put(P_COMMON_NET_TX_TOTAL.get(), ttx);
         properties.put(P_COMMON_NET_RX_TOTAL.get(), trx);
+        return NO_ERROR;
     }
 
-    private void addStorageProperties(Map<String, Object> properties) {
+    private int addStorageProperties(Map<String, Object> properties) {
         Set<ObjectName> mbeans;
 
         try {
             mbeans = connector.getMBeanServerConnection().queryNames(null, null);
         } catch (IOException e) {
             logger.error("Error getting some properties.", e);
-            return;
+            return ERROR;
         }
 
         int counter = 0;
@@ -210,15 +234,17 @@ public class SigarClient implements MonitoringClient {
                     counter++;
                 } catch (Exception e) {
                     logger.error("Error getting some properties.", e);
+                    return ERROR;
                 }
             }
         }
         properties.put(P_COMMON_STORAGE_COUNT_TOTAL.get(), counter);
         properties.put(P_COMMON_STORAGE_TOTAL_TOTAL.get(), ttotal);
         properties.put(P_COMMON_STORAGE_USED_TOTAL.get(), tused);
+        return NO_ERROR;
     }
 
-    private void addProcessProperties(Map<String, Object> properties) {
+    private int addProcessProperties(Map<String, Object> properties) {
         StringBuilder process = new StringBuilder();
         StringBuilder process3 = new StringBuilder();
 
@@ -243,30 +269,36 @@ public class SigarClient implements MonitoringClient {
             properties.put(P_COMMON_SYSTEM_PROCESS3.get(), ps3.substring(0, ps3.length() - 1));
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addStatusProperties(Map<String, Object> properties) {
+    private int addStatusProperties(Map<String, Object> properties) {
         try {
             if (!properties.isEmpty()) {
                 properties.put(P_COMMON_STATUS.get(), "up");
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addSigarProperties(Map<String, Object> properties) {
+    private int addSigarProperties(Map<String, Object> properties) {
         try {
             if (!properties.isEmpty()) {
                 properties.put(P_SIGAR_JMX_URL.get(), this.serviceurl);
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
-    private void addPFlagsProperties(Map<String, Object> properties) {
+    private int addPFlagsProperties(Map<String, Object> properties) {
         try {
             Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags",
                     "PFlags");
@@ -275,7 +307,9 @@ public class SigarClient implements MonitoringClient {
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
+            return ERROR;
         }
+        return NO_ERROR;
     }
 
     public Object getJMXSigarAttribute(String objname, String attribute) throws IaasMonitoringException {

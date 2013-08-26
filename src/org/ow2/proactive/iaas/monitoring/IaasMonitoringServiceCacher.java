@@ -42,26 +42,22 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
+
 import java.util.concurrent.TimeUnit;
+
 import org.ow2.proactive.iaas.utils.Utils;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.LoadingCache;
+
 import java.util.concurrent.ExecutionException;
 
 
 public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
 
     /**
-     * Flags in the options.
+     * Logger.
      */
-    public static final String SHOW_VMPROCESSES_ON_HOST_FLAG = "showVMProcessesOnHost";
-    public static final String CREDENTIALS_FLAG = "cred";
-    public static final String HOSTSFILE_FLAG = "hostsfile";
-    public static final String USE_RMNODE_ON_HOST_FLAG = "useRMNodeOnHost";
-    public static final String USE_RMNODE_ON_VM_FLAG = "useRMNodeOnVM";
-
-    /** Logger. */
     private static final Logger logger = Logger.getLogger(IaasMonitoringServiceCacher.class);
 
     /**
@@ -75,24 +71,24 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
     private LoadingCache<String, Map<String, String>> vmPropertiesCache;
 
     /**
-     * Refresh period for caches [seconds]. 
+     * Refresh period for caches [seconds].
      */
     private int refreshPeriod = 60 * 2;
 
     /**
-     * Maximum amount of cache entries. 
+     * Maximum amount of cache entries.
      */
     private int maximumCacheEntries = 200;
 
     /**
-     * Expiration time for caches [seconds]. If a property of a VM or a host 
+     * Expiration time for caches [seconds]. If a property of a VM or a host
      * cannot be obtained, after this time the entry in the cache will be
      * removed.
      */
     private int expirationTime = 60 * 10;
 
     /**
-     * Flag to refresh cache periodically. 
+     * Flag to refresh cache periodically.
      */
     private boolean autoUpdate = false;
 
@@ -102,7 +98,7 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
     private IaasMonitoringChainable loader;
 
     /**
-     * Timer to execute regularly the refresh task. 
+     * Timer to execute regularly the refresh task.
      */
     private Timer timer;
 
@@ -154,9 +150,9 @@ public class IaasMonitoringServiceCacher implements IaasMonitoringChainable {
 
         logger.debug(String
                 .format("[" +
-                    nsname +
-                    "] " +
-                    "Monitoring params for cacher: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
+                        nsname +
+                        "] " +
+                        "Monitoring params for cacher: refreshPeriod='%d' maximumCacheEntries='%d' expirationTime='%d' autoUpdateCache='%b'",
                         refreshPeriod, maximumCacheEntries, expirationTime, autoUpdate));
 
         createCaches();

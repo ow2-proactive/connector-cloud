@@ -41,11 +41,14 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.io.IOException;
+
 import org.apache.log4j.Logger;
+
 import java.net.MalformedURLException;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.JMXConnectorFactory;
+
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 import org.ow2.proactive.iaas.monitoring.SigarClient;
@@ -54,8 +57,8 @@ import org.ow2.proactive.iaas.monitoring.MonitoringClient;
 
 public class JmxUtils {
 
-    /** 
-     * Logger. 
+    /**
+     * Logger.
      */
     private static final Logger logger = Logger.getLogger(JmxUtils.class);
 
@@ -66,15 +69,6 @@ public class JmxUtils {
 
     static {
         mbeanClient = SigarClient.class;
-    }
-
-    public static final String getHostName(String jmxServiceUrl) {
-        try {
-            return new JMXServiceURL(jmxServiceUrl).getHost();
-        } catch (MalformedURLException e) {
-            // TODO: Consider throwing a checked exception.
-            throw new IllegalArgumentException(e);
-        }
     }
 
     public static void setMBeanClient(Class clz) {
@@ -125,10 +119,10 @@ public class JmxUtils {
         return map;
     }
 
-    public static Map<String, Object> getROJmxEnv(Credentials credentials) {
+    public static Map<String, Object> getRoJmxEnv(Credentials credentials) {
         Map<String, Object> env = new HashMap<String, Object>();
         env.put(JMXConnectorFactory.PROTOCOL_PROVIDER_PACKAGES, "org.ow2.proactive.jmx.provider");
-        Object[] obj = new Object[] { "", credentials };
+        Object[] obj = new Object[]{"", credentials};
         env.put(JMXConnector.CREDENTIALS, obj);
         return env;
     }

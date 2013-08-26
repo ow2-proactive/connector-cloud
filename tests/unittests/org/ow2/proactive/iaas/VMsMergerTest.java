@@ -36,8 +36,9 @@
 package org.ow2.proactive.iaas;
 
 import java.util.Map;
+
 import org.junit.Test;
-import org.junit.After;
+
 import java.util.HashMap;
 
 import junit.framework.Assert;
@@ -116,8 +117,7 @@ public class VMsMergerTest {
 
         currentVMProperties = new HashMap<String, String>();
 
-        Map<String, String> fromVMP = VMsMerger.getExtraVMProperties(vmId, currentVMProperties,
-                hostsMap);
+        Map<String, String> fromVMP = VMsMerger.getExtraVMPropsFromHostProps(vmId, hostsMap);
         currentVMProperties.putAll(fromVMP);
         Map<String, String> fromSigar = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, currentVMProperties,
                 sigarsMap);

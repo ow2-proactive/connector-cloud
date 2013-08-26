@@ -39,7 +39,6 @@ import org.ow2.proactive.iaas.monitoring.vmprocesses.VMProcess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,21 +51,21 @@ import org.junit.Test;
 
 public class VMProcessTest {
 
-    public static final String INSTANCE = "instance-00000109";
-    public static final String UUID = "7de378fc-5f62-4961-a6a7-f3ffc812ad2b";
-    public static final String MAC = "fa:16:3e:41:17:68";
-    public static final String KVM_COMMAND_LINE_SAMPLE = 
-            "/usr/bin/kvm -S -M pc-1.0 -enable-kvm -m 4096 -smp 2,sockets=2,cores=1,threads=1" + 
-            " -name " + INSTANCE + " -uuid " + UUID + " -nodefconfig -nodefaults " + 
-            "-chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000109.monitor,server,nowait " + 
-            "-mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown " + 
-            "-drive file=/store/nova/instances/instance-00000109/disk,if=none,id=drive-virtio-disk0,format=qcow2,cache=none "+ 
-            "-device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1"+ 
-            " -netdev tap,fd=19,id=hostnet0 -device rtl8139,netdev=hostnet0,id=net0,mac="+MAC+",bus=pci.0,addr=0x3 "+
-            "-chardev file,id=charserial0,path=/store/nova/instances/instance-00000109/console.log "+
-            "-device isa-serial,chardev=charserial0,id=serial0 -chardev pty,id=charserial1 "+
-            "-device isa-serial,chardev=charserial1,id=serial1 -usb -device usb-tablet,id=input0 "+
-            "-vnc 192.168.1.13:3 -k en-us -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5";
+    public static final String COMMAND_LINE_NAME = "instance-00000109";
+    public static final String COMMAND_LINE_UUID = "7de378fc-5f62-4961-a6a7-f3ffc812ad2b";
+    public static final String COMMAND_LINE_MAC = "fa:16:3e:41:17:68";
+    public static final String KVM_COMMAND_LINE_SAMPLE =
+            "/usr/bin/kvm -S -M pc-1.0 -enable-kvm -m 4096 -smp 2,sockets=2,cores=1,threads=1" +
+                    " -name " + COMMAND_LINE_NAME + " -uuid " + COMMAND_LINE_UUID + " -nodefconfig -nodefaults " +
+                    "-chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/instance-00000109.monitor,server,nowait " +
+                    "-mon chardev=charmonitor,id=monitor,mode=control -rtc base=utc -no-shutdown " +
+                    "-drive file=/store/nova/instances/instance-00000109/disk,if=none,id=drive-virtio-disk0,format=qcow2,cache=none " +
+                    "-device virtio-blk-pci,bus=pci.0,addr=0x4,drive=drive-virtio-disk0,id=virtio-disk0,bootindex=1" +
+                    " -netdev tap,fd=19,id=hostnet0 -device rtl8139,netdev=hostnet0,id=net0,mac=" + COMMAND_LINE_MAC + ",bus=pci.0,addr=0x3 " +
+                    "-chardev file,id=charserial0,path=/store/nova/instances/instance-00000109/console.log " +
+                    "-device isa-serial,chardev=charserial0,id=serial0 -chardev pty,id=charserial1 " +
+                    "-device isa-serial,chardev=charserial1,id=serial1 -usb -device usb-tablet,id=input0 " +
+                    "-vnc 192.168.1.13:3 -k en-us -vga cirrus -device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x5";
 
     @Before
     public void before() throws Exception {
@@ -102,16 +101,16 @@ public class VMProcessTest {
 
         VMProcess vmp = vmps.get(0);
 
-        Assert.assertTrue(vmp.getProperty("vendor.vm.uuid").equals(UUID));
-        Assert.assertTrue(vmp.getProperty("network.0.mac").equals(MAC));
-        Assert.assertTrue(vmp.getProperty("id").equals(INSTANCE));
-        
+        Assert.assertTrue(vmp.getProperty("vendor.vm.name").equals(COMMAND_LINE_NAME));
+        Assert.assertTrue(vmp.getProperty("network.0.mac").equals(COMMAND_LINE_MAC));
+        Assert.assertTrue(vmp.getProperty("id").equals(COMMAND_LINE_UUID));
+
     }
-    
+
     public static void startSecondJVM(Class<?> clazz) throws Exception {
         startSecondJVM(clazz, KVM_COMMAND_LINE_SAMPLE);
     }
-    
+
     public static void startSecondJVM(Class<?> clazz, String cline) throws Exception {
         String separator = System.getProperty("file.separator");
         String pwd = clazz.getClassLoader().getResource("").getFile();
@@ -126,7 +125,7 @@ public class VMProcessTest {
         System.out.println("Starting JVM: " + array);
 
         new ProcessBuilder(array).start();
-      
+
         System.out.println("Done.");
     }
 }

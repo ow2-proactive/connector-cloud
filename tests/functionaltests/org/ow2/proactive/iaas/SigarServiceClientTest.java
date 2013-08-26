@@ -38,6 +38,7 @@ package org.ow2.proactive.iaas;
 import java.io.File;
 import java.util.*;
 import java.util.Map.Entry;
+
 import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.PFlags;
 import org.junit.AfterClass;
@@ -62,8 +63,9 @@ import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 import static org.ow2.proactive.iaas.VimServiceClientTest.*;
 
 /**
- * These tests check for the presence of certain monitoring information as it 
+ * These tests check for the presence of certain monitoring information as it
  * is retrieved from a sigar mbean in an RMNode.
+ *
  * @author mjost
  */
 public class SigarServiceClientTest {
@@ -71,7 +73,7 @@ public class SigarServiceClientTest {
     static final String MAX_NOT_CONTAINED_KEYS_KEY = "sigar.maximum_not_contained_keys";
 
     /**
-     * Maximum allowed amount of keys not present (per test) before considered the 
+     * Maximum allowed amount of keys not present (per test) before considered the
      * test as failed.
      */
     private static int keysNotContainedMaximum = 0;
@@ -162,7 +164,7 @@ public class SigarServiceClientTest {
 
         System.out.println("RMNode JMX URL: " + jmxurl);
 
-        Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(c);
+        Map<String, Object> jmxenv = JmxUtils.getRoJmxEnv(c);
         rmNodeProps = Utils.convertToStringMap(JmxUtils.getSigarProperties(jmxurl, jmxenv,
                 SigarClient.MASK_ALL));
         System.out.println("Map properties: '\n" + rmNodeProps + "\n'");

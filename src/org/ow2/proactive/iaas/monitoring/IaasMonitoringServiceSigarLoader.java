@@ -51,8 +51,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
-import org.apache.ws.security.conversation.dkalgo.P_SHA1;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 import org.ow2.proactive.iaas.utils.VMsMerger;
@@ -74,19 +74,19 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     public static final String USE_RMNODE_ON_HOST_FLAG = "useRMNodeOnHost";
     public static final String USE_RMNODE_ON_VM_FLAG = "useRMNodeOnVM";
 
-    /** 
-     * Logger. 
+    /**
+     * Logger.
      */
     private static final Logger logger = Logger.getLogger(IaasMonitoringServiceSigarLoader.class);
 
-    /** 
+    /**
      * Map to save JMX urls per host.
      * Each JMX url is used to exploit monitoring information that can
      * be obtained by using the Sigar MBean available and running in the host.
      */
     protected Map<String, String> jmxSupportedHosts = new HashMap<String, String>();
 
-    /** 
+    /**
      * List saving all JMX urls for VMs.
      */
     protected List<String> jmxSupportedVMs = new ArrayList<String>();
@@ -95,7 +95,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
      * Use sigar monitoring.
      */
     protected Boolean useSigar = false;
-/**
+    /**
      * Credentials to get connected to the RMNodes (information obtained from JMX Sigar MBeans).
      */
     protected Credentials credentialsSigar = null;
@@ -106,7 +106,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     protected Boolean showVMProcessesOnHost = false;
 
     /**
-     *  Assume RMNodes are running on hosts.
+     * Assume RMNodes are running on hosts.
      */
     protected Boolean useRMNodeOnHost = false;
 
@@ -130,13 +130,13 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
      */
     private Map<String, String> vmId2hostId = new HashMap<String, String>();
 
-    /** 
+    /**
      * Constants to filter sigar properties.
      */
     private static int MASK_ALL = SigarClient.MASK_ALL;
     private static int MASK_VMPROC = SigarClient.MASK_VMPROC;
     private static int MASK_ALL_BUT_VMPROC = MASK_ALL & ~MASK_VMPROC;
-    
+
     public static final Integer ERRORS_ALLOWED = 3;
 
     IaasMonitoringServiceSigarLoader() throws IaasMonitoringException {
@@ -153,7 +153,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         logger.info(String.format(
                 "Monitoring params for SigarLoader: useRMNodeOnHost='%s', useRMNodeOnVM='%s', sigarCred='%s',"
-                    + " hostsfile='%s', showVMProcessesOnHost='%b', useSigar='%b'", useRMNodeOnHost,
+                        + " hostsfile='%s', showVMProcessesOnHost='%b', useSigar='%b'", useRMNodeOnHost,
                 useRMNodeOnVM, credentialsPath, hostsFile, showVMProcessesOnHost, useSigar));
 
         // Use Sigar monitoring? 
@@ -163,7 +163,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 setCredentials(new File(credentialsPath));
             } catch (KeyException e) {
                 throw new IaasMonitoringException("Credentials file did not load successfully: " +
-                    credentialsPath, e);
+                        credentialsPath, e);
             }
         } else {
             logger.warn("No credentials file for monitoring will be used.");
@@ -273,7 +273,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 logger.error("[" + nsname + "]" + "Cannot retrieve the list of hosts from JMX table.", e);
             }
 
-        return hosts.toArray(new String[] {});
+        return hosts.toArray(new String[]{});
     }
 
     @Override
@@ -294,7 +294,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
             }
         }
 
-        return vms.toArray(new String[] {});
+        return vms.toArray(new String[]{});
     }
 
     @Override
@@ -312,103 +312,144 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs of the host: " + hostId, e);
             }
 
-        return (new ArrayList<String>(vms)).toArray(new String[] {});
+        return (new ArrayList<String>(vms)).toArray(new String[]{});
     }
 
     @Override
     public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
+
         logger.debug("[" + nsname + "]" + " Retrieving properties from host '" + hostId + "'...");
+
         int mask = (showVMProcessesOnHost ? MASK_ALL : MASK_ALL_BUT_VMPROC);
-        return getHostPropertiesSelective(hostId, mask);
+
+        return getHostPropertiesByMask(hostId, mask);
+
     }
 
     @Override
     public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
+
+        Map<String, String> vmProps = new HashMap<String, String>();
+
         logger.debug("[" + nsname + "]" + "Retrieving properties for VM " + vmId);
-        Map<String, String> properties = new HashMap<String, String>();
 
         if (useRMNodeOnHost) {
+
             try {
 
-                Map<String, Object> hostSummary = getHostsMaps(vmId, vmId2hostId);
-                Map<String, String> newProps;
+                addExtraPropsComingFromHostProps(vmId, vmProps);
 
-                // Get VM properties coming from the Host processes about this VM.
-                newProps = VMsMerger.getExtraVMProperties(vmId, properties, hostSummary);
-                if (newProps.containsKey(IaasConst.P_VM_HOST.get())) {
-                    String host = newProps.get(IaasConst.P_VM_HOST.get());
-                    vmId2hostId.put(vmId, host);
-                    logger.debug("Added cache for: vm " + vmId + " <-> host " + host + "...");
-                } else {
-                    logger.warn("Could not find host for: " + vmId + " (" + vmId2hostId + ")");
-                }
-                properties.putAll(newProps);
+                if (useRMNodeOnVM)
+                    addExtraPropsComingFromRmNodeProps(vmId, vmProps);
 
-                /*
-                 * Scenario: 1. Many VMs with Sigar(RMNodes) running on them. 2. Many VMs told by
-                 * the IaaS API. 3. Which VM corresponds to which Sigar? -> Needed MAC matching (MAC
-                 * address is obtainable from the parameters of the VM process, in the host).
-                 */
-                if (useRMNodeOnVM) {
-                    // Get properties of all VMs (from Sigar of each) unless cache exists.
-                    Map<String, Object> sigarsMap = getRMNodeVMsMaps(vmId, vmId2SigarJmxUrl);
-
-                    newProps = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, properties, sigarsMap);
-
-                    if (newProps.containsKey(IaasConst.P_SIGAR_JMX_URL.get())) {
-                        String jmxurl = newProps.get(IaasConst.P_SIGAR_JMX_URL.get());
-                        vmId2SigarJmxUrl.put(vmId, jmxurl);
-                        logger.debug("Added cache for: vm " + vmId + " <-> jmxurl " + jmxurl + "...");
-                    } else {
-                        logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrl + ")");
-                    }
-
-                    properties.putAll(newProps);
-                }
 
             } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve VMProcesses info for VM: " + vmId, e);
+                logger.warn("[" + nsname + "]" + "Cannot retrieve VM info for VM: " + vmId, e);
             }
         }
 
-        return properties;
+        return vmProps;
+    }
+
+    private void addExtraPropsComingFromRmNodeProps(String vmId, Map<String, String> vmProps) {
+
+        Map<String, Object> rmNodeVMsMaps = getRMNodeVMsMaps(vmId, vmId2SigarJmxUrl);
+
+        Map<String, String> vmPropsFromRmNode = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, vmProps, rmNodeVMsMaps);
+
+        addCacheEntryToVmId2SigarJmxUrl(vmId, vmPropsFromRmNode);
+
+        vmProps.putAll(vmPropsFromRmNode);
+
+    }
+
+    private void addCacheEntryToVmId2SigarJmxUrl(String vmId, Map<String, String> vmPropsFromRmNode) {
+
+        String jmxurl = getJmxUrlFromProps(vmPropsFromRmNode);
+
+        if (jmxurl != null) {
+
+            vmId2SigarJmxUrl.put(vmId, jmxurl);
+            logger.debug("Added cache for: vm " + vmId + " <-> jmxurl " + jmxurl + "...");
+
+        } else {
+
+            logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrl + ")");
+
+        }
+
+    }
+
+    private void addExtraPropsComingFromHostProps(String vmId, Map<String, String> properties) throws IaasMonitoringException {
+
+        Map<String, Object> hostSummary = getPropsOfHostHostingVmOrAllHostsProps(vmId, vmId2hostId);
+        Map<String, String> vmPropsFromHost = VMsMerger.getExtraVMPropsFromHostProps(vmId, hostSummary);
+
+        addCacheEntryTovmId2HostId(vmId, vmPropsFromHost);
+        properties.putAll(vmPropsFromHost);
+
+    }
+
+    private String getJmxUrlFromProps(Map<String, String> props) {
+        return props.get(IaasConst.P_SIGAR_JMX_URL.get());
+    }
+
+    private void addCacheEntryTovmId2HostId(String vmId, Map<String, String> vmPropsFromHost) {
+
+        String host = getHostNameFromVmProps(vmPropsFromHost);
+
+        if (host != null) {
+            vmId2hostId.put(vmId, host);
+            logger.debug("Added cache for: vm " + vmId + " <-> host " + host + "...");
+        } else {
+            logger.warn("Could not find host for: " + vmId + " (" + vmId2hostId + ")");
+        }
+    }
+
+    private String getHostNameFromVmProps(Map<String, String> vmPropsFromHost) {
+        return vmPropsFromHost.get(IaasConst.P_VM_HOST.get());
     }
 
     private String[] getVMProcesses(String hostId) throws IaasMonitoringException {
-        Map<String, String> props = getHostPropertiesSelective(hostId, MASK_VMPROC);
+
+        Map<String, String> props = getHostPropertiesByMask(hostId, MASK_VMPROC);
         String vms = props.get(VMPLister.VMS_KEY);
-        if (vms != null) {
+
+        if (vms != null)
             return vms.split(VMPLister.VMS_SEPARATOR);
-        } else {
-            return new String[] {};
-        }
+        else
+            return new String[]{};
+
     }
 
-    public Map<String, String> getHostPropertiesSelective(String hostId, int mask)
+    public Map<String, String> getHostPropertiesByMask(String hostId, int mask)
             throws IaasMonitoringException {
 
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> hostProps = new HashMap<String, String>();
 
         if (useSigar)
+
             try {
 
-                if (jmxSupportedHosts.containsKey(hostId)) {
-                    String jmxurl = jmxSupportedHosts.get(hostId);
-                    properties.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
-                    Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                    Map<String, String> sigarProps = queryProps(jmxurl, jmxenv, mask);
-                    properties.putAll(sigarProps);
+                String jmxurl = jmxSupportedHosts.get(hostId);
+
+                if (jmxurl != null) {
+                    hostProps.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
+                    Map<String, String> rmNodeProps = retrieveRmNodeProps(jmxurl, mask);
+                    hostProps.putAll(rmNodeProps);
                 } else {
                     logger.debug("[" + nsname + "]" + "No RMNode running on the host '" + hostId + "'.");
                 }
+
             } catch (Exception e) {
-                logger.warn("[" + nsname + "]" + "Cannot retrieve Sigar properties from host: " + hostId, e);
+                logger.warn("[" + nsname + "]" + "Cannot retrieve RMNode properties from host: " + hostId, e);
             }
 
-        return properties;
+        return hostProps;
+
     }
 
-    private Map<String, Object> getHostsMaps(String vmIdTarget, Map<String, String> cache)
+    private Map<String, Object> getPropsOfHostHostingVmOrAllHostsProps(String vmIdTarget, Map<String, String> cache)
             throws IaasMonitoringException {
 
         Map<String, Object> hostsMap = new HashMap<String, Object>();
@@ -450,68 +491,79 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
      * Get Sigar maps of all VMs (maps with properties of an RMNode).
      * This is optimized to retrieve only one VM set of properties if there is already
      * a relation vmIdTarget<->jmxurl (that can be found using mac resolution only).
+     *
      * @param vmIdTarget
      * @param cache
      * @return the map with node:properties
      */
     private Map<String, Object> getRMNodeVMsMaps(String vmIdTarget, Map<String, String> cache) {
-        Map<String, Object> sigarsMap = new HashMap<String, Object>();
-        String jmxurl = null;
-        Boolean doraw = false;
 
-        /*
-         * Cached Sigar jmxurl for this vmIdTarget.
-         */
-        jmxurl = cache.get(vmIdTarget);
+        Map<String, Object> rmNodesProps = new HashMap<String, Object>();
+        Boolean needToReScanAllRmNodes;
 
-        if (jmxurl != null) {
-            Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-            Map<String, String> p = queryProps(jmxurl, jmxenv, MASK_ALL_BUT_VMPROC);
-            Integer err = Integer.getInteger(p.get(P_DEBUG_NUMBER_OF_ERRORS.get()));
-                    
-            if (p.isEmpty()) {
-                logger.info("Sigar VM properties empty, node reconnected? " + vmIdTarget + ": " + jmxurl);
-                doraw = true;
-            } else if (err == null || err > ERRORS_ALLOWED ) {
-                logger.info("Sigar VM properties: too many fails, node reconnected? " + vmIdTarget + ": " + jmxurl);
-                doraw = true;
-            } else{
-                sigarsMap.put(vmIdTarget, p);
+        String cachedJmxUrl = cache.get(vmIdTarget);
+
+        if (cachedJmxUrl != null) {
+
+            Map<String, String> rmNodeProps = retrieveRmNodeProps(cachedJmxUrl, MASK_ALL_BUT_VMPROC);
+
+            if (rmNodePropsAreInvalid(rmNodeProps)) {
+                logger.info("Invalid RMNode props (too many fails), node reconnected? " + vmIdTarget + ": " + cachedJmxUrl);
+                needToReScanAllRmNodes = true;
+            } else {
+                rmNodesProps.put(vmIdTarget, rmNodeProps);
+                needToReScanAllRmNodes = false;
             }
+
         } else {
-            logger.info("vm<->jmxurl cache miss for VM " + vmIdTarget + ": " + jmxurl);
-            doraw = true;
+
+            logger.info("vm<->jmxurl cache miss for VM " + vmIdTarget);
+            needToReScanAllRmNodes = true;
+
         }
 
-        if (doraw) {
-            for (String j : jmxSupportedVMs) {
-                //String j = jmxSupportedVMs.get(sigar);
-                logger.debug("Querying props of sigar VM at: " + j);
-                Map<String, String> sigarProps = null;
-                Map<String, Object> jmxenv = JmxUtils.getROJmxEnv(credentialsSigar);
-                sigarProps = queryProps(j, jmxenv, MASK_ALL_BUT_VMPROC);
-                logger.debug("Properties: " + sigarProps);
-                if (sigarProps != null) {
-                    sigarsMap.put(j, sigarProps);
-                } else {
-                    logger.warn("Could not get properties for RMNode@VM:" + j);
-                }
+        if (needToReScanAllRmNodes) {
+            cache.remove(vmIdTarget);
+            getRmNodesProps(rmNodesProps);
+        }
+
+        return rmNodesProps;
+    }
+
+    private boolean rmNodePropsAreInvalid(Map<String, String> rmNodeProps) {
+        Integer errorsWhileRetrieving = getNumberOfErrorsWhileGettingProps(rmNodeProps);
+        return rmNodeProps.isEmpty() || errorsWhileRetrieving == null || errorsWhileRetrieving > ERRORS_ALLOWED;
+    }
+
+    private void getRmNodesProps(Map<String, Object> sigarsMap) {
+        for (String j : jmxSupportedVMs) {
+            logger.debug("Querying props of sigar VM at: " + j);
+            Map<String, String> sigarProps = null;
+            sigarProps = retrieveRmNodeProps(j, MASK_ALL_BUT_VMPROC);
+            logger.debug("Properties: " + sigarProps);
+            if (sigarProps != null) {
+                sigarsMap.put(j, sigarProps);
+            } else {
+                logger.warn("Could not get properties for RMNode@VM:" + j);
             }
         }
+    }
 
-        return sigarsMap;
+    private Integer getNumberOfErrorsWhileGettingProps(Map<String, String> p) {
+        return Integer.getInteger(p.get(P_DEBUG_NUMBER_OF_ERRORS.get()));
     }
 
     /**
-     * Query all the monitoring properties of a target RMNode using 
+     * Query all the monitoring properties of a target RMNode using
      * the remote Sigar MBean.
+     *
      * @param jmxurl URL of the RM JMX Server.
-     * @param env Jmx initialization map.
      * @return a map of properties of the target RMNode.
      */
-    private Map<String, String> queryProps(String jmxurl, Map<String, Object> env, int mask) {
+    private Map<String, String> retrieveRmNodeProps(String jmxurl, int mask) {
         Map<String, Object> outp = new HashMap<String, Object>();
         try {
+            Map<String, Object> env = JmxUtils.getRoJmxEnv(credentialsSigar);
             outp = JmxUtils.getSigarProperties(jmxurl, env, mask);
         } catch (Exception e) {
             logger.warn("[" + nsname + "]" + "Could not get sigar properties for '" + jmxurl + "'.", e);

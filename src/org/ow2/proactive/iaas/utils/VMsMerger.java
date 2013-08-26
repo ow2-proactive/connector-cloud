@@ -40,10 +40,9 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map.Entry;
+
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.monitoring.IaasConst;
-
-import com.google.common.collect.Maps;
 
 
 public class VMsMerger {
@@ -51,66 +50,87 @@ public class VMsMerger {
     private static final Logger logger = Logger.getLogger(VMsMerger.class);
 
     /**
-     * The goal is to add to the current VMProperties (obtained from IaaS API) and VMProcesses 
-     * some properties obtained from Sigar agents. But first we need to find out what Sigar agent 
-     * really matches the already provided information. 
-     * @param vmId 
-     * @param vmProperties 
-     * @param sigarsMap
+     * The goal is to add to the current VMProperties (obtained from IaaS API) and VMProcesses
+     * some properties obtained from Sigar agents. But first we need to find out what Sigar agent
+     * really matches the already provided information.
+     *
+     * @param vmId
+     * @param vmProperties
+     * @param rmNodesMaps
      * @return the set of new extra properties of the VM.
      */
     public static Map<String, String> getExtraVMPropertiesFromVMRMNodes(String vmId,
-            Map<String, String> vmProperties, Map<String, Object> sigarsMap) {
+                                                                        Map<String, String> vmProperties, Map<String, Object> rmNodesMaps) {
 
         // We assume sigar information is available. 
         List<String> vmMacs = getMacs(vmProperties);
 
         if (vmMacs.isEmpty()) {
-            logger.warn("No MACs found in VM " + vmId + ": " + vmProperties);
-            return Collections.<String,String>emptyMap();
+            logger.warn("No MACs found in VM properties: " + vmId + " -> " + vmProperties);
+            return Collections.<String, String>emptyMap();
         }
 
-        for (Entry<String, Object> sigar : sigarsMap.entrySet()) {
+        for (Entry<String, Object> rmNodeMap : rmNodesMaps.entrySet()) {
+
+            Map<String, Object> props = (Map<String, Object>) rmNodeMap.getValue();
+
             String mac;
             int i = 0;
-            Map<String, Object> props = (Map<String, Object>) sigar.getValue();
 
-            while ((mac = (String) props.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null) {
-                if (vmMacs.contains(mac.toUpperCase())) {
+            while ((mac = (String) props.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null)
+                if (vmMacs.contains(mac.toUpperCase()))
                     return Utils.convertToStringMap(props);
-                }
-            }
+
         }
-        
+
         logger.warn("Could not match VM " + vmId + " with any VM RMNode...");
-        return Collections.<String,String>emptyMap();
+        return Collections.<String, String>emptyMap();
     }
 
     /**
-     * The goal is to add to the scare information of a VM coming from the IaaS API some information like 
-     * process memory usage and cpu usage as listed in the host where this VM is hosted (a kvm process for instance). 
-     * @param vmId 
-     * @param vmProperties 
+     * The goal is to add to the scare information of a VM coming from the IaaS API some information like
+     * process memory usage and cpu usage as listed in the host where this VM is hosted (a kvm process for instance).
+     *
+     * @param vmId
      * @param hostsMap
      * @return the set of new extra properties of the VM.
      */
-    public static Map<String, String> getExtraVMProperties(String vmId,
-            Map<String, String> vmProperties, Map<String, Object> hostsMap) {
+    public static Map<String, String> getExtraVMPropsFromHostProps(
+            String vmId, Map<String, Object> hostsMap) {
 
         for (Entry<String, Object> host : hostsMap.entrySet()) {
+
             Map<String, Object> hostProps = (Map<String, Object>) host.getValue();
-            if (hostProps.containsKey(IaasConst.P_HOST_VM_ID.get(vmId))) {
-                Map<String, String> ret = new HashMap<String, String>();
-                ret.putAll(getVMPropertiesFromHostMap(vmId, hostProps));
-                ret.put(IaasConst.P_VM_HOST.get(), host.getKey());
+
+            if (hostMapContainsVmInformation(vmId, hostProps)) {
+
+                Map<String, String> ret = fillInExtraVmProperties(vmId, host, hostProps);
+
                 return ret;
             }
+
         }
+
         logger.warn("Could not match " + vmId + " with any host RMNode...");
-        return Collections.<String,String>emptyMap();
+        return Collections.<String, String>emptyMap();
     }
 
-    private static Map<String, String> getVMPropertiesFromHostMap(String vmId, Map<String, Object> props) {
+    private static boolean hostMapContainsVmInformation(String vmId, Map<String, Object> hostProps) {
+        return hostProps.containsKey(IaasConst.P_HOST_VM_ID.get(vmId));
+    }
+
+    private static Map<String, String> fillInExtraVmProperties(String vmId, Entry<String, Object> host, Map<String, Object> hostProps) {
+
+        Map<String, String> ret = new HashMap<String, String>();
+
+        ret.putAll(getVMPropertiesFromHostProperties(vmId, hostProps));
+        ret.put(IaasConst.P_VM_HOST.get(), host.getKey());
+
+        return ret;
+
+    }
+
+    private static Map<String, String> getVMPropertiesFromHostProperties(String vmId, Map<String, Object> props) {
         Map<String, String> output = new HashMap<String, String>();
 
         String prefix = IaasConst.P_HOST_VM_PREFIX.get(vmId);

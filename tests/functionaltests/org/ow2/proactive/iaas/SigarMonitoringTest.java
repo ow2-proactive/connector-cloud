@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Map.Entry;
+
 import junit.framework.Assert;
 import org.hyperic.sigar.Sigar;
 import org.junit.AfterClass;
@@ -66,15 +67,16 @@ import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader
 
 
 /**
- * These tests check for the presence of certain monitoring information as it 
+ * These tests check for the presence of certain monitoring information as it
  * is retrieved from a sigar mbean in an RMNode.
+ *
  * @author mjost
  */
 public class SigarMonitoringTest {
 
     static final String HOST_NAME = "host1";
     static final String VM_NAME = "vm1";
-    static final String VM_INSTANCE_NAME = "instance-00000000";
+    static final String VM_INSTANCE_ID = "ffc58542-d24a-4e88-a2c2-ca162f2a5ee9";
 
     /**
      * Url of the RM.
@@ -138,12 +140,12 @@ public class SigarMonitoringTest {
                 null,
                 "nsname",
                 USE_SIGAR_FLAG + OPTIONS_SEP +
-                SKIP_CACHE_FLAG + OPTIONS_SEP +
-                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
-                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
-                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
-                    monitHosts.getAbsolutePath());
+                        SKIP_CACHE_FLAG + OPTIONS_SEP +
+                        CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                        IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                        USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                        HOSTSFILE_FLAG + KEY_VALUE_SEP +
+                        monitHosts.getAbsolutePath());
 
         // Check outputs...
         String[] hosts = monit.getHosts();
@@ -172,27 +174,28 @@ public class SigarMonitoringTest {
                 null,
                 "nsname",
                 USE_SIGAR_FLAG + OPTIONS_SEP +
-                SKIP_CACHE_FLAG + OPTIONS_SEP +
-                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
-                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
-                    SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
-                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
-                    monitHosts.getAbsolutePath());
+                        SKIP_CACHE_FLAG + OPTIONS_SEP +
+                        CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                        IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                        USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                        SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
+                        HOSTSFILE_FLAG + KEY_VALUE_SEP +
+                        monitHosts.getAbsolutePath());
 
         // Check outputs...
         Map<String, String> props = monit.getHostProperties(HOST_NAME);
         for (Entry<String, String> entry : props.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(props.containsKey(P_HOST_VM_ID.get(VMProcessTest.INSTANCE)));
+        Assert.assertTrue(props.containsKey(P_HOST_VM_ID.get(VMProcessTest.COMMAND_LINE_UUID)));
 
     }
 
     @Test
     public void getVMPropertiesOnHost() throws Exception {
         String macAddress = new Sigar().getNetInterfaceConfig().getHwaddr();
-        String cline = VMProcessTest.KVM_COMMAND_LINE_SAMPLE.replace(VMProcessTest.MAC, macAddress).replace(VMProcessTest.INSTANCE, VM_INSTANCE_NAME);
+        String cline = VMProcessTest.KVM_COMMAND_LINE_SAMPLE.replace(VMProcessTest.COMMAND_LINE_MAC, macAddress).
+                replace(VMProcessTest.COMMAND_LINE_UUID, VM_INSTANCE_ID);
 
         VMProcessTest.startSecondJVM(VMProcessHelperTest.class, cline);
         Thread.sleep(100);
@@ -202,14 +205,14 @@ public class SigarMonitoringTest {
                 null,
                 "nsname",
                 USE_SIGAR_FLAG + OPTIONS_SEP +
-                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP +
-                    CREDENTIALS_FLAG + KEY_VALUE_SEP +
-                    IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
-                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
-                    USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
-                    SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
-                    HOSTSFILE_FLAG + KEY_VALUE_SEP +
-                    monitHosts.getAbsolutePath());
+                        IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP +
+                        CREDENTIALS_FLAG + KEY_VALUE_SEP +
+                        IaasFuncTHelper.getRmHome() + "/config/authentication/rm.cred" + OPTIONS_SEP +
+                        USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP +
+                        USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
+                        SHOW_VMPROCESSES_ON_HOST_FLAG + OPTIONS_SEP +
+                        HOSTSFILE_FLAG + KEY_VALUE_SEP +
+                        monitHosts.getAbsolutePath());
 
         monit.registerNode(VM_NAME, jmxUrl, NodeType.VM);
 
@@ -218,9 +221,9 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : hprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(hprops.containsKey(P_HOST_VM_ID.get(VM_INSTANCE_NAME)));
-        
-        Map<String, String> vprops = monit.getVMProperties(VM_INSTANCE_NAME);
+        Assert.assertTrue(hprops.containsKey(P_HOST_VM_ID.get(VM_INSTANCE_ID)));
+
+        Map<String, String> vprops = monit.getVMProperties(VM_INSTANCE_ID);
         for (Entry<String, String> entry : vprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }

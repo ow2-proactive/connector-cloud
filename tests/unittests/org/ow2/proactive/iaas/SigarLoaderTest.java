@@ -40,7 +40,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.BufferedWriter;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -49,11 +48,8 @@ import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import org.ow2.proactive.iaas.monitoring.*;
 import org.ow2.proactive.iaas.utils.JmxUtils;
-import org.ow2.proactive.iaas.monitoring.NodeType;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringChainable;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceFactory;
 
 import static org.ow2.proactive.iaas.utils.Utils.*;
 import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader.*;
@@ -109,21 +105,28 @@ public class SigarLoaderTest {
 
         monitHosts = createMonitoringHostsFile(hostsfile);
 
-        JmxUtils.setMBeanClient(ClientTest.class);
+        JmxUtils.setMBeanClient(SigarLoaderTestClientHelper.class);
 
     }
 
     /**
      * Create monitor service.
+     *
      * @return standard monitor.
      * @throws IaasMonitoringException
      */
     private static IaasMonitoringChainable getMonitor() throws IaasMonitoringException {
         IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(null, "nsname",
                 IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP + USE_SIGAR_FLAG + OPTIONS_SEP +
-                    USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP + USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
-                    HOSTSFILE_FLAG + KEY_VALUE_SEP + monitHosts.getAbsolutePath());
+                        USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP + USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
+                        HOSTSFILE_FLAG + KEY_VALUE_SEP + monitHosts.getAbsolutePath());
         return monit;
+    }
+
+
+    private static Integer getVm2UrlCacheMisses(IaasMonitoringChainable monit) {
+        IaasMonitoringServiceSigarLoader monitC = (IaasMonitoringServiceSigarLoader) monit;
+        return monitC.getVmId2SigarJmxUrlCacheMisses();
     }
 
     @Test
@@ -169,8 +172,8 @@ public class SigarLoaderTest {
 
             vm1 = monit.getVMProperties(VM1_ID);
             Assert.assertTrue(vm1 != null);
-            Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
-            Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
+            Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.toString()));
+            Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.toString())));
 
             monit.unregisterNode(VM1_NODE, VM1_URL, NodeType.VM); // VM unregistered.
         }
@@ -179,7 +182,7 @@ public class SigarLoaderTest {
             // Test vm2 (VM RMNode not registered yet)
             vm2 = monit.getVMProperties(VM2_ID);
             Assert.assertTrue(vm2 != null);
-            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()) == false);
+            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.toString()) == false);
         }
 
         {
@@ -188,8 +191,8 @@ public class SigarLoaderTest {
 
             vm2 = monit.getVMProperties(VM2_ID);
             Assert.assertTrue(vm2 != null);
-            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
-            Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
+            Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.toString()));
+            Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.toString())));
 
             monit.unregisterNode(VM2_NODE, VM2_URL, NodeType.VM); // VM unregistered.
         }
@@ -198,6 +201,7 @@ public class SigarLoaderTest {
 
     @Test
     public void getVMPropertiesSameRMNodeName_Test() throws Exception {
+
         IaasMonitoringChainable monit = getMonitor();
 
         Map<String, String> vm1;
@@ -205,6 +209,7 @@ public class SigarLoaderTest {
 
         final String name = VM1_NODE + "same";
 
+        // Two vms with the same RMNode name (should not happen but it might)
         monit.registerNode(name, VM1_URL, NodeType.VM);
         monit.registerNode(name, VM2_URL, NodeType.VM);
 
@@ -214,52 +219,81 @@ public class SigarLoaderTest {
         Assert.assertTrue(vm1 != null);
         Assert.assertTrue(vm2 != null);
 
-        Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
-        Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.get()));
+        Assert.assertTrue(vm1.containsKey(P_TEST_PROP_FROM_VM_SIGAR.toString()));
+        Assert.assertTrue(vm2.containsKey(P_TEST_PROP_FROM_VM_SIGAR.toString()));
 
-        Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
-        Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.get())));
+        Assert.assertTrue(VM1_PROP_VM_SIGAR.equals(vm1.get(P_TEST_PROP_FROM_VM_SIGAR.toString())));
+        Assert.assertTrue(VM2_PROP_VM_SIGAR.equals(vm2.get(P_TEST_PROP_FROM_VM_SIGAR.toString())));
 
     }
 
     @Test
-    public void getVMPropertiesVMDisconnection_Test() throws Exception {
+    public void getVMPropertiesVMDisconnectionAndReconnection_Test() throws Exception {
+
+        System.out.println("Started disconnection test...");
+
         IaasMonitoringChainable monit = getMonitor();
 
-        Map<String, String> vm1a;
-        Map<String, String> vm1b;
+        Map<String, String> vmOriginal;
+        Map<String, String> vmReconnected;
+        Map<String, String> vmReReconnected;
 
         monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM);
 
-        vm1a = monit.getVMProperties(VM1_ID);
+        vmOriginal = monit.getVMProperties(VM1_ID);
 
-        System.out.println(vm1a.get(P_SIGAR_JMX_URL.get()));
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 1);
 
-        // make vm1 disconnect
-        Map<String, Object> backup;
-        backup = ClientTest.getResults().remove(VM1_URL);
-        ClientTest.getResults().put(VM1_URL, ClientTest.getSigarFailureMap(VM1_URL));
+        makeVm1DisconnectAndReconnectWithDifferentUrl(monit);
 
-        // make vm1 reconnect (different URL)
-        backup.put(P_SIGAR_JMX_URL.get(), VM1_URL + "D");
-        ClientTest.getResults().put(VM1_URL + "D", backup); // Different url now.
-        monit.registerNode(VM1_NODE, VM1_URL + "D", NodeType.VM);
+        vmReconnected = monit.getVMProperties(VM1_ID);
 
-        vm1b = monit.getVMProperties(VM1_ID);
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2);
 
-        Assert.assertTrue(vm1a != null);
-        Assert.assertTrue(vm1b != null);
+        vmReReconnected = monit.getVMProperties(VM1_ID);
 
-        Assert.assertTrue(vm1a.containsKey(P_COMMON_ID.get()));
-        Assert.assertTrue(vm1b.containsKey(P_COMMON_ID.get()));
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2); // no cache miss since last check
 
-        Assert.assertEquals(vm1a.get(P_COMMON_ID.get()), vm1b.get(P_COMMON_ID.get()));
+        // Asserts...
 
-        Assert.assertTrue(vm1a.containsKey(P_SIGAR_JMX_URL.get()));
-        Assert.assertTrue(vm1b.containsKey(P_SIGAR_JMX_URL.get()));
-        Assert.assertFalse(vm1a.get(P_SIGAR_JMX_URL.get()).equals(vm1b.get(P_SIGAR_JMX_URL.get())));
-        
-        ClientTest.restore(); // Restore original status.
+        Assert.assertTrue(vmOriginal != null);
+        Assert.assertTrue(vmReconnected != null);
+        Assert.assertTrue(vmReReconnected != null);
+
+        Assert.assertTrue(vmOriginal.containsKey(P_COMMON_ID.toString()));
+        Assert.assertTrue(vmReconnected.containsKey(P_COMMON_ID.toString()));
+        Assert.assertTrue(vmReReconnected.containsKey(P_COMMON_ID.toString()));
+
+        Assert.assertEquals(vmOriginal.get(P_COMMON_ID.toString()), vmReconnected.get(P_COMMON_ID.toString()));
+        Assert.assertEquals(vmOriginal.get(P_COMMON_ID.toString()), vmReReconnected.get(P_COMMON_ID.toString()));
+
+        Assert.assertTrue(vmOriginal.containsKey(P_SIGAR_JMX_URL.toString()));
+        Assert.assertTrue(vmReconnected.containsKey(P_SIGAR_JMX_URL.toString()));
+        Assert.assertTrue(vmReReconnected.containsKey(P_SIGAR_JMX_URL.toString()));
+        Assert.assertFalse(vmOriginal.get(P_SIGAR_JMX_URL.toString()).equals(vmReconnected.get(P_SIGAR_JMX_URL.toString())));
+        Assert.assertFalse(vmOriginal.get(P_SIGAR_JMX_URL.toString()).equals(vmReReconnected.get(P_SIGAR_JMX_URL.toString())));
+        Assert.assertTrue(vmReconnected.get(P_SIGAR_JMX_URL.toString()).equals(vmReconnected.get(P_SIGAR_JMX_URL.toString())));
+
+        SigarLoaderTestClientHelper.restoreDefaultProperties(); // Restore original status.
+
+    }
+
+    private void makeVm1DisconnectAndReconnectWithDifferentUrl(IaasMonitoringChainable monit) {
+
+        Map<String, Map<String, Object>> allProps = SigarLoaderTestClientHelper.getAllPropsMap();
+
+        Map<String, Object> propsWithFailure = SigarLoaderTestClientHelper.getSigarMapSimulatingFailures(VM1_URL);
+
+        Map<String, Object> originalVm1Props = allProps.remove(VM1_URL);   // all info regarding vm1 is removed
+
+        allProps.put(VM1_URL, propsWithFailure);                           // instead a map with connection failures data is put
+
+        String NEW_VM1_URL = VM1_URL + "NEW";
+
+        originalVm1Props.put(P_SIGAR_JMX_URL.toString(), NEW_VM1_URL);     // the original info regarding vm1 is added into a new url (RMNode reconnected)
+        allProps.put(NEW_VM1_URL, originalVm1Props);                       // Different URL with same VM1 original data.
+
+        monit.registerNode(VM1_NODE, NEW_VM1_URL, NodeType.VM);
 
     }
 

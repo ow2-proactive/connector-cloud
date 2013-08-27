@@ -71,7 +71,7 @@ public class VMProcessTest {
     public void before() throws Exception {
         // This class sleeps for a while and exits, so
         // no need to kill it.
-        startSecondJVM(VMProcessHelperTest.class);
+        startSecondJVM(VMProcessTestHelper.class);
     }
 
     @Test

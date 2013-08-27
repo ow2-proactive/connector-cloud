@@ -77,7 +77,7 @@ public class VMsMerger {
             String mac;
             int i = 0;
 
-            while ((mac = (String) props.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null)
+            while ((mac = (String) props.get(IaasConst.P_COMMON_NET_MAC.toString(i++))) != null)
                 if (vmMacs.contains(mac.toUpperCase()))
                     return Utils.convertToStringMap(props);
 
@@ -116,7 +116,7 @@ public class VMsMerger {
     }
 
     private static boolean hostMapContainsVmInformation(String vmId, Map<String, Object> hostProps) {
-        return hostProps.containsKey(IaasConst.P_HOST_VM_ID.get(vmId));
+        return hostProps.containsKey(IaasConst.P_HOST_VM_ID.toString(vmId));
     }
 
     private static Map<String, String> fillInExtraVmProperties(String vmId, Entry<String, Object> host, Map<String, Object> hostProps) {
@@ -124,7 +124,7 @@ public class VMsMerger {
         Map<String, String> ret = new HashMap<String, String>();
 
         ret.putAll(getVMPropertiesFromHostProperties(vmId, hostProps));
-        ret.put(IaasConst.P_VM_HOST.get(), host.getKey());
+        ret.put(IaasConst.P_VM_HOST.toString(), host.getKey());
 
         return ret;
 
@@ -133,7 +133,7 @@ public class VMsMerger {
     private static Map<String, String> getVMPropertiesFromHostProperties(String vmId, Map<String, Object> props) {
         Map<String, String> output = new HashMap<String, String>();
 
-        String prefix = IaasConst.P_HOST_VM_PREFIX.get(vmId);
+        String prefix = IaasConst.P_HOST_VM_PREFIX.toString(vmId);
         for (String k : props.keySet()) {
             if (k.startsWith(prefix)) {
                 try {
@@ -151,7 +151,7 @@ public class VMsMerger {
         List<String> output = new ArrayList<String>();
         String mac = null;
         int i = 0;
-        while ((mac = vmProperties.get(IaasConst.P_COMMON_NET_MAC.get(i++))) != null) {
+        while ((mac = vmProperties.get(IaasConst.P_COMMON_NET_MAC.toString(i++))) != null) {
             output.add(mac.toUpperCase());
         }
         return output;

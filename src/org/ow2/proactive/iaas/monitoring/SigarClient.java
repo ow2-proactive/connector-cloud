@@ -4,7 +4,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.io.IOException;
+
 import org.apache.log4j.Logger;
+
 import javax.management.ObjectName;
 import javax.management.MBeanException;
 import javax.management.remote.JMXConnector;
@@ -15,6 +17,7 @@ import javax.management.InstanceNotFoundException;
 import javax.management.AttributeNotFoundException;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.MalformedObjectNameException;
+
 import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
 
 import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
@@ -94,8 +97,8 @@ public class SigarClient implements MonitoringClient {
     }
 
     private void addDebugProperties(Map<String, Object> properties, int errors) {
-        properties.put(P_DEBUG_SIGAR_USED.get(), "yes");
-        properties.put(P_DEBUG_NUMBER_OF_ERRORS.get(), (Integer) errors);
+        properties.put(P_DEBUG_SIGAR_USED.toString(), "yes");
+        properties.put(P_DEBUG_NUMBER_OF_ERRORS.toString(), (Integer) errors);
     }
 
     private int addVMProcessesProperties(Map<String, Object> properties) {
@@ -112,7 +115,7 @@ public class SigarClient implements MonitoringClient {
     private int addCpuCoresProperty(Map<String, Object> properties) {
         try {
             Object a = getJMXSigarAttribute("sigar:Type=Cpu", "TotalCores");
-            properties.put(P_COMMON_CPU_CORES.get(), (Integer) a);
+            properties.put(P_COMMON_CPU_CORES.toString(), (Integer) a);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
             return ERROR;
@@ -125,7 +128,7 @@ public class SigarClient implements MonitoringClient {
             Object a = getJMXSigarAttribute("sigar:Type=Cpu", "Mhz");
             int fmhz = (Integer) a;
             float fghz = (float) fmhz / 1000;
-            properties.put(P_COMMON_CPU_FREQUENCY.get(), fghz);
+            properties.put(P_COMMON_CPU_FREQUENCY.toString(), fghz);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
             return ERROR;
@@ -137,7 +140,7 @@ public class SigarClient implements MonitoringClient {
         try {
             Double a = (Double) getJMXSigarAttribute("sigar:Type=CpuUsage", "Idle");
             float usage = (float) (1.0 - a);
-            properties.put(P_COMMON_CPU_USAGE.get(), usage);
+            properties.put(P_COMMON_CPU_USAGE.toString(), usage);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
             return ERROR;
@@ -151,9 +154,9 @@ public class SigarClient implements MonitoringClient {
             Long free = (Long) getJMXSigarAttribute("sigar:Type=Mem", "Free");
             Long actualFree = (Long) getJMXSigarAttribute("sigar:Type=Mem", "ActualFree");
 
-            properties.put(P_COMMON_MEM_TOTAL.get(), total);
-            properties.put(P_COMMON_MEM_FREE.get(), free);
-            properties.put(P_COMMON_MEM_ACTUAL_FREE.get(), actualFree);
+            properties.put(P_COMMON_MEM_TOTAL.toString(), total);
+            properties.put(P_COMMON_MEM_FREE.toString(), free);
+            properties.put(P_COMMON_MEM_ACTUAL_FREE.toString(), actualFree);
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
             return ERROR;
@@ -184,12 +187,12 @@ public class SigarClient implements MonitoringClient {
                     Long speed = (Long) connector.getMBeanServerConnection().getAttribute(on, "Speed");
                     String ip = (String) connector.getMBeanServerConnection().getAttribute(on, "Address");
 
-                    properties.put(P_COMMON_NET_NAME.get(counter), name);
-                    properties.put(P_COMMON_NET_TX.get(counter), tx);
-                    properties.put(P_COMMON_NET_RX.get(counter), rx);
-                    properties.put(P_COMMON_NET_MAC.get(counter), mac);
-                    properties.put(P_COMMON_NET_SPEED.get(counter), (speed < 0 ? 0 : speed));
-                    properties.put(P_COMMON_NET_IP.get(counter), ip);
+                    properties.put(P_COMMON_NET_NAME.toString(counter), name);
+                    properties.put(P_COMMON_NET_TX.toString(counter), tx);
+                    properties.put(P_COMMON_NET_RX.toString(counter), rx);
+                    properties.put(P_COMMON_NET_MAC.toString(counter), mac);
+                    properties.put(P_COMMON_NET_SPEED.toString(counter), (speed < 0 ? 0 : speed));
+                    properties.put(P_COMMON_NET_IP.toString(counter), ip);
 
                     ttx += tx;
                     trx += rx;
@@ -200,9 +203,9 @@ public class SigarClient implements MonitoringClient {
                 }
             }
         }
-        properties.put(P_COMMON_NET_COUNT_TOTAL.get(), counter);
-        properties.put(P_COMMON_NET_TX_TOTAL.get(), ttx);
-        properties.put(P_COMMON_NET_RX_TOTAL.get(), trx);
+        properties.put(P_COMMON_NET_COUNT_TOTAL.toString(), counter);
+        properties.put(P_COMMON_NET_TX_TOTAL.toString(), ttx);
+        properties.put(P_COMMON_NET_RX_TOTAL.toString(), trx);
         return NO_ERROR;
     }
 
@@ -226,9 +229,9 @@ public class SigarClient implements MonitoringClient {
                     Long total = (Long) connector.getMBeanServerConnection().getAttribute(on, "Total");
                     Long used = (Long) connector.getMBeanServerConnection().getAttribute(on, "Used");
 
-                    properties.put(P_COMMON_STORAGE_NAME.get(counter), name);
-                    properties.put(P_COMMON_STORAGE_TOTAL.get(counter), total);
-                    properties.put(P_COMMON_STORAGE_USED.get(counter), used);
+                    properties.put(P_COMMON_STORAGE_NAME.toString(counter), name);
+                    properties.put(P_COMMON_STORAGE_TOTAL.toString(counter), total);
+                    properties.put(P_COMMON_STORAGE_USED.toString(counter), used);
                     ttotal += total;
                     tused += used;
                     counter++;
@@ -238,9 +241,9 @@ public class SigarClient implements MonitoringClient {
                 }
             }
         }
-        properties.put(P_COMMON_STORAGE_COUNT_TOTAL.get(), counter);
-        properties.put(P_COMMON_STORAGE_TOTAL_TOTAL.get(), ttotal);
-        properties.put(P_COMMON_STORAGE_USED_TOTAL.get(), tused);
+        properties.put(P_COMMON_STORAGE_COUNT_TOTAL.toString(), counter);
+        properties.put(P_COMMON_STORAGE_TOTAL_TOTAL.toString(), ttotal);
+        properties.put(P_COMMON_STORAGE_USED_TOTAL.toString(), tused);
         return NO_ERROR;
     }
 
@@ -264,9 +267,9 @@ public class SigarClient implements MonitoringClient {
                         .append(',');
             }
             String ps = process.toString();
-            properties.put(P_COMMON_SYSTEM_PROCESS.get(), ps.substring(0, ps.length() - 1));
+            properties.put(P_COMMON_SYSTEM_PROCESS.toString(), ps.substring(0, ps.length() - 1));
             String ps3 = process3.toString();
-            properties.put(P_COMMON_SYSTEM_PROCESS3.get(), ps3.substring(0, ps3.length() - 1));
+            properties.put(P_COMMON_SYSTEM_PROCESS3.toString(), ps3.substring(0, ps3.length() - 1));
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
             return ERROR;
@@ -277,7 +280,7 @@ public class SigarClient implements MonitoringClient {
     private int addStatusProperties(Map<String, Object> properties) {
         try {
             if (!properties.isEmpty()) {
-                properties.put(P_COMMON_STATUS.get(), "up");
+                properties.put(P_COMMON_STATUS.toString(), "up");
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
@@ -289,7 +292,7 @@ public class SigarClient implements MonitoringClient {
     private int addSigarProperties(Map<String, Object> properties) {
         try {
             if (!properties.isEmpty()) {
-                properties.put(P_SIGAR_JMX_URL.get(), this.serviceurl);
+                properties.put(P_SIGAR_JMX_URL.toString(), this.serviceurl);
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);
@@ -303,7 +306,7 @@ public class SigarClient implements MonitoringClient {
             Map<String, String> pflags = (Map<String, String>) getJMXSigarAttribute("sigar:Type=PFlags",
                     "PFlags");
             for (String key : pflags.keySet()) {
-                properties.put(P_COMMON_PFLAGS.get(key), pflags.get(key));
+                properties.put(P_COMMON_PFLAGS.toString(key), pflags.get(key));
             }
         } catch (Exception e) {
             logger.error("Error getting some properties.", e);

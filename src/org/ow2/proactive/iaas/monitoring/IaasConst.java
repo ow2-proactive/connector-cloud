@@ -107,7 +107,7 @@ public enum IaasConst {
         this.pattern = pattern;
     }
 
-    public String get() {
+    public String toString() {
 
         if (pattern.contains("%x%"))
             throw new IllegalArgumentException("This pattern requires one or more arguments.");
@@ -115,14 +115,14 @@ public enum IaasConst {
         return pattern;
     }
 
-    public String get(Object id) {
+    public String toString(Object id) {
         if (pattern.contains("%y%"))
             throw new IllegalArgumentException("This pattern requires more than one argument.");
 
         return pattern.replace("%x%", String.valueOf(id));
     }
 
-    public String get(Object id1, Object id2) {
+    public String toString(Object id1, Object id2) {
         return pattern.replace("%x%", String.valueOf(id1)).replace("%y%", String.valueOf(id2));
     }
 

@@ -123,12 +123,14 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     /**
      * Cache map containing vmid -> RMNode jmxurl.
      */
-    private Map<String, String> vmId2SigarJmxUrl = new HashMap<String, String>();
+    private Map<String, String> vmId2SigarJmxUrlCache = new HashMap<String, String>();
+    private Integer vmId2SigarJmxUrlCacheMisses = 0;
 
     /**
      * Cache map containing vmid -> hostid (host where the vm is running).
      */
-    private Map<String, String> vmId2hostId = new HashMap<String, String>();
+    private Map<String, String> vmId2hostIdCache = new HashMap<String, String>();
+    private Integer vmId2hostIdCacheMisses = 0;
 
     /**
      * Constants to filter sigar properties.
@@ -353,7 +355,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     private void addExtraPropsComingFromRmNodeProps(String vmId, Map<String, String> vmProps) {
 
-        Map<String, Object> rmNodeVMsMaps = getRMNodeVMsMaps(vmId, vmId2SigarJmxUrl);
+        Map<String, Object> rmNodeVMsMaps = getRMNodeVMsMaps(vmId);
 
         Map<String, String> vmPropsFromRmNode = VMsMerger.getExtraVMPropertiesFromVMRMNodes(vmId, vmProps, rmNodeVMsMaps);
 
@@ -369,12 +371,12 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
         if (jmxurl != null) {
 
-            vmId2SigarJmxUrl.put(vmId, jmxurl);
+            vmId2SigarJmxUrlCache.put(vmId, jmxurl);
             logger.debug("Added cache for: vm " + vmId + " <-> jmxurl " + jmxurl + "...");
 
         } else {
 
-            logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrl + ")");
+            logger.warn("Could not find jmxurl for: " + vmId + " (" + vmId2SigarJmxUrlCache + ")");
 
         }
 
@@ -382,7 +384,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     private void addExtraPropsComingFromHostProps(String vmId, Map<String, String> properties) throws IaasMonitoringException {
 
-        Map<String, Object> hostSummary = getPropsOfHostHostingVmOrAllHostsProps(vmId, vmId2hostId);
+        Map<String, Object> hostSummary = getPropsOfHostHostingVmOrAllHostsProps(vmId);
         Map<String, String> vmPropsFromHost = VMsMerger.getExtraVMPropsFromHostProps(vmId, hostSummary);
 
         addCacheEntryTovmId2HostId(vmId, vmPropsFromHost);
@@ -391,7 +393,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     private String getJmxUrlFromProps(Map<String, String> props) {
-        return props.get(IaasConst.P_SIGAR_JMX_URL.get());
+        return props.get(IaasConst.P_SIGAR_JMX_URL.toString());
     }
 
     private void addCacheEntryTovmId2HostId(String vmId, Map<String, String> vmPropsFromHost) {
@@ -399,15 +401,15 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         String host = getHostNameFromVmProps(vmPropsFromHost);
 
         if (host != null) {
-            vmId2hostId.put(vmId, host);
+            vmId2hostIdCache.put(vmId, host);
             logger.debug("Added cache for: vm " + vmId + " <-> host " + host + "...");
         } else {
-            logger.warn("Could not find host for: " + vmId + " (" + vmId2hostId + ")");
+            logger.warn("Could not find host for: " + vmId + " (" + vmId2hostIdCache + ")");
         }
     }
 
     private String getHostNameFromVmProps(Map<String, String> vmPropsFromHost) {
-        return vmPropsFromHost.get(IaasConst.P_VM_HOST.get());
+        return vmPropsFromHost.get(IaasConst.P_VM_HOST.toString());
     }
 
     private String[] getVMProcesses(String hostId) throws IaasMonitoringException {
@@ -434,7 +436,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 String jmxurl = jmxSupportedHosts.get(hostId);
 
                 if (jmxurl != null) {
-                    hostProps.put(IaasConst.P_SIGAR_JMX_URL.get(), jmxurl);
+                    hostProps.put(IaasConst.P_SIGAR_JMX_URL.toString(), jmxurl);
                     Map<String, String> rmNodeProps = retrieveRmNodeProps(jmxurl, mask);
                     hostProps.putAll(rmNodeProps);
                 } else {
@@ -449,7 +451,7 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
 
     }
 
-    private Map<String, Object> getPropsOfHostHostingVmOrAllHostsProps(String vmIdTarget, Map<String, String> cache)
+    private Map<String, Object> getPropsOfHostHostingVmOrAllHostsProps(String vmIdTarget)
             throws IaasMonitoringException {
 
         Map<String, Object> hostsMap = new HashMap<String, Object>();
@@ -458,17 +460,22 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         /*
          * Cached hostid for this vmIdTarget?
          */
-        host = cache.get(vmIdTarget);
+        host = vmId2hostIdCache.get(vmIdTarget);
 
         if (host != null) {
+
             try {
                 Map<String, Object> hostinfo = Utils.convertToObjectMap(getHostProperties(host));
                 hostsMap.put(host, hostinfo);
             } catch (IaasMonitoringException e) {
                 logger.warn("Could not get RMNode monitoring info for host " + host, e);
             }
+
         } else {
+
             logger.info("vm<->host cache miss for VM " + vmIdTarget + ": " + host);
+            vmId2hostIdCacheMisses++;
+
             /*
              * No cached hostid for this vmIdTarget. Retrieve all.
              */
@@ -493,21 +500,20 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
      * a relation vmIdTarget<->jmxurl (that can be found using mac resolution only).
      *
      * @param vmIdTarget
-     * @param cache
      * @return the map with node:properties
      */
-    private Map<String, Object> getRMNodeVMsMaps(String vmIdTarget, Map<String, String> cache) {
+    private Map<String, Object> getRMNodeVMsMaps(String vmIdTarget) {
 
         Map<String, Object> rmNodesProps = new HashMap<String, Object>();
         Boolean needToReScanAllRmNodes;
 
-        String cachedJmxUrl = cache.get(vmIdTarget);
+        String cachedJmxUrl = vmId2SigarJmxUrlCache.get(vmIdTarget);
 
         if (cachedJmxUrl != null) {
 
             Map<String, String> rmNodeProps = retrieveRmNodeProps(cachedJmxUrl, MASK_ALL_BUT_VMPROC);
 
-            if (rmNodePropsAreInvalid(rmNodeProps)) {
+            if (areRmNodePropsInvalid(rmNodeProps)) {
                 logger.info("Invalid RMNode props (too many fails), node reconnected? " + vmIdTarget + ": " + cachedJmxUrl);
                 needToReScanAllRmNodes = true;
             } else {
@@ -523,19 +529,27 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         }
 
         if (needToReScanAllRmNodes) {
-            cache.remove(vmIdTarget);
-            getRmNodesProps(rmNodesProps);
+
+            notifyCacheMissForVmId2SigarJmxUrlCache(vmIdTarget);
+
+            getAllRmNodesProps(rmNodesProps);
+
         }
 
         return rmNodesProps;
     }
 
-    private boolean rmNodePropsAreInvalid(Map<String, String> rmNodeProps) {
-        Integer errorsWhileRetrieving = getNumberOfErrorsWhileGettingProps(rmNodeProps);
-        return rmNodeProps.isEmpty() || errorsWhileRetrieving == null || errorsWhileRetrieving > ERRORS_ALLOWED;
+    private void notifyCacheMissForVmId2SigarJmxUrlCache(String vmIdTarget) {
+        vmId2SigarJmxUrlCacheMisses++;
+        vmId2SigarJmxUrlCache.remove(vmIdTarget);
     }
 
-    private void getRmNodesProps(Map<String, Object> sigarsMap) {
+    private boolean areRmNodePropsInvalid(Map<String, String> rmNodeProps) {
+        Integer errorsWhileRetrieving = getNumberOfErrorsWhileGettingProps(rmNodeProps);
+        return rmNodeProps.isEmpty() || errorsWhileRetrieving > ERRORS_ALLOWED;
+    }
+
+    private void getAllRmNodesProps(Map<String, Object> sigarsMap) {
         for (String j : jmxSupportedVMs) {
             logger.debug("Querying props of sigar VM at: " + j);
             Map<String, String> sigarProps = null;
@@ -550,7 +564,22 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     private Integer getNumberOfErrorsWhileGettingProps(Map<String, String> p) {
-        return Integer.getInteger(p.get(P_DEBUG_NUMBER_OF_ERRORS.get()));
+
+        String errors = p.get(P_DEBUG_NUMBER_OF_ERRORS.toString());
+
+        if (errors == null)
+            throw new IllegalStateException("Field " + P_DEBUG_NUMBER_OF_ERRORS.toString() + " in props is null, and it should never be null: " + p);
+
+        Integer nErrors;
+
+        try {
+            nErrors = Integer.parseInt(errors);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Field " + P_DEBUG_NUMBER_OF_ERRORS.toString() + " contains an invalid integer: " + p);
+        }
+
+        return nErrors;
+
     }
 
     /**
@@ -578,5 +607,13 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     public void shutDown() {
+    }
+
+    public Integer getVmId2SigarJmxUrlCacheMisses() {
+        return vmId2SigarJmxUrlCacheMisses;
+    }
+
+    public Integer getVmId2hostIdCacheMisses() {
+        return vmId2hostIdCacheMisses;
     }
 }

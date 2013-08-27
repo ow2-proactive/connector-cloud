@@ -33,10 +33,11 @@
  *  * $$PROACTIVE_INITIAL_DEV$$
  */
 package org.ow2.proactive.iaas;
+
 import org.junit.Ignore;
 
 @Ignore
-public class VMProcessHelperTest {
+public class VMProcessTestHelper {
     public static void main(String[] args) throws Exception {
         Thread.sleep(2000);
     }

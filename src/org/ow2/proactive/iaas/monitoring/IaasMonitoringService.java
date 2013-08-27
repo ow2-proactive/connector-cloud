@@ -39,6 +39,7 @@ package org.ow2.proactive.iaas.monitoring;
 
 import java.util.Map;
 import java.util.HashMap;
+
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
@@ -46,7 +47,9 @@ import org.ow2.proactive.iaas.IaasMonitoringApi;
 
 public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNodesListener {
 
-    /** Logger. */
+    /**
+     * Logger.
+     */
     private static final Logger logger = Logger.getLogger(IaasMonitoringService.class);
 
     /**
@@ -60,12 +63,13 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
     protected String nsname;
 
     /**
-     * Monitoring API of the infrastructure (if any). 
+     * Monitoring API of the infrastructure (if any).
      */
     protected IaasMonitoringApi monitoringApi;
 
     /**
      * Constructor.
+     *
      * @param iaaSMonitoringApi
      * @throws IaasMonitoringException
      */
@@ -75,8 +79,9 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
 
     /**
      * Configure the monitoring module.
-     * @param nsName Node Source name. 
-     * @param options 
+     *
+     * @param nsName  Node Source name.
+     * @param options
      */
     public void configure(String nsName, String options) throws IaasMonitoringException {
         this.nsname = nsName;
@@ -129,7 +134,7 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
                         // Ignore it.
                     }
                 }
-                hostinfo.put(IaasConst.P_HOST_VMS.get(), vmsinfo);
+                hostinfo.put(IaasConst.P_HOST_VMS.toString(), vmsinfo);
 
                 summary.put(host, hostinfo);
 

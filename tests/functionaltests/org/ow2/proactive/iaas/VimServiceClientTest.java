@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.After;
@@ -52,26 +53,26 @@ import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 
 @Ignore
 public class VimServiceClientTest {
-    static final String[] VM_EXPECTED_KEYS_CPU = { IaasConst.P_COMMON_CPU_CORES.get(),
-            IaasConst.P_COMMON_CPU_USAGE.get(), IaasConst.P_COMMON_CPU_FREQUENCY.get() };
+    static final String[] VM_EXPECTED_KEYS_CPU = {IaasConst.P_COMMON_CPU_CORES.toString(),
+            IaasConst.P_COMMON_CPU_USAGE.toString(), IaasConst.P_COMMON_CPU_FREQUENCY.toString()};
     static final String[] HOST_EXPECTED_KEYS_CPU = VM_EXPECTED_KEYS_CPU;
 
-    static final String[] VM_EXPECTED_KEYS_MEMORY = { IaasConst.P_COMMON_MEM_TOTAL.get(),
-            IaasConst.P_COMMON_MEM_FREE.get(), IaasConst.P_COMMON_MEM_ACTUAL_FREE.get() };
+    static final String[] VM_EXPECTED_KEYS_MEMORY = {IaasConst.P_COMMON_MEM_TOTAL.toString(),
+            IaasConst.P_COMMON_MEM_FREE.toString(), IaasConst.P_COMMON_MEM_ACTUAL_FREE.toString()};
     static final String[] HOST_EXPECTED_KEYS_MEMORY = VM_EXPECTED_KEYS_MEMORY;
 
-    static final String[] VM_EXPECTED_KEYS_STORAGE = { IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.get(),
-            IaasConst.P_COMMON_STORAGE_USED_TOTAL.get() };
+    static final String[] VM_EXPECTED_KEYS_STORAGE = {IaasConst.P_COMMON_STORAGE_TOTAL_TOTAL.toString(),
+            IaasConst.P_COMMON_STORAGE_USED_TOTAL.toString()};
     static final String[] HOST_EXPECTED_KEYS_STORAGE = VM_EXPECTED_KEYS_STORAGE;
 
-    static final String[] VM_EXPECTED_KEYS_NETWORK = { IaasConst.P_COMMON_NET_COUNT_TOTAL.get(),
-            IaasConst.P_COMMON_NET_TX_TOTAL.get(), IaasConst.P_COMMON_NET_SPEED_TOTAL.get(),
-            IaasConst.P_COMMON_NET_RX_TOTAL.get(), IaasConst.P_COMMON_NET_RX.get(0),
-            IaasConst.P_COMMON_NET_TX.get(0), IaasConst.P_COMMON_NET_SPEED.get(0) };
+    static final String[] VM_EXPECTED_KEYS_NETWORK = {IaasConst.P_COMMON_NET_COUNT_TOTAL.toString(),
+            IaasConst.P_COMMON_NET_TX_TOTAL.toString(), IaasConst.P_COMMON_NET_SPEED_TOTAL.toString(),
+            IaasConst.P_COMMON_NET_RX_TOTAL.toString(), IaasConst.P_COMMON_NET_RX.toString(0),
+            IaasConst.P_COMMON_NET_TX.toString(0), IaasConst.P_COMMON_NET_SPEED.toString(0)};
     static final String[] HOST_EXPECTED_KEYS_NETWORK = VM_EXPECTED_KEYS_NETWORK;
 
-    static final String[] VM_EXPECTED_KEYS_MISC = { IaasConst.P_VM_HOST.get(), IaasConst.P_COMMON_STATUS.get() };
-    static final String[] HOST_EXPECTED_KEYS_MISC = { IaasConst.P_HOST_SITE.get(), IaasConst.P_COMMON_STATUS.get() };
+    static final String[] VM_EXPECTED_KEYS_MISC = {IaasConst.P_VM_HOST.toString(), IaasConst.P_COMMON_STATUS.toString()};
+    static final String[] HOST_EXPECTED_KEYS_MISC = {IaasConst.P_HOST_SITE.toString(), IaasConst.P_COMMON_STATUS.toString()};
 
     static final String URL_KEY = "vmware.url";
     static final String USER_KEY = "vmware.user";
@@ -318,7 +319,7 @@ public class VimServiceClientTest {
     }
 
     private void checkMapProperties(String id, String entityType, Map<String, String> map,
-            String[] expectedKeys) throws Exception {
+                                    String[] expectedKeys) throws Exception {
         List<String> notContained = new ArrayList<String>();
         for (String key : expectedKeys)
             if (map.containsKey(key) == false)

@@ -158,15 +158,15 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : props.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(props.containsKey(P_COMMON_CPU_CORES.get()));
-        Assert.assertTrue(props.containsKey(P_COMMON_MEM_TOTAL.get()));
-        Assert.assertTrue(props.containsKey(P_COMMON_STORAGE_TOTAL_TOTAL.get()));
+        Assert.assertTrue(props.containsKey(P_COMMON_CPU_CORES.toString()));
+        Assert.assertTrue(props.containsKey(P_COMMON_MEM_TOTAL.toString()));
+        Assert.assertTrue(props.containsKey(P_COMMON_STORAGE_TOTAL_TOTAL.toString()));
 
     }
 
     @Test
     public void getVMsOnHost() throws Exception {
-        VMProcessTest.startSecondJVM(VMProcessHelperTest.class);
+        VMProcessTest.startSecondJVM(VMProcessTestHelper.class);
         Thread.sleep(100);
 
         // Create monitor service.
@@ -187,7 +187,7 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : props.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(props.containsKey(P_HOST_VM_ID.get(VMProcessTest.COMMAND_LINE_UUID)));
+        Assert.assertTrue(props.containsKey(P_HOST_VM_ID.toString(VMProcessTest.COMMAND_LINE_UUID)));
 
     }
 
@@ -197,7 +197,7 @@ public class SigarMonitoringTest {
         String cline = VMProcessTest.KVM_COMMAND_LINE_SAMPLE.replace(VMProcessTest.COMMAND_LINE_MAC, macAddress).
                 replace(VMProcessTest.COMMAND_LINE_UUID, VM_INSTANCE_ID);
 
-        VMProcessTest.startSecondJVM(VMProcessHelperTest.class, cline);
+        VMProcessTest.startSecondJVM(VMProcessTestHelper.class, cline);
         Thread.sleep(100);
 
         // Create monitor service.
@@ -221,14 +221,14 @@ public class SigarMonitoringTest {
         for (Entry<String, String> entry : hprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(hprops.containsKey(P_HOST_VM_ID.get(VM_INSTANCE_ID)));
+        Assert.assertTrue(hprops.containsKey(P_HOST_VM_ID.toString(VM_INSTANCE_ID)));
 
         Map<String, String> vprops = monit.getVMProperties(VM_INSTANCE_ID);
         for (Entry<String, String> entry : vprops.entrySet()) {
             System.out.println(entry.getKey() + ":" + entry.getValue());
         }
-        Assert.assertTrue(vprops.containsKey(P_COMMON_CPU_CORES.get()));
-        Assert.assertTrue(vprops.containsKey(P_COMMON_STORAGE_COUNT_TOTAL.get()));
+        Assert.assertTrue(vprops.containsKey(P_COMMON_CPU_CORES.toString()));
+        Assert.assertTrue(vprops.containsKey(P_COMMON_STORAGE_COUNT_TOTAL.toString()));
 
     }
 

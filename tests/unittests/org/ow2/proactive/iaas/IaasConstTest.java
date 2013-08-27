@@ -44,8 +44,8 @@ public class IaasConstTest {
 
     @Test
     public void test() throws Exception {
-        Assert.assertTrue(IaasConst.P_COMMON_NET_MAC.get(1).toString().equals("network.1.mac"));
-        Assert.assertTrue(IaasConst.P_HOST_VM_MAC.get("vm3", 4).toString().equals("vm.vm3.network.4.mac"));
+        Assert.assertTrue(IaasConst.P_COMMON_NET_MAC.toString(1).toString().equals("network.1.mac"));
+        Assert.assertTrue(IaasConst.P_HOST_VM_MAC.toString("vm3", 4).toString().equals("vm.vm3.network.4.mac"));
     }
 
 }

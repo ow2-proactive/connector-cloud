@@ -128,6 +128,11 @@ public class SigarLoaderTest {
         IaasMonitoringServiceSigarLoader monitC = (IaasMonitoringServiceSigarLoader) monit;
         return monitC.getVmId2SigarJmxUrlCacheMisses();
     }
+    
+    private static Integer getVm2HostCacheMisses(IaasMonitoringChainable monit) {
+        IaasMonitoringServiceSigarLoader monitC = (IaasMonitoringServiceSigarLoader) monit;
+        return monitC.getVmId2hostIdCacheMisses();
+    }
 
     @Test
     public void getHostProperties_Test() throws Exception {
@@ -242,17 +247,20 @@ public class SigarLoaderTest {
 
         vmOriginal = monit.getVMProperties(VM1_ID);
 
-        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 1);
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 1);    // url for vm RMNode not found initially
+        Assert.assertTrue(getVm2HostCacheMisses(monit) == 1);   // host where vm is not found initially
 
         makeVm1DisconnectAndReconnectWithDifferentUrl(monit);
 
         vmReconnected = monit.getVMProperties(VM1_ID);
 
-        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2);
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2);    // url found but it is not valid (failures while connecting to it)
+        Assert.assertTrue(getVm2HostCacheMisses(monit) == 1);   // host should not change
 
         vmReReconnected = monit.getVMProperties(VM1_ID);
 
-        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2); // no cache miss since last check
+        Assert.assertTrue(getVm2UrlCacheMisses(monit) == 2);    // no cache miss since last check
+        Assert.assertTrue(getVm2HostCacheMisses(monit) == 1);   // host should not change
 
         // Asserts...
 
@@ -299,13 +307,17 @@ public class SigarLoaderTest {
 
     @Test
     public void getVMPropertiesVMCache_Test() throws Exception {
+
         IaasMonitoringChainable monit = getMonitor();
         Map<String, String> vm1;
         monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM);
+
         vm1 = monit.getVMProperties(VM1_ID);
         Assert.assertTrue(vm1 != null);
+
         vm1 = monit.getVMProperties(VM1_ID);
         Assert.assertTrue(vm1 != null);
+
     }
 
     @AfterClass

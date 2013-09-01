@@ -37,69 +37,85 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
-import java.util.List;
-import java.util.Arrays;
 import org.apache.log4j.Logger;
-import javax.management.ObjectName;
-import javax.management.MBeanServer;
-import java.lang.management.ManagementFactory;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanRegistrationException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.MalformedObjectNameException;
-import javax.management.InstanceAlreadyExistsException;
 import org.ow2.proactive.resourcemanager.core.jmx.RMJMXHelper;
+
+import javax.management.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class MBeanExposer {
 
     private static final Logger logger = Logger.getLogger(MBeanExposer.class);
-    
+
     public static final String RM_MBEAN_DOMAIN_NAME = "ProActiveResourceManager";
     public static final String IAASMONITORING_MBEAN_NAME = RM_MBEAN_DOMAIN_NAME + ":name=IaasMonitoring";
-    
-	private ObjectName name;
-	
-    public void registerMBeanLocally(String nsname, Object mbean) 
-    		throws MBeanRegistrationException {
-        
-    	MBeanServer mbs = getRMMBeanServer();
-    	String mbeanname = IAASMONITORING_MBEAN_NAME + "-" + nsname;
-    	try {
-			name = new ObjectName(mbeanname);
-	        mbs.registerMBean(mbean, name);
-	    	logger.debug("JMX MBean " + name.getCanonicalName() + " registered successfully.");
-		} catch (MalformedObjectNameException e) {
-			throw new MBeanRegistrationException(e, "The mbean name '" + mbeanname + "' is not valid.");
-		} catch (InstanceAlreadyExistsException e) {
-			throw new MBeanRegistrationException(e, "The instance of the MBean '" + mbeanname + "' already exists.");
-		} catch (NotCompliantMBeanException e) {
-			throw new RuntimeException("Wrong MBean.",e);
-		}
+
+    private ObjectName name;
+    private MBeanServer server;
+
+
+    public void registerAsMBean(String nsname, Object mbean) throws MBeanRegistrationException {
+
+        registerAsMBean(nsname, mbean, false);
+
     }
-    
-    public ObjectName getName(){
-    	return name;
+
+    public MBeanServer getServer() {
+        return server;
     }
-    
-    private MBeanServer getRMMBeanServer() throws MBeanRegistrationException {
+
+    public void registerAsMBean(String nsname, Object mbean, boolean anyServer)
+            throws MBeanRegistrationException {
+
+        server = getRMMBeanServer(anyServer);
+        String mbeanname = IAASMONITORING_MBEAN_NAME + "-" + nsname;
+        try {
+            name = new ObjectName(mbeanname);
+            ObjectInstance instance = server.registerMBean(mbean, name);
+            logger.debug("JMX MBean " + name.getCanonicalName() + " registered successfully: " + instance.toString());
+        } catch (MalformedObjectNameException e) {
+            throw new MBeanRegistrationException(e, "The mbean name '" + mbeanname + "' is not valid.");
+        } catch (InstanceAlreadyExistsException e) {
+            throw new MBeanRegistrationException(e, "The instance of the MBean '" + mbeanname + "' already exists.");
+        } catch (NotCompliantMBeanException e) {
+            throw new RuntimeException("Wrong MBean.", e);
+        }
+    }
+
+    public ObjectName getName() {
+
+        return name;
+
+    }
+
+    private MBeanServer getRMMBeanServer(boolean anyServer) throws MBeanRegistrationException {
         MBeanServer mbs = null;
+
+        if (anyServer)
+            return MBeanServerFactory.createMBeanServer();
+
         List<MBeanServer> mbss = RMJMXHelper.findMBeanServer(null);
-        for (MBeanServer s: mbss) {
-        	List<String> domains = Arrays.asList(s.getDomains());
-        	if (domains.contains(RM_MBEAN_DOMAIN_NAME)) {
-        		mbs = s;
-        	}
+        for (MBeanServer s : mbss) {
+            List<String> domains = Arrays.asList(s.getDomains());
+            if (domains.contains(RM_MBEAN_DOMAIN_NAME)) {
+                mbs = s;
+            }
         }
-        
+
         if (mbs == null) {
-        	throw new MBeanRegistrationException(null, "Could not find the right MBeanServer.");
+            throw new MBeanRegistrationException(null, "Could not find the right MBeanServer.");
         }
-        
+
         return mbs;
+
     }
+
     public void stop() throws MBeanRegistrationException, InstanceNotFoundException {
-        MBeanServer mbs = getRMMBeanServer();
-        mbs.unregisterMBean(name);
+
+        if (server != null)
+            server.unregisterMBean(name);
+
     }
-    
+
 }

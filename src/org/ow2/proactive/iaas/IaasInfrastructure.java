@@ -37,6 +37,7 @@ package org.ow2.proactive.iaas;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
@@ -51,6 +52,7 @@ import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
 import org.ow2.proactive.resourcemanager.nodesource.common.Configurable;
 import org.ow2.proactive.resourcemanager.nodesource.infrastructure.InfrastructureManager;
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
+
 import javax.management.MBeanRegistrationException;
 
 
@@ -77,7 +79,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     protected abstract IaasApi getAPI();
 
     protected abstract Map<String, String> getInstanceParams(String nodeName, String nodeSourceName,
-            Map<String, ?> nodeConfiguration);
+                                                             Map<String, ?> nodeConfiguration);
 
     protected IaasMonitoringService iaaSMonitoringService;
     protected MBeanExposer mbeanExposer;
@@ -189,7 +191,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     }
 
     protected String getFromNodeConfigurationOrDefault(Map<String, ?> nodeConfiguration, String key,
-            String defaultValue) {
+                                                       String defaultValue) {
         Object fromNodeConfiguration = nodeConfiguration.get(key);
         if (fromNodeConfiguration instanceof String && !((String) fromNodeConfiguration).isEmpty()) {
             return (String) fromNodeConfiguration;
@@ -206,12 +208,12 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             logger.info("Monitoring of insfrastructure '" + nodeSourceName + "': enabled.");
 
             try {
-                IaasMonitoringService monitService = new IaasMonitoringService((IaasMonitoringApi) getAPI());
+                IaasMonitoringService monitService = new IaasMonitoringService(nodeSourceName);
 
-                monitService.configure(nodeSourceName, options);
+                monitService.configure((IaasMonitoringApi) getAPI(), options);
 
                 MBeanExposer exp = new MBeanExposer();
-                exp.registerMBeanLocally(nodeSourceName, monitService);
+                exp.registerAsMBean(nodeSourceName, monitService);
 
                 iaaSMonitoringService = monitService;
                 mbeanExposer = exp;
@@ -233,7 +235,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             return false;
         } else {
             throw new RuntimeException("Wrong monitoring options. "
-                + "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
+                    + "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
         }
     }
 

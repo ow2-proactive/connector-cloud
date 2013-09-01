@@ -45,6 +45,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 import java.net.MalformedURLException;
+import javax.management.*;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXServiceURL;
 import javax.management.remote.JMXConnectorFactory;
@@ -131,4 +132,54 @@ public class JmxUtils {
     private JmxUtils() {
     }
 
+    public static JMXConnector getConnector(JMXServiceURL url) throws IaasMonitoringException {
+        try {
+            return JMXConnectorFactory.connect(url, new HashMap<String, Object>());
+        } catch (IOException e) {
+            throw new IaasMonitoringException(e);
+        }
+
+    }
+
+    public String translateRequest(JMXServiceURL url, ObjectName obj, String method, String argument) throws IaasMonitoringException {
+
+        MBeanServerConnection connection;
+        try {
+            connection = getConnector(url).getMBeanServerConnection();
+        } catch (IOException e) {
+            throw new IaasMonitoringException();
+        }
+
+        return getEntityInfo(connection, obj, method, argument);
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getEntityInfo(MBeanServerConnection connection, ObjectName obj, String functionName, String argument) throws IaasMonitoringException {
+
+        String eid = argument;
+
+        Object[] params = new Object[]{eid};
+        String[] signature = new String[]{String.class.getName()};
+
+        Map<String, String> properties = new HashMap<String, String>();
+        try {
+            properties = (Map<String, String>) connection.invoke(obj,
+                    functionName, params, signature);
+        } catch (InstanceNotFoundException e) {
+            throw new IaasMonitoringException(e);
+        } catch (ReflectionException e) {
+            throw new IaasMonitoringException(e);
+        } catch (MBeanException e) {
+            throw new IaasMonitoringException(e);
+        } catch (IOException e) {
+            throw new IaasMonitoringException(e);
+        }
+
+        if (properties == null) {
+            throw new IaasMonitoringException("Properties is null");
+        } else {
+            return properties.toString();
+        }
+    }
 }

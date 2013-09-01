@@ -45,7 +45,7 @@ import org.ow2.proactive.iaas.utils.Utils;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
 
 
-public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNodesListener {
+public class IaasMonitoringService implements IaasMonitoringApiExtended, IaasNodesListener {
 
     /**
      * Logger.
@@ -57,35 +57,41 @@ public class IaasMonitoringService implements IaasMonitoringServiceMBean, IaasNo
      */
     protected IaasMonitoringChainable loader;
 
+    public String getNodeSourceName() {
+        return nsname;
+    }
+
     /**
      * Name of the Node Source being monitored.
      */
     protected String nsname;
 
     /**
-     * Monitoring API of the infrastructure (if any).
-     */
-    protected IaasMonitoringApi monitoringApi;
-
-    /**
      * Constructor.
      *
-     * @param iaaSMonitoringApi
-     * @throws IaasMonitoringException
+     * @param nsName Node Source name.
      */
-    public IaasMonitoringService(IaasMonitoringApi iaaSMonitoringApi) throws IaasMonitoringException {
-        monitoringApi = iaaSMonitoringApi;
+    public IaasMonitoringService(String nsName) throws IaasMonitoringException {
+        this.nsname = nsName;
     }
 
     /**
      * Configure the monitoring module.
      *
-     * @param nsName  Node Source name.
      * @param options
+     * @param iaaSMonitoringApi
      */
-    public void configure(String nsName, String options) throws IaasMonitoringException {
-        this.nsname = nsName;
-        loader = IaasMonitoringServiceFactory.getMonitoringService(monitoringApi, nsName, options);
+    public void configure(IaasMonitoringApi iaaSMonitoringApi, String options) throws IaasMonitoringException {
+        loader = IaasMonitoringServiceFactory.getMonitoringService(iaaSMonitoringApi, nsname, options);
+    }
+
+    /**
+     * Configure the monitoring module.
+     *
+     * @param chain monitoring proxy
+     */
+    public void configure(IaasMonitoringChainable chain) throws IaasMonitoringException {
+        loader = chain;
     }
 
     @Override

@@ -34,18 +34,11 @@
  */
 package org.ow2.proactive.iaas;
 
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.util.ProActiveCounter;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringService;
-import org.ow2.proactive.iaas.monitoring.MBeanExposer;
-import org.ow2.proactive.iaas.monitoring.NodeType;
+import org.ow2.proactive.iaas.monitoring.*;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
 import org.ow2.proactive.resourcemanager.exception.RMException;
 import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
@@ -54,6 +47,10 @@ import org.ow2.proactive.resourcemanager.nodesource.infrastructure.Infrastructur
 import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
 
 import javax.management.MBeanRegistrationException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
 
 
 public abstract class IaasInfrastructure extends InfrastructureManager {
@@ -213,13 +210,15 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
                 monitService.configure((IaasMonitoringApi) getAPI(), options);
 
                 MBeanExposer exp = new MBeanExposer();
-                exp.registerAsMBean(nodeSourceName, monitService);
+                exp.registerAsMBean(nodeSourceName, new DynamicIaasMonitoringMBean(monitService));
 
                 iaaSMonitoringService = monitService;
                 mbeanExposer = exp;
 
             } catch (MBeanRegistrationException e) {
                 logger.error("Could not register IaaS Monitoring MBean.", e);
+            } catch (IOException e) {
+                logger.error("Could not initialize IaaS Monitoring MBean.", e);
             } catch (IaasMonitoringException e) {
                 logger.error("Cannot initialize IaaSMonitoringService MBean:", e);
             }

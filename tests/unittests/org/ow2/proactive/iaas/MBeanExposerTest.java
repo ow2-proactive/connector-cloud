@@ -94,7 +94,7 @@ public class MBeanExposerTest {
         service.configure(chain);
 
         MBeanExposer exposer = new MBeanExposer();
-        exposer.registerAsMBean(nsname, new DynamicMBeanImpl(service), true);
+        exposer.registerAsMBean(nsname, new DynamicIaasMonitoringMBean(service), true);
 
         MBeanServer server = exposer.getServer();
 
@@ -140,13 +140,13 @@ public class MBeanExposerTest {
 
         MBeanServerConnection proxy = getMBeanServerConnection();
 
-        Object host1 = proxy.getAttribute(getDefaultObjectName(), DynamicMBeanImpl.HOST_PREFIX + "host1");
+        Object host1 = proxy.getAttribute(getDefaultObjectName(), DynamicIaasMonitoringMBean.HOST_PREFIX + "host1");
         Assert.assertEquals(HOST1PROPS, host1);
 
-        Object vm1 = proxy.getAttribute(getDefaultObjectName(), DynamicMBeanImpl.VM_PREFIX + "vm1");
+        Object vm1 = proxy.getAttribute(getDefaultObjectName(), DynamicIaasMonitoringMBean.VM_PREFIX + "vm1");
         Assert.assertEquals(VM1PROPS, vm1);
 
-        Object vm2 = proxy.getAttribute(getDefaultObjectName(), DynamicMBeanImpl.VM_PREFIX + "vm2");
+        Object vm2 = proxy.getAttribute(getDefaultObjectName(), DynamicIaasMonitoringMBean.VM_PREFIX + "vm2");
         Assert.assertEquals(VM2PROPS, vm2);
 
     }

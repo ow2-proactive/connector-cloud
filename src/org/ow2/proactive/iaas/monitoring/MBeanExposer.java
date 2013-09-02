@@ -55,7 +55,7 @@ public class MBeanExposer {
     private MBeanServer server;
 
 
-    public void registerAsMBean(String nsname, Object mbean) throws MBeanRegistrationException {
+    public void registerAsMBean(String nsname, DynamicMBean mbean) throws MBeanRegistrationException {
 
         registerAsMBean(nsname, mbean, false);
 

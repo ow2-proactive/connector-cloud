@@ -1,18 +1,21 @@
 package org.ow2.proactive.iaas.monitoring;
 
+import javax.management.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
-import javax.management.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class DynamicMBeanImpl implements DynamicMBean {
-    public static final String HOST_PREFIX = "host.";
-    public static final String VM_PREFIX = "vm.";
+public class DynamicIaasMonitoringMBean implements DynamicMBean {
+
+    public static final String HOST_PREFIX = "Host.";
+    public static final String VM_PREFIX = "VM.";
 
     private final IaasMonitoringService service;
 
-    public DynamicMBeanImpl(IaasMonitoringService service) throws IOException {
+    public DynamicIaasMonitoringMBean(IaasMonitoringService service) throws IOException {
 
         if (service == null)
             throw new IllegalArgumentException("service cannot be null");

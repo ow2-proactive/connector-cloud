@@ -37,30 +37,21 @@
 
 package org.ow2.proactive.iaas.monitoring;
 
+import org.apache.log4j.Logger;
+import org.ow2.proactive.authentication.crypto.Credentials;
+import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
+import org.ow2.proactive.iaas.utils.JmxUtils;
+import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.iaas.utils.VMsMerger;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.KeyException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.List;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.ArrayList;
+import java.util.*;
 
-import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.utils.Utils;
-import org.ow2.proactive.iaas.utils.JmxUtils;
-import org.ow2.proactive.iaas.utils.VMsMerger;
-import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.iaas.monitoring.vmprocesses.VMPLister;
-
-
-import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
+import static org.ow2.proactive.iaas.monitoring.IaasConst.P_DEBUG_NUMBER_OF_ERRORS;
 
 public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable {
 
@@ -283,6 +274,15 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         logger.debug("[" + nsname + "]" + "Retrieving list of VMs...");
         HashSet<String> vms = new HashSet<String>();
 
+        if (useRMNodeOnHost)
+            getVMsUsingRmNodesOnHosts(vms);
+        else
+            getVMsWithoutUsingRmNodesOnHosts(vms);
+
+        return vms.toArray(new String[]{});
+    }
+
+    private void getVMsUsingRmNodesOnHosts(HashSet<String> vms) throws IaasMonitoringException {
         String[] hosts = getHosts();
         for (String hostid : hosts) {
             try {
@@ -295,8 +295,10 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 logger.warn("[" + nsname + "]" + "Cannot retrieve the list of VMs from host: " + hostid, e);
             }
         }
+    }
 
-        return vms.toArray(new String[]{});
+    private void getVMsWithoutUsingRmNodesOnHosts(HashSet<String> vms) throws IaasMonitoringException {
+        vms.addAll(jmxSupportedVMs);
     }
 
     @Override
@@ -344,10 +346,12 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 if (useRMNodeOnVM)
                     addExtraPropsComingFromRmNodeProps(vmId, vmProps);
 
-
             } catch (Exception e) {
                 logger.warn("[" + nsname + "]" + "Cannot retrieve VM info for VM: " + vmId, e);
             }
+        } else {
+            if (useRMNodeOnVM)
+                vmProps.putAll(retrieveRmNodeProps(vmId, MASK_ALL_BUT_VMPROC));
         }
 
         return vmProps;
@@ -494,6 +498,11 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         return hostsMap;
     }
 
+
+    private static boolean isAValidJmxUrl(String url) {
+        return (url.startsWith("service:"));
+    }
+
     /**
      * Get Sigar maps of all VMs (maps with properties of an RMNode).
      * This is optimized to retrieve only one VM set of properties if there is already
@@ -507,7 +516,11 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         Map<String, Object> rmNodesProps = new HashMap<String, Object>();
         Boolean needToReScanAllRmNodes;
 
-        String cachedJmxUrl = vmId2SigarJmxUrlCache.get(vmIdTarget);
+        String cachedJmxUrl;
+        if (!isAValidJmxUrl(vmIdTarget))
+            cachedJmxUrl = vmId2SigarJmxUrlCache.get(vmIdTarget);
+        else
+            cachedJmxUrl = vmIdTarget;
 
         if (cachedJmxUrl != null) {
 

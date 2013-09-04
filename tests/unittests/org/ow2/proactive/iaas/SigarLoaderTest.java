@@ -35,66 +35,57 @@
 
 package org.ow2.proactive.iaas;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.BufferedWriter;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Map.Entry;
-
-import org.junit.Test;
+import com.google.common.collect.Lists;
+import junit.framework.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
+import org.junit.Test;
 import org.ow2.proactive.iaas.monitoring.*;
 import org.ow2.proactive.iaas.utils.JmxUtils;
 
-import static org.ow2.proactive.iaas.utils.Utils.*;
-import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader.*;
-
-import com.google.common.collect.Lists;
-
-import junit.framework.Assert;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import static org.ow2.proactive.iaas.monitoring.IaasConst.*;
+import static org.ow2.proactive.iaas.monitoring.IaasMonitoringServiceSigarLoader.*;
+import static org.ow2.proactive.iaas.utils.Utils.KEY_VALUE_SEP;
+import static org.ow2.proactive.iaas.utils.Utils.OPTIONS_SEP;
 
 
 public class SigarLoaderTest {
-
-    private static File monitHosts;
 
     static final int HOSTN = 2;
     static final String HOST1_ID = "host1-id";
     static final String HOST1_URL = "host1-url";
     static final String HOST2_ID = "host2-id";
     static final String HOST2_URL = "host2-url";
-
     static final int VMN = 4;
     static final String VM1_ID = "vm1-id";
     static final String VM1_NODE = "vm1-node";
-    static final String VM1_URL = "vm1-url";
+    static final String VM1_URL = "service:vm1-url";
     static final String VM1_MAC = "vm1-mac";
     static final String VM1_PROP_VM_SIGAR = "vm1-prop";
-
     static final String VM2_ID = "vm2-id";
     static final String VM2_NODE = "vm2-node";
-    static final String VM2_URL = "vm2-url";
+    static final String VM2_URL = "service:vm2-url";
     static final String VM2_MAC = "vm2-mac";
     static final String VM2_PROP_VM_SIGAR = "vm2-prop";
-
     static final String VM3_ID = "vm3-id";
     static final String VM3_NODE = "vm3-node";
-    static final String VM3_URL = "vm3-url";
+    static final String VM3_URL = "service:vm3-url";
     static final String VM3_MAC = "vm3-mac";
     static final String VM3_PROP_VM_SIGAR = "vm3-prop";
-
     static final String VM4_ID = "vm4-id";
     static final String VM4_NODE = "vm4-node";
-    static final String VM4_URL = "vm4-url";
+    static final String VM4_URL = "service:vm4-url";
     static final String VM4_MAC = "vm4-mac";
     static final String VM4_PROP_VM_SIGAR = "vm4-prop";
+    private static File monitHosts;
 
     @BeforeClass
     public static void start() throws Exception {
@@ -115,34 +106,82 @@ public class SigarLoaderTest {
      * @return standard monitor.
      * @throws IaasMonitoringException
      */
-    private static IaasMonitoringChainable getMonitor() throws IaasMonitoringException {
+    private static IaasMonitoringChainable getMonitorUsingHosts(boolean skipRegisterNodes) throws IaasMonitoringException {
         IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(null, "nsname",
                 IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP + USE_SIGAR_FLAG + OPTIONS_SEP +
                         USE_RMNODE_ON_HOST_FLAG + OPTIONS_SEP + USE_RMNODE_ON_VM_FLAG + OPTIONS_SEP +
                         HOSTSFILE_FLAG + KEY_VALUE_SEP + monitHosts.getAbsolutePath());
+        if (!skipRegisterNodes)
+            registerAllFakeVmNodes(monit, true);
         return monit;
     }
 
+    /**
+     * Create monitor service (without use of RmNodes on Hosts).
+     *
+     * @return standard monitor.
+     * @throws IaasMonitoringException
+     */
+    private static IaasMonitoringChainable getMonitorWithoutUsingHosts(boolean skipRegisterNodes) throws IaasMonitoringException {
+        IaasMonitoringChainable monit = IaasMonitoringServiceFactory.getMonitoringService(null, "nsname",
+                IaasMonitoringServiceFactory.SKIP_CACHE_FLAG + OPTIONS_SEP + USE_SIGAR_FLAG + OPTIONS_SEP +
+                        OPTIONS_SEP + USE_RMNODE_ON_VM_FLAG);
+        if (!skipRegisterNodes)
+            registerAllFakeVmNodes(monit, false);
+        return monit;
+    }
+
+    private static void registerAllFakeVmNodes(IaasMonitoringChainable monit, boolean usingHosts) {
+        if (usingHosts) {
+            monit.registerNode(VM1_ID, VM1_URL, NodeType.VM);
+            monit.registerNode(VM2_ID, VM2_URL, NodeType.VM);
+            monit.registerNode(VM3_ID, VM3_URL, NodeType.VM);
+            monit.registerNode(VM4_ID, VM4_URL, NodeType.VM);
+        } else {
+            monit.registerNode(VM1_URL, VM1_URL, NodeType.VM);
+            monit.registerNode(VM2_URL, VM2_URL, NodeType.VM);
+            monit.registerNode(VM3_URL, VM3_URL, NodeType.VM);
+            monit.registerNode(VM4_URL, VM4_URL, NodeType.VM);
+        }
+
+    }
 
     private static Integer getVm2UrlCacheMisses(IaasMonitoringChainable monit) {
         IaasMonitoringServiceSigarLoader monitC = (IaasMonitoringServiceSigarLoader) monit;
         return monitC.getVmId2SigarJmxUrlCacheMisses();
     }
-    
+
     private static Integer getVm2HostCacheMisses(IaasMonitoringChainable monit) {
         IaasMonitoringServiceSigarLoader monitC = (IaasMonitoringServiceSigarLoader) monit;
         return monitC.getVmId2hostIdCacheMisses();
     }
 
+    @AfterClass
+    public static void shutdown() throws Exception {
+    }
+
+    private static File createMonitoringHostsFile(Map<String, String> file) {
+        File temp = null;
+        try {
+            temp = File.createTempFile("monit", ".cnf");
+            FileWriter fw = new FileWriter(temp.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            for (Entry<String, String> entry : file.entrySet()) {
+                bw.write(entry.getKey() + "=" + entry.getValue() + "\n");
+            }
+            bw.close();
+        } catch (IOException e) {
+            Assert.fail("Failed to create temporary file: " + e.getMessage());
+        }
+        return temp;
+    }
+
     @Test
     public void getHostProperties_Test() throws Exception {
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(false);
 
         // Check outputs...
         String[] hosts = monit.getHosts();
-        for (String host : hosts) {
-            System.out.println(" - " + host);
-        }
         Assert.assertTrue(hosts.length == HOSTN);
         Assert.assertTrue(Lists.newArrayList(hosts).contains(HOST1_ID));
         Assert.assertTrue(Lists.newArrayList(hosts).contains(HOST2_ID));
@@ -150,13 +189,10 @@ public class SigarLoaderTest {
 
     @Test
     public void getVMList_Test() throws Exception {
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(false);
 
         // Check outputs...
         String[] vms = monit.getVMs();
-        for (String vm : vms) {
-            System.out.println(" - " + vm);
-        }
         Assert.assertTrue(vms.length == VMN);
         Assert.assertTrue(Lists.newArrayList(vms).contains(VM1_ID));
         Assert.assertTrue(Lists.newArrayList(vms).contains(VM2_ID));
@@ -166,7 +202,7 @@ public class SigarLoaderTest {
 
     @Test
     public void getVMProperties_Test() throws Exception {
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(true);
 
         Map<String, String> vm1;
         Map<String, String> vm2;
@@ -207,7 +243,7 @@ public class SigarLoaderTest {
     @Test
     public void getVMPropertiesSameRMNodeName_Test() throws Exception {
 
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(true);
 
         Map<String, String> vm1;
         Map<String, String> vm2;
@@ -235,9 +271,7 @@ public class SigarLoaderTest {
     @Test
     public void getVMPropertiesVMDisconnectionAndReconnection_Test() throws Exception {
 
-        System.out.println("Started disconnection test...");
-
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(true);
 
         Map<String, String> vmOriginal;
         Map<String, String> vmReconnected;
@@ -308,7 +342,7 @@ public class SigarLoaderTest {
     @Test
     public void getVMPropertiesVMCache_Test() throws Exception {
 
-        IaasMonitoringChainable monit = getMonitor();
+        IaasMonitoringChainable monit = getMonitorUsingHosts(true);
         Map<String, String> vm1;
         monit.registerNode(VM1_NODE, VM1_URL, NodeType.VM);
 
@@ -320,24 +354,39 @@ public class SigarLoaderTest {
 
     }
 
-    @AfterClass
-    public static void shutdown() throws Exception {
+    @Test
+    public void getVMList_NoHost_Test() throws Exception {
+        IaasMonitoringChainable monit = getMonitorWithoutUsingHosts(false);
+
+        String[] vms = monit.getVMs();
+        Assert.assertTrue(vms.length == VMN);
+        Assert.assertTrue(Lists.newArrayList(vms).contains(VM1_URL));
+        Assert.assertTrue(Lists.newArrayList(vms).contains(VM2_URL));
+        Assert.assertTrue(Lists.newArrayList(vms).contains(VM3_URL));
+        Assert.assertTrue(Lists.newArrayList(vms).contains(VM4_URL));
     }
 
-    private static File createMonitoringHostsFile(Map<String, String> file) {
-        File temp = null;
-        try {
-            temp = File.createTempFile("monit", ".cnf");
-            FileWriter fw = new FileWriter(temp.getAbsoluteFile());
-            BufferedWriter bw = new BufferedWriter(fw);
-            for (Entry<String, String> entry : file.entrySet()) {
-                bw.write(entry.getKey() + "=" + entry.getValue() + "\n");
-            }
-            bw.close();
-        } catch (IOException e) {
-            Assert.fail("Failed to create temporary file: " + e.getMessage());
-        }
-        return temp;
+    @Test
+    public void getVMProperties_NoHost_Test() throws Exception {
+        IaasMonitoringChainable monit = getMonitorWithoutUsingHosts(false);
+
+        String[] vms = monit.getVMs();
+        Assert.assertTrue(vms.length == VMN);
+        Assert.assertTrue(Lists.newArrayList(vms).contains(VM1_URL));
+        Map<String, String> vmProps = monit.getVMProperties(VM1_URL);
+        Assert.assertTrue(vmProps.containsKey(P_COMMON_NET_MAC.toString(0)));
+        System.out.println(vmProps.get(P_COMMON_NET_MAC.toString(0)));
+        Assert.assertTrue(vmProps.get(P_COMMON_NET_MAC.toString(0)).equals(VM1_MAC));
+
+    }
+
+    @Test
+    public void getHostsList_NoHost_Test() throws Exception {
+        IaasMonitoringChainable monit = getMonitorWithoutUsingHosts(false);
+
+        String[] hosts = monit.getHosts();
+        Assert.assertTrue(hosts.length == 0);
+
     }
 
 }

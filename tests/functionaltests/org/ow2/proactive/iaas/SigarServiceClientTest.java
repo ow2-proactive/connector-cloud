@@ -35,32 +35,33 @@
 
 package org.ow2.proactive.iaas;
 
-import java.io.File;
-import java.util.*;
-import java.util.Map.Entry;
-
 import org.apache.commons.io.FileUtils;
 import org.hyperic.sigar.PFlags;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.ow2.proactive.iaas.utils.JmxUtils;
-import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.iaas.monitoring.SigarClient;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTConfig;
 import org.ow2.proactive.iaas.testsutils.IaasFuncTHelper;
-import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.resourcemanager.frontend.RMConnection;
-import org.ow2.proactive.resourcemanager.frontend.ResourceManager;
+import org.ow2.proactive.iaas.utils.JmxUtils;
+import org.ow2.proactive.iaas.utils.Utils;
+import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
-import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
+import org.ow2.proactive.resourcemanager.frontend.RMConnection;
+import org.ow2.proactive.resourcemanager.frontend.ResourceManager;
+
+import java.io.File;
+import java.util.*;
+import java.util.Map.Entry;
+
+import static org.ow2.proactive.iaas.VimServiceClientTest.*;
 
 /**
- * Set of keys that are expected to be present in the response. 
+ * Set of keys that are expected to be present in the response.
  */
-import static org.ow2.proactive.iaas.VimServiceClientTest.*;
 
 /**
  * These tests check for the presence of certain monitoring information as it
@@ -112,8 +113,10 @@ public class SigarServiceClientTest {
         String tmpFoldPath = tmpFold.getRoot().getAbsolutePath();
 
         // The PFlag name is as follows.
+        // Note: it cannot contain any dot "."
         pflagName = "tomcat-process";
         File f = tmpFold.newFile(pflagName);
+        System.out.println("TEMPORARY FOLDER: " + tmpFoldPath);
         f.deleteOnExit();
 
         // The PFlag value is as follows.

@@ -37,6 +37,7 @@ package org.ow2.proactive.iaas;
 import org.ow2.proactive.scheduler.common.task.TaskResult;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * A simple executable to be used as a task that will stop a running instance on a Iaas.
@@ -45,10 +46,28 @@ import java.io.Serializable;
  */
 public class IaasUndeployExecutable extends IaasExecutable {
 
+    public static final String INSTANCE_ID_KEY = "instanceId";
+
     @Override
     public Serializable execute(TaskResult... results) throws Throwable {
-        String instanceId = (String) results[0].value();
+        String instanceId;
+
+        instanceId = getInstanceId(args, results);
+
         createApi(args).stopInstance(new IaasInstance(instanceId));
         return "DONE";
+    }
+
+    private String getInstanceId(Map<String, String> args, TaskResult[] results) throws Throwable {
+        String instanceId;
+
+        instanceId = args.get(INSTANCE_ID_KEY);
+        if (instanceId != null)
+            return instanceId;
+
+        if (results.length > 0)
+            return (String) results[0].value();
+
+        throw new IllegalArgumentException("InstanceId not provided.");
     }
 }

@@ -745,8 +745,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     private void waitUntilCustomizationEnds(
             String vmVcenterId) throws ViServiceClientException, InterruptedException {
         EventFilterSpec eventFilter = new EventFilterSpec();
-        eventFilter.getType().add("CustomizationSucceeded");
-        eventFilter.getType().add("CustomizationFailed");
+        eventFilter.getType().add("CustomizationStartedEvent");
         EventFilterSpecByEntity filter = new EventFilterSpecByEntity();
         ManagedObjectReference entity = new ManagedObjectReference();
         entity.setType("VirtualMachine");
@@ -756,6 +755,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
         eventFilter.setEntity(filter);
         ManagedObjectReference eventCollector = vimServiceClient.createEventCollectorFromNow(eventFilter);
         pollEventsUntilCustomizationEnd(eventCollector);
+        Thread.sleep(60 * 1000); // just wait one more minutes to make sure it is done as we are waiting only for customization started
     }
 
     private void pollEventsUntilCustomizationEnd(

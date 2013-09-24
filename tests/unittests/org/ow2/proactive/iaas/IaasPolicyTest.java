@@ -36,6 +36,7 @@ package org.ow2.proactive.iaas;
 
 import org.ow2.proactive.resourcemanager.common.NodeState;
 import org.ow2.proactive.resourcemanager.common.event.RMEventType;
+import org.ow2.proactive.resourcemanager.common.event.RMNodeDescriptor;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
 import org.ow2.proactive.resourcemanager.core.RMCore;
 import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
@@ -401,7 +402,7 @@ public class IaasPolicyTest {
         when(schedulerState.getPendingJobs()).thenReturn(new Vector<JobState>());
         LinkedList<Node> aliveNodes = createAliveNodes("token");
         when(nodeSource.getAliveNodes()).thenReturn(aliveNodes);
-        RMNode rmNode = mock(RMNode.class);
+        RMNodeDescriptor rmNode = mock(RMNodeDescriptor.class);
         when(rmNode.getNodeURL()).thenReturn("rmi://node");
 
         policy.nodeEvent(new RMNodeEvent(rmNode, RMEventType.NODE_ADDED, NodeState.CONFIGURING, "me"));

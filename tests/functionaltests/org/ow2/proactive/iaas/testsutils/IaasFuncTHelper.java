@@ -47,11 +47,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+
 import org.objectweb.proactive.api.PAFuture;
 import org.objectweb.proactive.core.config.CentralPAPropertyRepository;
 import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.iaas.nova.NovaAPI;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthentication;
 import org.ow2.proactive.resourcemanager.common.event.RMInitialState;
 import org.ow2.proactive.resourcemanager.core.properties.PAResourceManagerProperties;
@@ -117,7 +117,7 @@ public class IaasFuncTHelper {
 
     public static String startResourceManager(Map<String, String> rmNodeJvmArgs) throws Exception {
         List<String> commandList = new ArrayList<String>();
-        String javaPath = IaasFuncTUtils.getJavaPathFromSystemProperties();
+        String javaPath = org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.getJavaPathFromSystemProperties();
         commandList.add(javaPath);
         commandList.add("-Djava.security.manager");
 
@@ -151,7 +151,7 @@ public class IaasFuncTHelper {
         processBuilder.redirectErrorStream(true);
         rmProcess = processBuilder.start();
 
-        ProcessStreamReader out = new ProcessStreamReader("rm-process-output: ", rmProcess.getInputStream(),
+        org.ow2.proactive.iaas.testsutils.ProcessStreamReader out = new org.ow2.proactive.iaas.testsutils.ProcessStreamReader("rm-process-output: ", rmProcess.getInputStream(),
             System.out);
         out.start();
 
@@ -168,8 +168,9 @@ public class IaasFuncTHelper {
         ResourceManager rm = rmAuth.login(rmCredentials);
         System.out.println("Done.");
 
-        RMEventMonitor rmEventMonitor = new RMEventMonitor();
-        RMEventListener eventListener = RMEventListener.createEventListener(rmEventMonitor);
+        org.ow2.proactive.iaas.testsutils.RMEventMonitor rmEventMonitor = new org.ow2.proactive.iaas.testsutils.RMEventMonitor();
+        org.ow2.proactive.iaas.testsutils.RMEventListener eventListener = org.ow2.proactive.iaas.testsutils.RMEventListener.createEventListener(
+                rmEventMonitor);
         RMInitialState state = rm.getMonitoring().addRMEventListener(eventListener);
         PAFuture.waitFor(state);
         state.getNodeSource().size();
@@ -186,15 +187,16 @@ public class IaasFuncTHelper {
     }
 
     public static void createNodeSource(ResourceManager rm, Credentials rmCred,
-            RMEventMonitor rmEventMonitor, Map<String, String> jvmArgs) throws Exception {
+            org.ow2.proactive.iaas.testsutils.RMEventMonitor rmEventMonitor, Map<String, String> jvmArgs) throws Exception {
         String nodeSourceName = defaultNodeSourceName + System.currentTimeMillis();
 
-        RMEventMonitor.RMNodesDeployedWaitCondition waitCondition = new RMEventMonitor.RMNodesDeployedWaitCondition(
+        org.ow2.proactive.iaas.testsutils.RMEventMonitor.RMNodesDeployedWaitCondition waitCondition = new org.ow2.proactive.iaas.testsutils.RMEventMonitor.RMNodesDeployedWaitCondition(
             nodeSourceName, defaultNumberOfNodes);
         rmEventMonitor.addWaitCondition(waitCondition);
 
         Object[] infrastructureParams = new Object[] { "", rmCred.getBase64(), defaultNumberOfNodes,
-                defaultNodeTimeout, IaasFuncTUtils.buildJvmParameters(jvmArgs) };
+                defaultNodeTimeout, org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.buildJvmParameters(
+                jvmArgs) };
         BooleanWrapper nodeSourceCreated = rm
                 .createNodeSource(nodeSourceName, LocalInfrastructure.class.getName(), infrastructureParams,
                         StaticPolicy.class.getName(), null);
@@ -208,7 +210,7 @@ public class IaasFuncTHelper {
 
     public static String startScheduler(String rmUrl) throws Exception {
         List<String> commandList = new ArrayList<String>();
-        String javaPath = IaasFuncTUtils.getJavaPathFromSystemProperties();
+        String javaPath = org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.getJavaPathFromSystemProperties();
         commandList.add(javaPath);
         commandList.add("-Djava.security.manager");
         commandList.add("-Djava.security.policy");
@@ -238,7 +240,7 @@ public class IaasFuncTHelper {
         processBuilder.redirectErrorStream(true);
         schedProcess = processBuilder.start();
 
-        ProcessStreamReader out = new ProcessStreamReader("scheduler-process-output: ",
+        org.ow2.proactive.iaas.testsutils.ProcessStreamReader out = new org.ow2.proactive.iaas.testsutils.ProcessStreamReader("scheduler-process-output: ",
             schedProcess.getInputStream(), System.out);
         out.start();
 
@@ -247,7 +249,8 @@ public class IaasFuncTHelper {
         SchedulerAuthenticationInterface schedAuth = SchedulerConnection.waitAndJoin(url,
                 TimeUnit.SECONDS.toMillis(60));
         schedulerPublicKey = schedAuth.getPublicKey();
-        Credentials schedCred = IaasFuncTUtils.createCredentials("admin", "admin", schedulerPublicKey);
+        Credentials schedCred = org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.createCredentials("admin",
+                "admin", schedulerPublicKey);
         scheduler = schedAuth.login(schedCred);
 
         return url;
@@ -265,13 +268,13 @@ public class IaasFuncTHelper {
         if (rmProcess != null) {
             System.out.println("Shutting down resource manager process.");
             try {
-                IaasFuncTUtils.destory(rmProcess);
+                org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.destory(rmProcess);
             } catch (Throwable error) {
                 System.err.println("An error occurred while shutting down resource manager process:");
                 error.printStackTrace();
             } finally {
                 try {
-                    IaasFuncTUtils.cleanupRMActiveObjectRegistry();
+                    org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.cleanupRMActiveObjectRegistry();
                 } catch (Throwable error) {
                     System.err.println("An error occurred while cleaning up:");
                     error.printStackTrace();
@@ -284,13 +287,14 @@ public class IaasFuncTHelper {
         System.out.println("Shutting down scheduler process.");
         if (schedProcess != null) {
             try {
-                IaasFuncTUtils.destory(schedProcess);
+                org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.destory(schedProcess);
             } catch (Throwable error) {
                 System.err.println("An error occurred while shutting down scheduler process:");
                 error.printStackTrace();
             } finally {
                 try {
-                    IaasFuncTUtils.cleanupActiveObjectRegistry(SchedulerConstants.SCHEDULER_DEFAULT_NAME);
+                    org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.cleanupActiveObjectRegistry(
+                            SchedulerConstants.SCHEDULER_DEFAULT_NAME);
                 } catch (Throwable error) {
 
                 }
@@ -341,11 +345,13 @@ public class IaasFuncTHelper {
     }
 
     public static String getRmHome() throws Exception {
-        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
+        return org.ow2.proactive.iaas.testsutils.IaasFuncTConfig.getInstance().getProperty(
+                org.ow2.proactive.iaas.testsutils.IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 
     public static String getSchedHome() throws Exception {
-        return IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_HOME);
+        return org.ow2.proactive.iaas.testsutils.IaasFuncTConfig.getInstance().getProperty(
+                org.ow2.proactive.iaas.testsutils.IaasFuncTConfig.TEST_SCHEDULER_HOME);
     }
 
     public static Credentials getRmCredentials() throws Exception {
@@ -365,6 +371,7 @@ public class IaasFuncTHelper {
         }
         classpath.append(getClassesPathname()).append(File.pathSeparatorChar);
         classpath.append(getTestClassesPathname()).append(File.pathSeparatorChar);
+        classpath.append(libPath).append(File.separator).append("*").append(File.pathSeparatorChar);
 
         return classpath.toString();
     }

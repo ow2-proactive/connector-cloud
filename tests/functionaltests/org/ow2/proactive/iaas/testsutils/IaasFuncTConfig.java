@@ -42,7 +42,8 @@ import java.util.Properties;
 public class IaasFuncTConfig extends Properties{
 
     public static final String TEST_SCHEDULER_HOME = "scheduling.project.dir";
-    
+    public static final String TEST_SCHEDULER_LIB = "scheduling.lib.dir";
+
     private static final IaasFuncTConfig instance = new IaasFuncTConfig();
     
     private IaasFuncTConfig() {

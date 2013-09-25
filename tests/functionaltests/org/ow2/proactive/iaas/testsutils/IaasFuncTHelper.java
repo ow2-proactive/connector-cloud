@@ -371,7 +371,7 @@ public class IaasFuncTHelper {
         }
         classpath.append(getClassesPathname()).append(File.pathSeparatorChar);
         classpath.append(getTestClassesPathname()).append(File.pathSeparatorChar);
-        classpath.append(libPath).append(File.separator).append("*").append(File.pathSeparatorChar);
+        classpath.append(IaasFuncTConfig.getInstance().getProperty(IaasFuncTConfig.TEST_SCHEDULER_LIB)).append(File.separator).append("*").append(File.pathSeparatorChar);
 
         return classpath.toString();
     }

@@ -113,9 +113,10 @@
         </stubGenerator>
 
 
-        <junit haltonfailure="true">
+        <junit haltonfailure="true" showoutput="true">
             <jvmarg value="-Djava.security.policy=${unit.grant.all.policy}"/>
             <jvmarg value="-Dscheduling.project.dir=${scheduling.project.dir}"/>
+            <jvmarg value="-Dscheduling.lib.dir=${scheduling.lib.dir}"/>
             <classpath refid="classpath.test"/>
             <formatter type="brief" usefile="false"/>
             <batchtest fork="yes">

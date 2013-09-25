@@ -33,7 +33,7 @@
         <mkdir dir="${scheduling.lib.dir}"/>
         <copy todir="${scheduling.lib.dir}">
             <fileset dir="${scheduling.project.lib.dir}"
-                     includes="**/*.jar,**/*.so,**/*.dylib,**/*.sl,**/*.dll,**/*.lib" excludes="typica.jar,vim25.jar"/>
+                     includes="**/*.jar,**/*.so,**/*.dylib,**/*.sl,**/*.dll,**/*.lib" excludes="typica.jar,vim25.jar, ProActive*.jar"/>
         </copy>
     </target>
 

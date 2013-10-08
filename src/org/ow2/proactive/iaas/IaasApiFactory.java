@@ -37,20 +37,17 @@ package org.ow2.proactive.iaas;
 import org.ow2.proactive.iaas.cloudstack.CloudStackAPI;
 import org.ow2.proactive.iaas.eucalyptus.EucalyptusConnector;
 import org.ow2.proactive.iaas.nova.NovaAPI;
+import org.ow2.proactive.iaas.numergy.NumergyAPI;
 import org.ow2.proactive.iaas.openstack.OpenStackAPI;
 import org.ow2.proactive.iaas.vcloud.VCloudAPI;
 
 import java.util.Map;
 
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.CLOUDSTACK;
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.EUCALYPTUS;
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.NOVA;
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.OPENSTACK;
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.VCLOUD;
+import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.*;
 
 public class IaasApiFactory {
     public enum IaasProvider {
-        CLOUDSTACK, NOVA, OPENSTACK, EUCALYPTUS, VCLOUD
+        CLOUDSTACK, NOVA, OPENSTACK, EUCALYPTUS, VCLOUD, NUMERGY
     }
 
     public static IaasApi create(String providerName, Map<String, String> args) throws Exception {
@@ -64,6 +61,8 @@ public class IaasApiFactory {
             return new EucalyptusConnector(args);
         } else if (VCLOUD.name().equals(providerName)) {
             return VCloudAPI.getVCloudAPI(args);
+        } else if (NUMERGY.name().equals(providerName)) {
+            return NumergyAPI.getNumergyAPI(args);
         }
         throw new IllegalArgumentException("Unknown Iaas provider : " + providerName);
     }

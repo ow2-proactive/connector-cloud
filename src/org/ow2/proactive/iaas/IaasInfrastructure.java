@@ -61,7 +61,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     @Configurable(description = "The URL where Rest API is located.")
     protected String iaasApiUrl = "";
 
-    @Configurable(description = "Monitoring options.")
+    @Configurable(description = "Monitoring options (use 'monitoringDisabled' if not required).")
     protected String monitoringOptions = "";
 
     protected static final int NB_OF_BASE_PARAMETERS = 3;
@@ -69,9 +69,10 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     protected static final Logger logger = Logger.getLogger(IaasInfrastructure.class);
     protected Hashtable<String, IaasInstance> nodeNameToInstance = new Hashtable<String, IaasInstance>();
 
-    protected static final int TEN_MINUTES_TIMEOUT = 60000 * 10;
     protected static final String NODE_NAME_FORMAT = "%s-node-%d";
     protected static final Map<String, Object> USE_CONFIGURED_VALUES = new HashMap<String, Object>();
+
+    protected long DEPLOYING_NODES_TIMEOUT_MS = 60000 * 10;
 
     protected abstract IaasApi getAPI();
 
@@ -80,7 +81,6 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
 
     protected IaasMonitoringService iaaSMonitoringService;
     protected MBeanExposer mbeanExposer;
-    protected String[] monitoringHostUrls;
 
     public IaasInfrastructure() {
     }
@@ -111,7 +111,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
     private void acquireNode(Map<String, ?> nodeConfiguration) {
         if (!allowedToCreateMoreInstance()) {
             logger.info(String.format("Can not create more instance, limit reached (%d on %d).",
-                    nodeNameToInstance.size(), maxNbOfInstances));
+                                      nodeNameToInstance.size(), maxNbOfInstances));
             return;
         }
 
@@ -123,16 +123,17 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
         String nodeName = String.format(NODE_NAME_FORMAT, nodeSourceName, ProActiveCounter.getUniqID());
 
         String nodeUrl = this.addDeployingNode(nodeName, "", "Deploying " + api.getName() + " node ",
-                TEN_MINUTES_TIMEOUT);
+                                               DEPLOYING_NODES_TIMEOUT_MS);
+
         try {
             Map<String, String> instanceParams = getInstanceParams(nodeName, nodeSourceName,
-                    nodeConfiguration);
+                                                                   nodeConfiguration);
             IaasInstance instance = api.startInstance(instanceParams);
             nodeNameToInstance.put(nodeName, instance);
             logger.info("New " + api.getName() + " instance started " + nodeUrl);
         } catch (Exception e) {
             this.declareDeployingNodeLost(nodeUrl,
-                    "Failed to start " + api.getName() + " instance: " + e.getMessage());
+                                          "Failed to start " + api.getName() + " instance: " + e.getMessage());
             logger.error("Failed to start " + api.getName() + " instance", e);
         } finally {
             try {
@@ -234,7 +235,7 @@ public abstract class IaasInfrastructure extends InfrastructureManager {
             return false;
         } else {
             throw new RuntimeException("Wrong monitoring options. "
-                    + "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
+                                               + "Should at least specify 'monitoringEnabled' or 'monitoringDisabled'.");
         }
     }
 

@@ -1,0 +1,92 @@
+################################
+NUMERGY INFRASTRUCTRE USER GUIDE
+################################
+
+### COMPILE
+
+Follow the instructions given in openstack/README to compile this project.
+
+### NOTES
+
+## Overall picture
+
+https://docs.google.com/document/d/1Shm9Ly573lBrPtXplggYNc7knSMxo-md997gtIvLaTE/edit?usp=sharing
+
+## Metadata server
+
+Since Numergy does not provide yet any mechanism of user_data passing, a
+simple metadata server was implemented. The server itself is a keystore server,
+specifically ElasticSearch server. Download it and execute it:
+
+   $ ./bin/elasticsearch -f
+
+It will expose its service on port 9200 usually. This server must be reachable
+from all the new VMs.
+
+## VM images (base VM)
+
+Numergy's API allows duplication of VMs, so a baseInstanceId (base VM) is required
+rather than an imageId.
+
+This base VM should be configured in such a way that at boot time it launches
+the script provided.
+
+<see start-node.sh script>
+
+One way of executing this script every time the VM boots (for Ubuntu OS) is
+by creating a service script, do it as follows:
+
+#Put this service-script in /etc/init.d/panode in the base VM.
+###############################################
+#!/bin/bash
+case "$1" in
+  start)
+    nohup /path/to/start-node.sh &> /tmp/start-node.log &
+    ;;
+  stop)
+    pkill java
+    ;;
+  *)
+  ;;
+esac
+###############################################
+
+Then execute in the base VM.
+
+   $ sudo chmod +x /etc/init.d/panode
+   $ sudo update-rc.d panode defaults 98 02
+
+
+You will have to manually modify start-node.sh to correctly point at the Metadata
+server, according to its IP address in the VMs network.
+
+### USE
+
+After you compiled your scheduler and connectors as described above proceed
+as follows: 
+
+1. Add the following line
+
+   org.ow2.proactive.iaas.numergy.NumergyInfrastructure 
+
+to the text file
+
+   config/rm/nodesource/infrastructures
+
+2. Launch the scheduler
+
+3. Acquire nodes from Numergy
+
+## Static approach
+
+   <see create-numergy-nodesource-static.sh>
+
+## Dynamic approach for the job that needs resources from Numergy on demand
+
+
+   <see create-numergy-nodesource-dynamic.sh>
+
+# Job Example
+
+   <see file job.xml>
+

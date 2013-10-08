@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<job xmlns="urn:proactive:jobdescriptor:3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="urn:proactive:jobdescriptor:3.2 ../../src/scheduler/src/org/ow2/proactive/scheduler/common/xml/schemas/jobdescriptor/3.2/schedulerjob.xsd"
+     name="job_pi_in_numergy" priority="normal" cancelJobOnError="true">
+
+    <variables>
+        <variable name="iterations" value="9000000000"/>
+    </variables>
+
+    <genericInformation>
+        <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+        <info name="IAAS_OPERATION" value="DEPLOY"/>
+        <info name="IAAS_NODE_SOURCE" value="NUMERGY_NODESOURCE"/>
+        <info name="IAAS_INSTANCE_NB" value="4"/>
+        <info name="IAAS_IMAGE_ID" value="2a2b35d4-278a-11e3-8d40-005056992152"/>
+    </genericInformation>
+
+    <taskFlow>
+        <task name="Computation1">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation2">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation3">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation4">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation5">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation6">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation7">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation8">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation9">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation10">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation11">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation12">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation13">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation14">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation15">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Computation16">
+            <description>Compute Pi and return it</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarlo">
+                <parameters>
+                    <parameter name="steps" value="20"/>
+                    <parameter name="iterations" value="${iterations}"/>
+                </parameters>
+            </javaExecutable>
+        </task>
+        <task name="Average" preciousResult="true">
+            <description>Do the average and return it.</description>
+            <genericInformation>
+                <info name="NODE_ACCESS_TOKEN" value="numergy$PAS_JOB_ID"/>
+            </genericInformation>
+            <!-- Task human description -->
+            <depends>
+                <task ref="Computation1"/>
+                <task ref="Computation2"/>
+                <task ref="Computation3"/>
+                <task ref="Computation4"/>
+                <task ref="Computation5"/>
+                <task ref="Computation6"/>
+                <task ref="Computation7"/>
+                <task ref="Computation8"/>
+                <task ref="Computation9"/>
+                <task ref="Computation10"/>
+                <task ref="Computation11"/>
+                <task ref="Computation12"/>
+                <task ref="Computation13"/>
+                <task ref="Computation14"/>
+                <task ref="Computation15"/>
+                <task ref="Computation16"/>
+            </depends>
+            <javaExecutable class="org.ow2.proactive.scheduler.examples.MonteCarloAverage"/>
+
+        </task>
+    </taskFlow>
+</job>

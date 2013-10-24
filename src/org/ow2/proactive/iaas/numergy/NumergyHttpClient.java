@@ -55,8 +55,8 @@ public class NumergyHttpClient {
 
 
     private boolean isValid() {
-        final int ALMOST_ONE_DAY = 1000 * (3600 * 24 - 10);
-        return (System.currentTimeMillis() - created < ALMOST_ONE_DAY);
+        final int ALMOST_ONE_HOUR = 1000 * (3600 - 10);
+        return (System.currentTimeMillis() - created < ALMOST_ONE_HOUR);
     }
 
     private void reconnectIfNeeded() {

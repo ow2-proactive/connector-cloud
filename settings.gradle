@@ -1,0 +1,10 @@
+include 'iaas-api'
+include 'monitoring'
+
+
+include 'connectors:cloudstack'
+include 'connectors:vmware'
+include 'connectors:numergy'
+include 'connectors:nova'
+include 'connectors:openstack'
+include 'connectors:eucalyptus'

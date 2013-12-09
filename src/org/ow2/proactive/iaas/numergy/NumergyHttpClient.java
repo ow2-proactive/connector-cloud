@@ -50,9 +50,12 @@ public class NumergyHttpClient {
     private void renewSessionId() throws IOException {
         String entity = executeAuthenticationPost(accessKey, secretKey, tenantId);
         this.sessionId = NumergyJsonHelper.getSessionIdFromJson(entity);
-        this.computeUri = NumergyJsonHelper.getComputeUriFromJson(entity);
+        this.computeUri = getComputeUri();
     }
 
+    private String getComputeUri() {
+        return endpoint + "/" + tenantId;
+    }
 
     private boolean isValid() {
         final int ALMOST_ONE_HOUR = 1000 * (3600 - 10);

@@ -42,16 +42,6 @@ public class NumergyJsonHelper {
         }
     }
 
-    public static String getComputeUriFromJson(String entity) {
-        String compute;
-        try {
-            compute = JsonPath.read(entity, "$.access.serviceCatalog[?(@.type=='compute')].endpoints[0].publicURL");
-        } catch (InvalidPathException ex) {
-            throw new InvalidPathException("Cannot obtain novaUri from: " + entity);
-        }
-        return compute;
-    }
-
     public static String getSessionIdFromJson(String entity) {
         try {
             return JsonPath.read(entity, "$.access.token.id");

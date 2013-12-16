@@ -1,5 +1,6 @@
 include 'iaas-api'
 include 'monitoring'
+include 'functional-tests'
 
 
 include 'connectors:cloudstack'

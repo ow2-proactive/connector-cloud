@@ -11,9 +11,9 @@ import java.util.Map;
 
 import javax.security.sasl.AuthenticationException;
 
+import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -25,13 +25,10 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
-
-import com.jayway.jsonpath.JsonPath;
 
 
 public class NovaAPI implements IaasApi, IaasMonitoringApi {
@@ -52,7 +49,7 @@ public class NovaAPI implements IaasApi, IaasMonitoringApi {
     // NOVA FACTORY
     // ////////////////////////
 
-    public static IaasApi getNovaAPI(Map<String, String> args) throws URISyntaxException,
+    public static IaasApi create(Map<String, String> args) throws URISyntaxException,
             AuthenticationException {
         return getNovaAPI(args.get(NovaAPIConstants.ApiParameters.USER_NAME),
                 args.get(NovaAPIConstants.ApiParameters.PASSWORD),
@@ -279,7 +276,7 @@ public class NovaAPI implements IaasApi, IaasMonitoringApi {
 
     @Override
     public String getName() {
-        return IaasApiFactory.IaasProvider.NOVA.name();
+        return getClass().getName();
     }
 
     public class NovaAPIConstants {

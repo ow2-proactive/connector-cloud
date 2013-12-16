@@ -38,6 +38,9 @@ import java.util.Map;
 
 /**
  * Implementations are targeted at specific Iaas implementation, for instance Cloudstack, Openstack, Eucalyptus, ...
+ * They must implement a create(Map<String,String) method.
+ *
+ * @see org.ow2.proactive.iaas.IaasApiFactory
  */
 public interface IaasApi {
 

@@ -5,16 +5,15 @@
 package org.ow2.proactive.iaas.openstack;
 
 
-import org.ow2.proactive.iaas.CloudProvider;
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
-import org.ow2.proactive.iaas.IaasInstance;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.security.sasl.AuthenticationException;
+
+import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -25,7 +24,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import com.jayway.jsonpath.JsonPath;
+import org.ow2.proactive.iaas.CloudProvider;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasInstance;
 
 
 public class OpenStackAPI implements IaasApi {
@@ -249,7 +250,7 @@ public class OpenStackAPI implements IaasApi {
         throw new UnsupportedOperationException("not implemented");
     }
 
-    public static IaasApi getOpenStackAPI(Map<String, String> args) throws URISyntaxException, AuthenticationException {
+    public static IaasApi create(Map<String, String> args) throws URISyntaxException, AuthenticationException {
         return getOpenStackAPI(
                 args.get("username"),
                 args.get("password"),
@@ -261,7 +262,7 @@ public class OpenStackAPI implements IaasApi {
 
     @Override
     public String getName() {
-        return IaasApiFactory.IaasProvider.OPENSTACK.name();
+        return getClass().getName();
     }
 
 	@Override

@@ -2,6 +2,7 @@ package org.ow2.proactive.iaas.monitoring.vmprocesses;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ public class VMPLister {
                 String mem = (String) c.get("memSize");
                 String cpu = (String) c.get("cpuPerc");
                 String[] vargs = (String[]) c.get("commandline");
+                logger.error("===>" + Arrays.toString(vargs));
 
                 String args = Utils.argsToString(vargs);
                 VMPPattern pat = VMPPattern.whatVMPPatternMatches(args);

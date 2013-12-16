@@ -34,22 +34,6 @@
  */
 package org.ow2.proactive.iaas.cloudstack;
 
-import static java.util.Arrays.asList;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
-import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
-
 import java.io.InputStream;
 import java.io.StringReader;
 import java.net.URI;
@@ -80,10 +64,25 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
-import org.ow2.proactive.iaas.IaasInstance;
 import org.xml.sax.InputSource;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasInstance;
+
+import static java.util.Arrays.asList;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.API_URL;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.ApiParameters.SECRET_KEY;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.NAME;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.SERVICE_OFFERING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.TEMPLATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.USER_DATA;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.InstanceParameters.ZONE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.JOB_STATE_PENDING;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_ID;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.JOB_STATUS;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.Response.STATE;
+import static org.ow2.proactive.iaas.cloudstack.CloudStackAPI.CloudStackAPIConstants.VM_STATE_RUNNING;
 
 /**
  * A Cloudstack Rest API client capable of starting and stopping instances.
@@ -110,8 +109,8 @@ public class CloudStackAPI implements IaasApi {
         this.apiURL = apiUrl;
     }
 
-    public CloudStackAPI(Map<String, String> args) {
-        this(args.get(API_URL), args.get(API_KEY), args.get(SECRET_KEY));
+    public static CloudStackAPI create(Map<String, String> args) {
+        return new CloudStackAPI(args.get(API_URL), args.get(API_KEY), args.get(SECRET_KEY));
     }
 
     @Override
@@ -272,7 +271,7 @@ public class CloudStackAPI implements IaasApi {
 
     @Override
     public String getName() {
-        return IaasApiFactory.IaasProvider.CLOUDSTACK.name();
+        return getClass().getName();
     }
 
 	@Override

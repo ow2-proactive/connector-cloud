@@ -1,5 +1,13 @@
 package org.ow2.proactive.iaas.numergy;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.security.sasl.AuthenticationException;
+
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.rabbitmq.tools.json.JSONReader;
@@ -7,16 +15,8 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.metadata.MetadataHttpClient;
-
-import javax.security.sasl.AuthenticationException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class NumergyAPI implements IaasApi {
@@ -33,7 +33,7 @@ public class NumergyAPI implements IaasApi {
     // NUMERGY FACTORY
     // ////////////////////////
 
-    public static IaasApi getNumergyAPI(Map<String, String> args) throws URISyntaxException,
+    public static IaasApi create(Map<String, String> args) throws URISyntaxException,
             AuthenticationException {
         return getNumergyAPI(
                 args.get(NumergyAPIConstants.ApiParameters.ACCESS_KEY),
@@ -188,7 +188,7 @@ public class NumergyAPI implements IaasApi {
 
     @Override
     public String getName() {
-        return IaasApiFactory.IaasProvider.NUMERGY.name();
+        return getClass().getName();
     }
 
     @Override

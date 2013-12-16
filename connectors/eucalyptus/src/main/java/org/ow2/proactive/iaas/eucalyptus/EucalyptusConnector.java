@@ -1,23 +1,23 @@
 package org.ow2.proactive.iaas.eucalyptus;
 
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasApiFactory;
-import org.ow2.proactive.iaas.IaasInstance;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
-import org.objectweb.proactive.core.ProActiveException;
-import org.objectweb.proactive.core.util.log.ProActiveLogger;
+
 import com.xerox.amazonws.ec2.AvailabilityZone;
 import com.xerox.amazonws.ec2.EC2Exception;
 import com.xerox.amazonws.ec2.ImageDescription;
 import com.xerox.amazonws.ec2.Jec2;
 import com.xerox.amazonws.ec2.ReservationDescription;
 import com.xerox.amazonws.ec2.ReservationDescription.Instance;
+import org.apache.log4j.Logger;
+import org.objectweb.proactive.core.ProActiveException;
+import org.objectweb.proactive.core.util.log.ProActiveLogger;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasInstance;
 
 
 /**
@@ -116,6 +116,10 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
                 args.get("eucaHost"),
                 Integer.parseInt(args.get("eucaPort"))
         );
+    }
+
+    public static EucalyptusConnector create(Map<String, String> args) {
+        return new EucalyptusConnector(args);
     }
 
     /**
@@ -478,7 +482,7 @@ public class EucalyptusConnector implements java.io.Serializable, IaasApi {
 
     @Override
     public String getName() {
-        return IaasApiFactory.IaasProvider.EUCALYPTUS.name();
+        return getClass().getName();
     }
 
 	@Override

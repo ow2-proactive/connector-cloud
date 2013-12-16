@@ -51,14 +51,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
+
 import javax.security.sasl.AuthenticationException;
 import javax.xml.bind.JAXBElement;
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasInstance;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
-import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
-import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
+
 import com.vmware.vcloud.api.rest.schema.*;
 import com.vmware.vcloud.api.rest.schema.ovf.MsgType;
 import com.vmware.vcloud.api.rest.schema.ovf.SectionType;
@@ -91,6 +87,12 @@ import com.vmware.vim25.EventFilterSpecByEntity;
 import com.vmware.vim25.EventFilterSpecRecursionOption;
 import com.vmware.vim25.ManagedObjectReference;
 import org.apache.log4j.Logger;
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
+import org.ow2.proactive.iaas.vcloud.monitoring.ViServiceClientException;
+import org.ow2.proactive.iaas.vcloud.monitoring.VimServiceClient;
 
 
 public class VCloudAPI implements IaasApi, IaasMonitoringApi {
@@ -111,7 +113,7 @@ public class VCloudAPI implements IaasApi, IaasMonitoringApi {
     private String credLogin;
     private String credPassword;
 
-    public static IaasApi getVCloudAPI(Map<String, String> args) throws URISyntaxException,
+    public static IaasApi create(Map<String, String> args) throws URISyntaxException,
             AuthenticationException {
         VCloudAPI vCloudAPI = getVCloudAPI(args.get(VCloudAPIConstants.ApiParameters.USER_NAME),
                 args.get(VCloudAPIConstants.ApiParameters.PASSWORD),

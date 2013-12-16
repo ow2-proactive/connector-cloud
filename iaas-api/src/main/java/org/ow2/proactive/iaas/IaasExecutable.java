@@ -1,10 +1,10 @@
 package org.ow2.proactive.iaas;
 
-import org.ow2.proactive.scheduler.common.task.executable.JavaExecutable;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.ow2.proactive.scheduler.common.task.executable.JavaExecutable;
 
 /**
  * Base class for operations on Iaas, responsible for selecting the Iaas implementation from a parameter.
@@ -14,7 +14,7 @@ import java.util.Map;
 public abstract class IaasExecutable extends JavaExecutable {
 
     /**
-     * See {@link IaasApiFactory.IaasProvider} for accepted values
+     * The iaas provider full class name
      */
     @SuppressWarnings("unused") // will be written by #init()
     private String providerName;

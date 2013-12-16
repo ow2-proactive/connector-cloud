@@ -34,36 +34,25 @@
  */
 package org.ow2.proactive.iaas;
 
-import org.ow2.proactive.iaas.cloudstack.CloudStackAPI;
-import org.ow2.proactive.iaas.eucalyptus.EucalyptusConnector;
-import org.ow2.proactive.iaas.nova.NovaAPI;
-import org.ow2.proactive.iaas.numergy.NumergyAPI;
-import org.ow2.proactive.iaas.openstack.OpenStackAPI;
-import org.ow2.proactive.iaas.vcloud.VCloudAPI;
-
+import java.lang.reflect.Method;
 import java.util.Map;
 
-import static org.ow2.proactive.iaas.IaasApiFactory.IaasProvider.*;
 
+/**
+ * IaasApi instances are created via reflection
+ */
 public class IaasApiFactory {
-    public enum IaasProvider {
-        CLOUDSTACK, NOVA, OPENSTACK, EUCALYPTUS, VCLOUD, NUMERGY
-    }
 
     public static IaasApi create(String providerName, Map<String, String> args) throws Exception {
-        if (CLOUDSTACK.name().equals(providerName)) {
-            return new CloudStackAPI(args);
-        } else if (NOVA.name().equals(providerName)) {
-            return NovaAPI.getNovaAPI(args);
-        } else if (OPENSTACK.name().equals(providerName)) {
-            return OpenStackAPI.getOpenStackAPI(args);
-        } else if (EUCALYPTUS.name().equals(providerName)) {
-            return new EucalyptusConnector(args);
-        } else if (VCLOUD.name().equals(providerName)) {
-            return VCloudAPI.getVCloudAPI(args);
-        } else if (NUMERGY.name().equals(providerName)) {
-            return NumergyAPI.getNumergyAPI(args);
+        try {
+            Class<?> providerClass = Class.forName(providerName);
+            Method createProviderMethod = providerClass.getMethod("create", Map.class);
+            return (IaasApi) createProviderMethod.invoke(null, args);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Unknown Iaas provider : " + providerName);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException(
+              "Cannot find create method(Map<String,String>) on provider class : " + providerName);
         }
-        throw new IllegalArgumentException("Unknown Iaas provider : " + providerName);
     }
 }

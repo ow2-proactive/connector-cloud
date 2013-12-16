@@ -34,7 +34,7 @@ project(':monitoring') {
         compile 'com.google.guava:guava:14.0.1'
         compile 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
 
-        compile fileTree("${rootDir}/lib/sigar.jar")
+        compile fileTree(dir: "${rootDir}/lib/", include: '*sigar*')
 
         testCompile 'commons-collections:commons-collections:3.2'
     }

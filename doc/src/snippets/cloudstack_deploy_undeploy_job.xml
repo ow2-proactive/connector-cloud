@@ -7,7 +7,7 @@
 			<javaExecutable class="org.ow2.proactive.iaas.IaasDeployExecutable">
 				<parameters>
 					<!-- Select the Iaas API we use -->
-					<parameter name="providerName" value="CLOUDSTACK"/>
+					<parameter name="providerName" value="org.ow2.proactive.iaas.cloudstack.CloudStackAPI"/>
 					<!-- Cloudstack specific parameters -->
 					<parameter name="apiurl" value="http://mycloudstack:8080/client/api"/>
 					<parameter name="apikey" value="apublickey"/>
@@ -41,7 +41,7 @@
 			</depends>
 			<javaExecutable class="org.ow2.proactive.iaas.IaasUndeployExecutable">
 				<parameters>
-					<parameter name="providerName" value="CLOUDSTACK"/>
+					<parameter name="providerName" value="org.ow2.proactive.iaas.cloudstack.CloudStackAPI"/>
 					<parameter name="apiurl" value="http://mycloudstack:8080/client/api"/>
 					<parameter name="apikey" value="apublickey"/>
 					<parameter name="secretkey" value="asecretkey"/>

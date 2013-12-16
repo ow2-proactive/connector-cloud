@@ -39,7 +39,7 @@
 			<itemizedlist>
 				<listitem>
 					<para>
-						<emphasis>providerName</emphasis>: selection of the Iaas API we target (here CLOUDSTACK). This
+						<emphasis>providerName</emphasis>: selection of the Iaas API we target (the full class name). This
 						parameter is also mandatory when undeploying the instance.
 					</para>
 				</listitem>

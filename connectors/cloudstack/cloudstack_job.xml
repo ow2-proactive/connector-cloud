@@ -10,7 +10,7 @@
 		<task name="Deploy">
 			<javaExecutable class="org.ow2.proactive.iaas.IaasDeployExecutable">
 				<parameters>
-					<parameter name="providerName" value="cloudstack"/>
+					<parameter name="providerName" value="org.ow2.proactive.iaas.cloudstack.CloudStackAPI"/>
 					<parameter name="apiurl" value="http://localhost:8080/client/api"/>
 					<parameter name="apikey"
 							   value="dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA"/>
@@ -73,7 +73,7 @@
 			</depends>
 			<javaExecutable class="org.ow2.proactive.iaas.IaasUndeployExecutable">
 				<parameters>
-					<parameter name="providerName" value="cloudstack"/>
+					<parameter name="providerName" value="org.ow2.proactive.iaas.cloudstack.CloudStackAPI"/>
 					<parameter name="apiurl" value="http://localhost:8080/client/api"/>
 					<parameter name="apikey"
 							   value="dQEdbQVukQYkzGl9O_sG5qknip0mnXBtPfVBaJMiZd5LbwNuf3HTNi8hfxzLcXm32auykyoHuV_PIkak2kLeuA"/>

@@ -1,0 +1,132 @@
+defaultTasks 'build'
+
+buildscript {
+    repositories {
+        if (project.hasProperty('local')) mavenLocal()
+        mavenCentral()
+        maven { url 'http://repo.activeeon.com/content/repositories/snapshots/' }
+        maven { url 'http://repo.activeeon.com/content/repositories/releases/' }
+        maven { url 'http://repo.activeeon.com/content/repositories/thirdparty/' }
+    }
+
+    dependencies {
+        classpath 'org.ow2.proactive:documentation:1.0.0-SNAPSHOT'
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    rootProject.buildscript.repositories.each {
+        repositories.add(it)
+    }
+
+    dependencies {
+        compile 'log4j:log4j:1.2.14'
+        testCompile 'junit:junit:4.11'
+        testCompile 'org.mockito:mockito-core:1.9.5'
+    }
+}
+
+project(':monitoring') {
+
+    dependencies {
+        compile 'com.google.guava:guava:14.0.1'
+        compile 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+
+        compile fileTree("${rootDir}/lib/sigar.jar")
+
+        testCompile 'commons-collections:commons-collections:3.2'
+    }
+}
+
+project(':iaas-api') {
+
+    dependencies {
+        compile 'net.minidev:json-smart:1.1.1'
+        compile 'com.jayway.jsonpath:json-path:0.8.1'
+        compile 'org.apache.httpcomponents:httpclient:4.2.1'
+
+
+        compile 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
+        compile 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+        compile 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
+
+        compile project(':monitoring')
+
+        testCompile 'org.ow2.proactive:scheduler-server:3.5.0-SNAPSHOT'
+    }
+}
+
+project('connectors').subprojects {
+    dependencies {
+        compile project(':iaas-api')
+    }
+}
+
+project('connectors:cloudstack') {
+    dependencies {
+        compile 'org.apache.commons:commons-io:1.3.2'
+    }
+}
+
+project('connectors:eucalyptus') {
+    dependencies {
+        compile fileTree("${rootDir}/lib/endorsed/typica.jar")
+    }
+}
+
+project('connectors:vmware') {
+
+    dependencies {
+        compile fileTree("${rootDir}/lib/vcloud-java-sdk-5.1.0.jar")
+        compile fileTree("${rootDir}/lib/rest-api-schemas-5.1.0.jar")
+        compile fileTree("${rootDir}/lib/endorsed/vim25.jar")
+        compile 'org.apache.commons:commons-io:1.3.2'
+
+    }
+}
+
+project('functional-tests') {
+    dependencies {
+        compile project(':monitoring')
+        compile project(':connectors:vmware')
+
+        testCompile 'org.ow2.proactive:scheduler-server:3.5.0-SNAPSHOT'
+        testCompile project(':monitoring').sourceSets.test.output
+    }
+
+    test {
+        forkEvery 1
+
+        systemProperties << ['java.security.policy': file("$projectDir/src/test/resources/org/ow2/proactive/iaas/testsutils/config/client-java.security.policy").absolutePath]
+        systemProperties << ['proactive.runtime.ping': false]
+        systemProperties << ['scheduling.project.dir': file("$buildDir/")]
+
+        testLogging {
+            exceptionFormat = 'full'
+        }
+        beforeTest { descriptor ->
+            logger.lifecycle("Running: " + descriptor)
+        }
+    }
+
+    task proActiveLibs(type: Copy) {
+        from configurations.testRuntime.files
+        into file("$buildDir/dist/lib")
+    }
+
+    task proActiveConfiguration(type: Copy) {
+        from fileTree('config')
+        into file("$buildDir/config")
+    }
+
+    test.dependsOn proActiveConfiguration, proActiveLibs
+}
+
+project(':doc') {
+    apply plugin: 'documentation'
+    documentation.outputName = 'CloudServiceProviderConnectors'
+    documentation.docDir = 'src'
+    documentation.snippetsStart = rootProject.projectDir
+}

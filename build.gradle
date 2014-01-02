@@ -41,6 +41,7 @@ subprojects {
     }
 
     task addons(type: Sync) {
+        from jar
         from configurations.runtime
         into "$buildDir/addons"
     }
@@ -65,7 +66,6 @@ project(':iaas-api') {
         compile 'net.minidev:json-smart:1.1.1'
         compile 'com.jayway.jsonpath:json-path:0.8.1'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
-
 
         provided 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
         provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'

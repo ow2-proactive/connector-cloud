@@ -21,18 +21,37 @@ subprojects {
         repositories.add(it)
     }
 
+    configurations {
+        provided
+    }
+    sourceSets {
+        main {
+            compileClasspath += configurations.provided
+        }
+        test {
+            compileClasspath += configurations.provided
+            runtimeClasspath += configurations.provided
+        }
+    }
+
     dependencies {
-        compile 'log4j:log4j:1.2.14'
+        provided 'log4j:log4j:1.2.14'
         testCompile 'junit:junit:4.11'
         testCompile 'org.mockito:mockito-core:1.9.5'
     }
+
+    task addons(type: Sync) {
+        from configurations.runtime
+        into "$buildDir/addons"
+    }
+    build.dependsOn addons
 }
 
 project(':monitoring') {
 
     dependencies {
         compile 'com.google.guava:guava:14.0.1'
-        compile 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
 
         compile fileTree(dir: "${rootDir}/lib/", include: '*sigar*')
 
@@ -48,9 +67,9 @@ project(':iaas-api') {
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
 
 
-        compile 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
-        compile 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
-        compile 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
 
         compile project(':monitoring')
 
@@ -61,6 +80,9 @@ project(':iaas-api') {
 project('connectors').subprojects {
     dependencies {
         compile project(':iaas-api')
+        provided 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+        provided 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
     }
 }
 

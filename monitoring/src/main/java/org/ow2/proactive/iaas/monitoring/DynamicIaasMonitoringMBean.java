@@ -14,6 +14,7 @@ public class DynamicIaasMonitoringMBean implements DynamicMBean {
     public static final String VM_PREFIX = "VM.";
 
     private final IaasMonitoringService service;
+    private Boolean initialization;
 
     public DynamicIaasMonitoringMBean(IaasMonitoringService service) throws IOException {
 
@@ -21,6 +22,7 @@ public class DynamicIaasMonitoringMBean implements DynamicMBean {
             throw new IllegalArgumentException("service cannot be null");
 
         this.service = service;
+        this.initialization = true;
 
     }
 
@@ -151,12 +153,14 @@ public class DynamicIaasMonitoringMBean implements DynamicMBean {
 
     private void getListOfAttributes(List<String> attributeNames) {
         getDefaultListOfAttributes(attributeNames);
-        try {
-            getListOfAttributesFromArray(attributeNames, service.getHosts(), HOST_PREFIX);
-            getListOfAttributesFromArray(attributeNames, service.getVMs(), VM_PREFIX);
-        } catch (IaasMonitoringException e) {
-            // Ignore it.
-        }
+        if (!initialization)
+            try {
+                getListOfAttributesFromArray(attributeNames, service.getHosts(), HOST_PREFIX);
+                getListOfAttributesFromArray(attributeNames, service.getVMs(), VM_PREFIX);
+            } catch (IaasMonitoringException e) {
+                // Ignore it.
+            }
+        initialization = false;
     }
 
     private MBeanOperationInfo[] getListOfOperations() {

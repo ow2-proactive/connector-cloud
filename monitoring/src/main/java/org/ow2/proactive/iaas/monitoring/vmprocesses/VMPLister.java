@@ -45,7 +45,6 @@ public class VMPLister {
                 String mem = (String) c.get("memSize");
                 String cpu = (String) c.get("cpuPerc");
                 String[] vargs = (String[]) c.get("commandline");
-                logger.error("===>" + Arrays.toString(vargs));
 
                 String args = Utils.argsToString(vargs);
                 VMPPattern pat = VMPPattern.whatVMPPatternMatches(args);

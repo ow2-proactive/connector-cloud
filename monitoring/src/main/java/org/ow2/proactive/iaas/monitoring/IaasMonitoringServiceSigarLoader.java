@@ -558,7 +558,12 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     private boolean areRmNodePropsInvalid(Map<String, String> rmNodeProps) {
-        Integer errorsWhileRetrieving = getNumberOfErrorsWhileGettingProps(rmNodeProps);
+        Integer errorsWhileRetrieving;
+        try {
+            errorsWhileRetrieving = getNumberOfErrorsWhileGettingProps(rmNodeProps);
+        } catch (IllegalStateException e) {
+            return true;
+        }
         return rmNodeProps.isEmpty() || errorsWhileRetrieving > ERRORS_ALLOWED;
     }
 

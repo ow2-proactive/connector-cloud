@@ -2,7 +2,12 @@ package org.ow2.proactive.iaas.numergy;
 
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class NumergyJsonHelper {
@@ -73,6 +78,36 @@ public class NumergyJsonHelper {
             return JsonPath.read(entity, "$.server.addresses.private[0].addr");
         } catch (InvalidPathException e) {
             throw new InvalidPathException("Could not obtain IP address: " + entity, e);
+        }
+    }
+
+    public static String[] getListOfServers(String entity) {
+        ArrayList<String> list = new ArrayList<String>();
+        JSONArray results = JsonPath.read(entity, "$.servers");
+        for (Object o : results) {
+            JSONObject ob = (JSONObject) o;
+            list.add((String)ob.get("id"));
+        }
+        return list.toArray(new String[0]);
+    }
+
+    public static Map<String, String> getServerProperties(String entity) {
+        Map<String, String> p = new HashMap<String, String>();
+        p.put("name", getProp(entity, "$.server.name"));
+        p.put("status", getProp(entity, "$.server.status"));
+        getIpProp(p, entity, "$.server.addresses.private[*].addr");
+        return p;
+    }
+
+    private static String getProp(String entity, String xpath) {
+        return JsonPath.read(entity, xpath).toString();
+    }
+
+    private static void getIpProp(Map<String, String> properties, String entity, String xpath) {
+        Object o = JsonPath.read(entity, xpath);
+        int counter = 0;
+        for (Object ip : (JSONArray)o) {
+            properties.put("network." + counter++ + ".ip", ip.toString());
         }
     }
 

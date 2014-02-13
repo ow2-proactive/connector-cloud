@@ -24,12 +24,12 @@ public class NumergyHttpClient {
     private static final int SO_TIMEOUT = 10000;
 
     private static final Logger logger = Logger.getLogger(NumergyHttpClient.class);
+    private static final String API_VERSION = "v2.0";
 
     private long created;
     private HttpClient httpClient;
     private URI endpoint;
     private String sessionId;
-    private String computeUri;
 
     private String accessKey;
     private String secretKey;
@@ -50,11 +50,6 @@ public class NumergyHttpClient {
     private void renewSessionId() throws IOException {
         String entity = executeAuthenticationPost(accessKey, secretKey, tenantId);
         this.sessionId = NumergyJsonHelper.getSessionIdFromJson(entity);
-        this.computeUri = getComputeUri();
-    }
-
-    private String getComputeUri() {
-        return endpoint + "/" + tenantId;
     }
 
     private boolean isValid() {
@@ -75,7 +70,7 @@ public class NumergyHttpClient {
 
         reconnectIfNeeded();
 
-        HttpPost post = new HttpPost(computeUri + path);
+        HttpPost post = new HttpPost(endpoint.resolve(buildFullPath(path)));
         post.addHeader("X-Auth-Token", sessionId);
         post.addHeader("Content-type", "application/json");
         post.setEntity(new StringEntity(content.toJSONString(), "UTF-8"));
@@ -89,7 +84,7 @@ public class NumergyHttpClient {
 
         reconnectIfNeeded();
 
-        HttpGet get = new HttpGet(computeUri + path);
+        HttpGet get = new HttpGet(endpoint.resolve(buildFullPath(path)));
         get.addHeader("X-Auth-Token", sessionId);
         HttpResponse response = httpClient.execute(get);
         String entity = EntityUtils.toString(response.getEntity());
@@ -101,7 +96,7 @@ public class NumergyHttpClient {
 
         reconnectIfNeeded();
 
-        HttpDelete del = new HttpDelete(computeUri + path);
+        HttpDelete del = new HttpDelete(endpoint.resolve(buildFullPath(path)));
         del.addHeader("X-Auth-Token", sessionId);
         HttpResponse response = httpClient.execute(del);
         String entity = EntityUtils.toString(response.getEntity());
@@ -112,12 +107,36 @@ public class NumergyHttpClient {
     private String executeAuthenticationPost(String accessKey, String secretKey, String tenantId)
             throws IOException {
         JSONObject jsonReq = NumergyJsonHelper.buildAuthenticationJson(accessKey, secretKey, tenantId);
-        HttpPost post = new HttpPost(endpoint + "/tokens");
+        String url = buildAuthenticationUrl();
+        HttpPost post = new HttpPost(url);
         post.addHeader("Content-type", "application/json");
         post.setEntity(new StringEntity(jsonReq.toJSONString(), "UTF-8"));
         HttpResponse response = httpClient.execute(post);
         String entity = EntityUtils.toString(response.getEntity());
         return entity;
+    }
+
+    private String buildAuthenticationUrl() {
+        checkCorrectUrl();
+        String url = endpoint.resolve("/" + API_VERSION + "/tokens").toString();
+        logger.info("Authentication URL: " + url);
+        return url;
+    }
+
+    private String buildFullPath(String path) {
+        return "/" + API_VERSION + "/" + tenantId + path;
+    }
+
+    private void checkCorrectUrl() {
+        if (endpoint.toString().contains("tokens") ||
+                endpoint.toString().contains("v2.0") ||
+                endpoint.toString().contains("v1.0") ||
+                endpoint.toString().contains("v1.1")) {
+            String exampleUrl = "https://api2.numergy.com/";
+            throw new RuntimeException(
+                    String.format("Wrong URL: '%s'. Must use for example: '%s'",
+                                  endpoint.toString(), exampleUrl));
+        }
     }
 
     private HttpClient buildHttpClient() {

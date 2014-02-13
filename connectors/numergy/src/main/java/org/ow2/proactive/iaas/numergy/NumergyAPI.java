@@ -3,6 +3,7 @@ package org.ow2.proactive.iaas.numergy;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,10 +17,12 @@ import net.minidev.json.JSONObject;
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
 import org.ow2.proactive.iaas.metadata.MetadataHttpClient;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 
 
-public class NumergyAPI implements IaasApi {
+public class NumergyAPI implements IaasApi, IaasMonitoringApi {
 
     private static final Logger logger = Logger.getLogger(NumergyAPI.class);
 
@@ -191,8 +194,54 @@ public class NumergyAPI implements IaasApi {
         return getClass().getName();
     }
 
+    // ////////////////////////
+    // MONITORING METHODS
+    // ////////////////////////
+
     @Override
     public void disconnect() throws Exception {
+    }
+
+    @Override
+    public String[] getHosts() throws IaasMonitoringException {
+        return new String[]{"default"};
+    }
+
+    @Override
+    public String[] getVMs() throws IaasMonitoringException {
+        try {
+            String entity = numergyClient.executeGet("/servers");
+            return NumergyJsonHelper.getListOfServers(entity);
+        } catch (Exception e) {
+            throw new IaasMonitoringException("Could not list servers", e);
+        }
+    }
+
+    @Override
+    public String[] getVMs(String hostId) throws IaasMonitoringException {
+        return getVMs();
+    }
+
+    @Override
+    public Map<String, String> getHostProperties(String hostId) throws IaasMonitoringException {
+        return Collections.EMPTY_MAP;
+    }
+
+    @Override
+    public Map<String, String> getVMProperties(String vmId) throws IaasMonitoringException {
+        String entity = null;
+        try {
+            entity = numergyClient.executeGet("/servers/" + vmId);
+            return NumergyJsonHelper.getServerProperties(entity);
+        } catch (Exception e) {
+            String msg = "Could not get server properties: " + vmId + " " + entity;
+            throw new IaasMonitoringException(msg, e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getVendorDetails() throws IaasMonitoringException {
+        return Collections.EMPTY_MAP;
     }
 
     // ////////////////////////

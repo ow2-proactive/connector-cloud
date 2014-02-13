@@ -75,7 +75,7 @@ public class MetadataHttpClient {
     }
 
     private synchronized String executePost(String path, JSONObject content) throws IOException {
-        HttpPost post = new HttpPost(endpoint + path);
+        HttpPost post = new HttpPost(endpoint.resolve(path));
         post.addHeader("Content-type", "application/json");
         post.setEntity(new StringEntity(content.toJSONString(), "UTF-8"));
         HttpResponse response = httpClient.execute(post);
@@ -85,7 +85,7 @@ public class MetadataHttpClient {
     }
 
     private synchronized String executeGet(String path) throws IOException {
-        HttpGet get = new HttpGet(endpoint + path);
+        HttpGet get = new HttpGet(endpoint.resolve(path).toString());
         HttpResponse response = httpClient.execute(get);
         String entity = EntityUtils.toString(response.getEntity());
         EntityUtils.consume(response.getEntity());

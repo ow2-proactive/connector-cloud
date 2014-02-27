@@ -44,5 +44,5 @@ token=`getMetaDataFromServer token`
 
 echo "Now node start begins."
 
-$SCHEDULER_HOME/bin/unix/rm-start-node -r $rm_url -Dproactive.communication.protocol=$protocol -Dproactive.pamr.router.address=$router_address -Dproactive.pamr.router.port=$router_port -v $credentials -s $node_source_name -n $node_name -Dproactive.useIPaddress=true -Dproactive.net.nolocal=true -Dproactive.node.access.token=$token &> /tmp/rm-start-node.log
+$SCHEDULER_HOME/bin/unix/rm-start-node -r $rm_url -Dproactive.communication.protocol=$protocol -Dproactive.pamr.router.address=$router_address -Dproactive.pamr.router.port=$router_port -v $credentials -s $node_source_name -n $node_name -Dproactive.useIPaddress=true -Dproactive.net.nolocal=true -Dproactive.node.access.token=$token -Dproactive.agent.rank=0 &> /tmp/rm-start-node.log
 

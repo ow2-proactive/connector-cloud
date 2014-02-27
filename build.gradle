@@ -92,6 +92,12 @@ project('connectors:cloudstack') {
     }
 }
 
+project('connectors:numergy') {
+    dependencies {
+        compile 'org.apache.commons:commons-io:1.3.2'
+    }
+}
+
 project('connectors:eucalyptus') {
     dependencies {
         compile fileTree("${rootDir}/lib/endorsed/typica.jar")

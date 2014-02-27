@@ -14,11 +14,13 @@ import com.jayway.jsonpath.JsonPath;
 import com.rabbitmq.tools.json.JSONReader;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
+import net.minidev.json.parser.ParseException;
 import org.apache.log4j.Logger;
 import org.ow2.proactive.iaas.IaasApi;
 import org.ow2.proactive.iaas.IaasInstance;
 import org.ow2.proactive.iaas.IaasMonitoringApi;
-import org.ow2.proactive.iaas.metadata.MetadataHttpClient;
+import org.ow2.proactive.iaas.numergy.metadata.MetadataHttpClient;
 import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 
 
@@ -75,7 +77,7 @@ public class NumergyAPI implements IaasApi, IaasMonitoringApi {
 
     }
 
-    protected String startCreatedServer(String serverId) throws IOException {
+    public String startCreatedServer(String serverId) throws IOException {
 
         JSONObject jReq = NumergyJsonHelper.buildStartServerJson();
         String entity = numergyClient.executePost("/servers/" + serverId + "/action", jReq);
@@ -86,7 +88,12 @@ public class NumergyAPI implements IaasApi, IaasMonitoringApi {
         }
     }
 
-    protected void updateMetadataInfo(String serverId, JSONObject metadata) throws IOException {
+    public void updateMetadataInfo(String serverId, String metadata) throws IOException, ParseException {
+        JSONObject m = (JSONObject) new JSONParser(JSONParser.MODE_JSON_SIMPLE).parse(metadata);
+        updateMetadataInfo(serverId, m);
+    }
+
+    public void updateMetadataInfo(String serverId, JSONObject metadata) throws IOException {
         String entity = numergyClient.executeGet("/servers/" + serverId);
         String ip;
         try {
@@ -97,9 +104,14 @@ public class NumergyAPI implements IaasApi, IaasMonitoringApi {
         metadataClient.putMetadata(ip, metadata);
     }
 
-    protected String instanceStatus(String instanceId) throws Exception {
+    public String instanceStatus(String instanceId) throws Exception {
         String entity = numergyClient.executeGet("/servers/" + instanceId);
         return NumergyJsonHelper.getServerStatusFromJson(instanceId, entity);
+    }
+
+    public String limitsStatus() throws Exception {
+        String entity = numergyClient.executeGet("/limits/");
+        return entity;
     }
 
 

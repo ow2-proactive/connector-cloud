@@ -1,4 +1,4 @@
-package org.ow2.proactive.iaas.metadata;
+package org.ow2.proactive.iaas.numergy.metadata;
 
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;

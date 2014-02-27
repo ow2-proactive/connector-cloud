@@ -146,7 +146,7 @@ public class NumergyHttpClient {
         HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
         HttpConnectionParams.setSoTimeout(params, SO_TIMEOUT);
         ClientConnectionManager cm = new ThreadSafeClientConnManager(params, mgr.getSchemeRegistry());
-        return new DefaultHttpClient(cm, params);
+        return HttpUtility.turnClientIntoInsecure(new DefaultHttpClient(cm, params));
     }
 
 }

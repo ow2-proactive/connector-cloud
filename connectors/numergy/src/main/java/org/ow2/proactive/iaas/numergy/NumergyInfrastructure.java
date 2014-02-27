@@ -45,7 +45,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.ow2.proactive.iaas.metadata.MetadataHttpClient.*;
+import static org.ow2.proactive.iaas.numergy.metadata.MetadataHttpClient.*;
 
 /**
  * An infrastructure that creates nodes in Numergy.

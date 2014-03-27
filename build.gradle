@@ -14,7 +14,7 @@ buildscript {
     }
 }
 
-subprojects {
+allprojects {
     apply plugin: 'maven'
     apply plugin: 'java'
 
@@ -35,6 +35,10 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+
     rootProject.buildscript.repositories.each {
         repositories.add(it)
     }
@@ -175,4 +179,15 @@ project(':doc') {
     documentation.outputName = 'CloudServiceProviderConnectors'
     documentation.docDir = 'src'
     documentation.snippetsStart = rootProject.projectDir
+}
+
+task customLibs(type: Zip) {
+    from 'lib', 'lib/endorsed'
+    include '*.jar'
+    exclude '*sigar*'
+    classifier 'libs'
+}
+
+artifacts {
+    archives customLibs
 }

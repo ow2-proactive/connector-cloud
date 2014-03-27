@@ -17,6 +17,8 @@ buildscript {
 subprojects {
     apply plugin: 'java'
 
+    group = 'org.ow2.proactive'
+    version = schedulingVersion
     rootProject.buildscript.repositories.each {
         repositories.add(it)
     }
@@ -52,7 +54,7 @@ project(':monitoring') {
 
     dependencies {
         compile 'com.google.guava:guava:14.0.1'
-        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
+        provided "org.ow2.proactive:rm-server:$schedulingVersion"
 
         compile fileTree(dir: "${rootDir}/lib/", include: '*sigar*')
 
@@ -67,22 +69,22 @@ project(':iaas-api') {
         compile 'com.jayway.jsonpath:json-path:0.8.1'
         compile 'org.apache.httpcomponents:httpclient:4.2.1'
 
-        provided 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
-        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
-        provided 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
+        provided "org.ow2.proactive:scheduler-node:$schedulingVersion"
+        provided "org.ow2.proactive:rm-server:$schedulingVersion"
+        provided "org.ow2.proactive:rm-policy-scheduler:$schedulingVersion"
 
         compile project(':monitoring')
 
-        testCompile 'org.ow2.proactive:scheduler-server:3.5.0-SNAPSHOT'
+        testCompile "org.ow2.proactive:scheduler-server:$schedulingVersion"
     }
 }
 
 project('connectors').subprojects {
     dependencies {
         compile project(':iaas-api')
-        provided 'org.ow2.proactive:scheduler-node:3.5.0-SNAPSHOT'
-        provided 'org.ow2.proactive:rm-server:3.5.0-SNAPSHOT'
-        provided 'org.ow2.proactive:rm-policy-scheduler:3.5.0-SNAPSHOT'
+        provided "org.ow2.proactive:scheduler-node:$schedulingVersion"
+        provided "org.ow2.proactive:rm-server:$schedulingVersion"
+        provided "org.ow2.proactive:rm-policy-scheduler:$schedulingVersion"
     }
 }
 
@@ -120,7 +122,7 @@ project('functional-tests') {
         compile project(':monitoring')
         compile project(':connectors:vmware')
 
-        testCompile 'org.ow2.proactive:scheduler-server:3.5.0-SNAPSHOT'
+        testCompile "org.ow2.proactive:scheduler-server:$schedulingVersion"
         testCompile project(':monitoring').sourceSets.test.output
     }
 

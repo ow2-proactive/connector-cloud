@@ -37,6 +37,8 @@ allprojects {
     }
 }
 
+archivesBaseName = 'cloud_service_provider_connectors'
+
 subprojects {
 
     rootProject.buildscript.repositories.each {

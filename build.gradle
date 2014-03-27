@@ -19,7 +19,7 @@ allprojects {
     apply plugin: 'java'
 
     group = 'org.ow2.proactive'
-    version = schedulingVersion
+    version = cloudConnectorsVersion
 
     uploadArchives {
         repositories {

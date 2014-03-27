@@ -15,10 +15,26 @@ buildscript {
 }
 
 subprojects {
+    apply plugin: 'maven'
     apply plugin: 'java'
 
     group = 'org.ow2.proactive'
     version = schedulingVersion
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                snapshotRepository(url: "http://repo.activeeon.com/content/repositories/snapshots/") {
+                    authentication(userName: "${System.getProperty('nexusUsername')}",
+                            password: "${System.getProperty('nexusPassword')}")
+                }
+                repository(url: "http://repo.activeeon.com/content/repositories/releases/") {
+                    authentication(userName: "${System.getProperty('nexusUsername')}",
+                            password: "${System.getProperty('nexusPassword')}")
+                }
+            }
+        }
+    }
     rootProject.buildscript.repositories.each {
         repositories.add(it)
     }

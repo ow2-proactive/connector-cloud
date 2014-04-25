@@ -11,6 +11,7 @@ import java.util.Map;
 
 import javax.security.sasl.AuthenticationException;
 
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
@@ -102,22 +103,6 @@ public class NovaAPI implements IaasApi, IaasMonitoringApi {
         authenticate(username, password, tenantName);
     }
 
-    public void test() throws Exception {
-        String outp;
-        outp = filter("servers/detail", "$.servers[*].status");
-        System.out.println("STATUS = " + outp);
-
-        // It lists all the hosts with all the services: conductor, compute,
-        // cert, network, scheduler, consoleauth.
-        outp = filter("os-hosts", "$.hosts[*]");
-        System.out.println("HOSTS = " + outp);
-
-        outp = filter("os-hosts", "$.hosts[?(@.service=='compute')].host_name");
-        System.out.println("HOSTS COMPUTE = " + outp);
-        // outp = api.filter("servers/detail", "$.servers[*].status");
-        // System.out.println("STATUS = " + outp);
-    }
-
     // ////////////////////////
     // NOVA COMMANDS
     // ////////////////////////
@@ -188,14 +173,15 @@ public class NovaAPI implements IaasApi, IaasMonitoringApi {
         logger.debug(jReq.toJSONString());
 
         HttpResponse response = post("/servers", jReq);
-        if (response.getStatusLine().getStatusCode() != 200) {
-            // TODO throw an error 
-        }
+
         String entity = EntityUtils.toString(response.getEntity());
         logger.debug(entity);
 
-        String serverId = JsonPath.read(entity, "$.server.id");
-        return serverId;
+        try {
+            return JsonPath.read(entity, "$.server.id");
+        } catch (InvalidPathException e) {
+            throw new RuntimeException("Error: " + entity, e);
+        }
     }
 
     public boolean rebootServer(String serverId, String method) throws ClientProtocolException, IOException {
@@ -271,7 +257,8 @@ public class NovaAPI implements IaasApi, IaasMonitoringApi {
 
     @Override
     public boolean isInstanceStarted(IaasInstance instance) throws Exception {
-        throw new UnsupportedOperationException("not implemented");
+        String outp = filter("/servers/" + instance.getInstanceId(), "$.server.status");
+        return "ACTIVE".equalsIgnoreCase(outp);
     }
 
     @Override

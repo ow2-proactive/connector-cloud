@@ -195,7 +195,7 @@ public class IaasFuncTHelper {
             nodeSourceName, defaultNumberOfNodes);
         rmEventMonitor.addWaitCondition(waitCondition);
 
-        Object[] infrastructureParams = new Object[] { "", rmCred.getBase64(), defaultNumberOfNodes,
+        Object[] infrastructureParams = new Object[] { rmCred.getBase64(), defaultNumberOfNodes,
                 defaultNodeTimeout, org.ow2.proactive.iaas.testsutils.IaasFuncTUtils.buildJvmParameters(
                 jvmArgs) };
         BooleanWrapper nodeSourceCreated = rm

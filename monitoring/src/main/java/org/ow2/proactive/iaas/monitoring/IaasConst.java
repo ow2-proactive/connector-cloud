@@ -74,6 +74,8 @@ public enum IaasConst {
 
     P_COMMON_PFLAGS("pflags.%x%"),
 
+    P_COMMON_VM_UUID("pflags.vmuuid"),
+
 
     P_VM_VMUSAGE("memory.virtualmemorybytes"),
     P_VM_HOST("host"),

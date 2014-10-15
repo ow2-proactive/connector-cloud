@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.security.KeyException;
 import java.util.*;
 
+import static org.ow2.proactive.iaas.monitoring.IaasConst.P_COMMON_VM_UUID;
 import static org.ow2.proactive.iaas.monitoring.IaasConst.P_DEBUG_NUMBER_OF_ERRORS;
 
 public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable {
@@ -298,7 +299,28 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     private void getVMsWithoutUsingRmNodesOnHosts(HashSet<String> vms) throws IaasMonitoringException {
-        vms.addAll(jmxSupportedVMs);
+
+        Map<String, Object> rmNodesMaps = new HashMap<String, Object>();
+
+        getAllRmNodesProps(rmNodesMaps);
+
+        for (Map.Entry<String, Object> rmNodeMap : rmNodesMaps.entrySet()) {
+
+            String jmxurl = rmNodeMap.getKey();
+            Map<String, String> props = (Map<String, String>) rmNodeMap.getValue();
+
+            String uuid = props.get(IaasConst.P_COMMON_VM_UUID.toString());
+
+            if (uuid != null) {
+                vms.add(uuid);
+                addCacheEntryToVmId2SigarJmxUrl(uuid, props);
+            } else {
+                logger.debug("Could not found UUID for: " + jmxurl);
+                vms.add(jmxurl);
+            }
+
+        }
+
     }
 
     @Override
@@ -350,8 +372,26 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
                 logger.warn("[" + nsname + "]" + "Cannot retrieve VM info for VM: " + vmId, e);
             }
         } else {
-            if (useRMNodeOnVM)
-                vmProps.putAll(retrieveRmNodeProps(vmId, MASK_ALL_BUT_VMPROC));
+            if (useRMNodeOnVM) {
+                Map<String, Object> vmMaps = getRMNodeVMsMaps(vmId);
+
+                for (Map.Entry<String, Object> entry: vmMaps.entrySet()) {
+                    String jmxUrl = entry.getKey();
+                    Map<String, String> vmMap = (Map<String, String>)entry.getValue();
+                    String uuid = vmMap.get(P_COMMON_VM_UUID.toString());
+
+                    logger.info("[" + nsname + "]" + "Obtained: jmxUrl " + jmxUrl + " uuid " + uuid);
+
+                    if (vmId.equals(jmxUrl) || vmId.equals(uuid)) {
+                        vmProps.putAll(vmMap);
+                        addCacheEntryToVmId2SigarJmxUrl(uuid, vmProps);
+                        break;
+                    }
+
+                }
+
+
+            }
         }
 
         return vmProps;
@@ -517,10 +557,14 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         Boolean needToReScanAllRmNodes;
 
         String cachedJmxUrl;
-        if (!isAValidJmxUrl(vmIdTarget))
+        if (!isAValidJmxUrl(vmIdTarget)) {
+            logger.debug("Not using passed vmId as jmxurl: " + vmIdTarget);
             cachedJmxUrl = vmId2SigarJmxUrlCache.get(vmIdTarget);
-        else
+            logger.debug("Found cache: " + vmIdTarget + ": " + cachedJmxUrl);
+        } else {
+            logger.debug("Using passed vmId as jmxurl: " + vmIdTarget);
             cachedJmxUrl = vmIdTarget;
+        }
 
         if (cachedJmxUrl != null) {
 
@@ -542,6 +586,8 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
         }
 
         if (needToReScanAllRmNodes) {
+
+            logger.info("Cannot retrieve only a few VM properties, retrieving all.");
 
             notifyCacheMissForVmId2SigarJmxUrlCache(vmIdTarget);
 
@@ -568,11 +614,12 @@ public class IaasMonitoringServiceSigarLoader implements IaasMonitoringChainable
     }
 
     private void getAllRmNodesProps(Map<String, Object> sigarsMap) {
+        logger.debug("Querying all props VMs at: " + jmxSupportedVMs);
         for (String j : jmxSupportedVMs) {
             logger.debug("Querying props of sigar VM at: " + j);
             Map<String, String> sigarProps = null;
             sigarProps = retrieveRmNodeProps(j, MASK_ALL_BUT_VMPROC);
-            logger.debug("Properties: " + sigarProps);
+            logger.debug("Properties of '" + j + "': " + sigarProps);
             if (sigarProps != null) {
                 sigarsMap.put(j, sigarProps);
             } else {

@@ -9,19 +9,18 @@ import java.util.Map;
 
 import javax.security.sasl.AuthenticationException;
 
+import org.ow2.proactive.iaas.IaasApi;
+import org.ow2.proactive.iaas.IaasInstance;
+import org.ow2.proactive.iaas.IaasMonitoringApi;
+import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
+import org.ow2.proactive.iaas.numergy.metadata.MetadataHttpClient;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
-import com.rabbitmq.tools.json.JSONReader;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.log4j.Logger;
-import org.ow2.proactive.iaas.IaasApi;
-import org.ow2.proactive.iaas.IaasInstance;
-import org.ow2.proactive.iaas.IaasMonitoringApi;
-import org.ow2.proactive.iaas.numergy.metadata.MetadataHttpClient;
-import org.ow2.proactive.iaas.monitoring.IaasMonitoringException;
 
 
 public class NumergyAPI implements IaasApi, IaasMonitoringApi {
@@ -177,8 +176,7 @@ public class NumergyAPI implements IaasApi, IaasMonitoringApi {
                 arguments.get(NumergyAPIConstants.InstanceParameters.NAME));
 
         String metadataStr = arguments.get(NumergyAPIConstants.InstanceParameters.META_DATA);
-        Object obj = (new JSONReader()).read(metadataStr);
-        JSONObject metadataJson = new JSONObject(((Map) obj));
+        JSONObject metadataJson = (JSONObject) new JSONParser(JSONParser.MODE_JSON_SIMPLE).parse(metadataStr);
 
         instancesStarter.addServerToWatchAndStart(instanceId, metadataJson);
 

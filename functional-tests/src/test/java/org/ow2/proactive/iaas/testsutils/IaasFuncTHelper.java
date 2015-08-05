@@ -227,8 +227,6 @@ public class IaasFuncTHelper {
             getDefaultPAConfigPathname());
         commandList.add(CentralPAPropertyRepository.LOG4J.getCmdLine() + "file:" +
             getSchedLog4JConfigPathname());
-        commandList.add(PASchedulerProperties.SCHEDULER_DEFAULT_FJT_LOG4J.getCmdLine() + "file:" +
-            getForkedTaskLog4JConfigPathname());
         commandList.add(PASchedulerProperties.RESOURCE_MANAGER_CREDS.getCmdLine() +
             "config/authentication/rm.cred");
         commandList.add("-cp");

@@ -40,13 +40,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Vector;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
 import org.objectweb.proactive.core.ProActiveException;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeInformation;
-import org.ow2.proactive.iaas.IaasPolicy;
 import org.ow2.proactive.resourcemanager.common.NodeState;
 import org.ow2.proactive.resourcemanager.common.event.RMEventType;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeDescriptor;
@@ -67,8 +63,11 @@ import org.ow2.proactive.scheduler.job.JobIdImpl;
 import org.ow2.proactive.scheduler.job.JobInfoImpl;
 import org.ow2.proactive.scheduler.task.TaskIdImpl;
 import org.ow2.proactive.scheduler.task.TaskInfoImpl;
-import org.ow2.proactive.scheduler.task.internal.InternalJavaTask;
+import org.ow2.proactive.scheduler.task.internal.InternalScriptTask;
 import org.ow2.proactive.scheduler.task.internal.InternalTask;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.anyMap;
@@ -501,7 +500,7 @@ public class IaasPolicyTest {
     }
 
     private InternalTask createTask(int jobId, int taskId) {
-        InternalTask task1 = new InternalJavaTask();
+        InternalTask task1 = new InternalScriptTask();
         task1.setId(TaskIdImpl.createTaskId(new JobIdImpl(jobId, Integer.toString(jobId)), "task" + taskId, taskId, false));
         return task1;
     }

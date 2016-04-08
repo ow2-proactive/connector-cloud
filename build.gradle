@@ -148,7 +148,8 @@ project('functional-tests') {
 
     test {
         forkEvery 1
-
+	exclude 'org/ow2/proactive/iaas/SigarMonitoringTest**'
+	exclude 'org/ow2/proactive/iaas/SigarServiceClientTest**'
         systemProperties << ['java.security.policy': file("$projectDir/src/test/resources/org/ow2/proactive/iaas/testsutils/config/client-java.security.policy").absolutePath]
         systemProperties << ['proactive.runtime.ping': false]
         systemProperties << ['scheduling.project.dir': file("$buildDir/")]
